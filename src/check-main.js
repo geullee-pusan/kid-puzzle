@@ -39,6 +39,7 @@ function drawCounts() {
     ['code', '숫자 추리'],
     ['swap', '자리 바꾸기'],
     ['tile', '조각 덮기'],
+    ['duel', '누가 이길까'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

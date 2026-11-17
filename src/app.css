@@ -282,7 +282,7 @@ a.btn {
   min-height: 0;
   overflow: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   /* 줄의 높이: 자리가 있으면 250px까지 늘어나고, 모자라면 196px까지 줄어든다. 그보다 모자라면 굴러간다 */
   grid-auto-rows: minmax(196px, 250px);
   align-content: start;
@@ -1514,6 +1514,322 @@ div.coin {
 
 .make-count {
   font-size: 26px;
+}
+
+/* ---- 누가 이길까: 초콜릿 한 판과 돌 더미 ----
+   색만으로 알리지 않는다. 쪼개진 조각은 조금 벌어져 보이고, 방금 생긴 조각에는 굵은 테두리를 두른다.
+   방금 가져간 돌의 자리는 점선 고리로 남기고, 골라 둔 돌은 테두리를 굵게 하고 가운데에 점을 찍는다. */
+.duel-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.duel-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 124px);
+  max-height: calc(var(--h) * 124px);
+}
+
+.duel-choco.small .duel-svg {
+  max-width: none;
+  max-height: none;
+}
+
+/* 초콜릿은 칸의 높이를 다 쓴다 */
+.door-picture > .duel-choco,
+.board-area > .duel-choco {
+  align-self: stretch;
+  height: auto;
+}
+
+.choco-piece {
+  fill: #4a2c1c;
+  stroke: #2b170d;
+  stroke-width: 4;
+}
+
+.choco-piece.fresh {
+  stroke: #e67700;
+  stroke-width: 12;
+}
+
+.choco-cell {
+  fill: #8d5a3b;
+}
+
+/* 금: 누를 수 있는 판에서만 그린다. 누르는 자리는 금보다 넓다 */
+.choco-line {
+  cursor: pointer;
+}
+
+.choco-hit {
+  fill: transparent;
+}
+
+.choco-groove {
+  stroke: #f3d9b1;
+  stroke-width: 5;
+  stroke-dasharray: 10 9;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.choco-line:hover .choco-hit,
+.choco-line:focus-visible .choco-hit {
+  fill: rgba(252, 196, 25, 0.55);
+}
+
+.choco-line:hover .choco-groove,
+.choco-line:focus-visible .choco-groove {
+  stroke: #fff;
+  stroke-width: 9;
+}
+
+.choco-line:focus-visible {
+  outline: none;
+}
+
+/* 돌 더미: 돌 하나의 크기(--stone)는 놓이는 자리마다 따로 정한다 */
+.duel-stones {
+  --stone: 40px;
+  align-items: flex-end;
+  gap: calc(var(--stone) * 1.1);
+}
+
+/* 판 화면과 직접 만들기: 칸의 높이와 너비에 맞춰 돌의 크기를 정한다(더미 아래의 글자 자리는 빼고) */
+.board-area > .duel-stones {
+  --stone: min(60px, calc((100cqh - 56px) / var(--rows)), calc((100cqw - 24px) / (var(--cols) + var(--piles) * 1.1)));
+  align-self: center;
+}
+
+.duel-pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.duel-heap {
+  display: grid;
+  grid-template-columns: repeat(var(--per), var(--stone));
+  grid-auto-rows: var(--stone);
+  place-items: center;
+}
+
+.duel-stone,
+.duel-slot {
+  display: block;
+  width: 84%;
+  height: 84%;
+}
+
+.duel-stone {
+  padding: 0;
+  border: 3px solid #343a40;
+  border-radius: 50%;
+  background: #adb5bd;
+}
+
+button.duel-stone {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.duel-stone.picked {
+  border: 5px solid #e67700;
+  background: radial-gradient(circle, #343a40 0 22%, var(--gold) 25%);
+}
+
+.duel-stone.gone {
+  border: 3px dashed #868e96;
+  background: transparent;
+}
+
+.duel-stones.small .duel-stone {
+  border-width: 2px;
+}
+
+.duel-stone:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.duel-pile-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.duel-pile-label strong {
+  font-size: 22px;
+}
+
+/* 처음 화면의 카드와 "만들기" 목록 */
+.door-picture > .duel-stones,
+.menu-picture > .duel-stones {
+  --stone: min(26px, calc(100cqh / var(--rows)), calc(100cqw / (var(--cols) + var(--piles) * 1.1)));
+}
+
+.menu-picture > .duel-choco {
+  height: 76px;
+}
+
+/* 하던 판 띠와 판 고르기 */
+.resume .duel-game.small {
+  width: 130px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume .duel-stones.small {
+  --stone: min(18px, calc(60px / var(--rows)));
+}
+
+.level .duel-game.small {
+  width: 120px;
+  height: 64px;
+  justify-content: flex-start;
+}
+
+.level .duel-stones.small {
+  --stone: min(18px, calc(64px / var(--rows)));
+}
+
+/* 풀이, "왜 그럴까?", 방금 판 다시 보기의 그림 */
+.duel-card {
+  width: min(100%, 250px);
+}
+
+.duel-card > .duel-choco {
+  height: 170px;
+}
+
+.duel-card > .duel-stones {
+  --stone: min(32px, calc(150px / var(--rows)));
+}
+
+.duel-card.big {
+  width: min(100%, 460px);
+}
+
+.duel-card.big > .duel-choco {
+  height: 280px;
+}
+
+.duel-card.big > .duel-stones {
+  --stone: min(44px, calc(230px / var(--rows)));
+}
+
+.duel-card .strip-note,
+.duel-marks-card .strip-note {
+  text-align: center;
+}
+
+/* 그림 속에서는 더미의 이름과 남은 수를 두 줄로 적어, 그림 둘이 나란히 놓여도 글자가 붙지 않게 한다 */
+.duel-card .duel-pile-label {
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  line-height: 1.25;
+}
+
+/* "왜 그럴까?"의 표: 수마다 칸 하나. 눈에 띄게 할 칸은 테두리를 굵게 한다 */
+.duel-marks-card {
+  width: 100%;
+}
+
+.duel-marks {
+  display: grid;
+  grid-template-columns: repeat(var(--per), max-content);
+  justify-content: center;
+  gap: 8px;
+}
+
+.duel-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  padding: 4px 6px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.duel-mark strong {
+  font-size: 24px;
+}
+
+.duel-mark.marked {
+  border: 4px solid var(--bar);
+  background: #e7f5ff;
+  font-weight: 700;
+}
+
+.duel-table {
+  margin: 0 auto;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.duel-table th,
+.duel-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* 줄의 글은 한 줄로 적는다(머리글만 좁으면 두 줄이 된다) */
+.duel-table td {
+  white-space: nowrap;
+}
+
+.duel-table thead th {
+  background: #f1f3f5;
+  font-size: 18px;
+}
+
+.duel-table tr.marked td {
+  background: #e7f5ff;
+  font-weight: 700;
+}
+
+/* 직접 만들기: 게임 셋 가운데 첫째 단추는 한 줄을 다 쓰고, 더미마다의 돌의 수는 이름과 함께 한 줄에 놓는다 */
+.segment.lead .btn:first-child {
+  grid-column: span 2;
+}
+
+.stepper.named span {
+  font-size: 19px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stepper.named .btn {
+  min-width: 52px;
+}
+
+.stepper.named strong {
+  min-width: 2.4em;
+  font-size: 22px;
+  text-align: center;
+}
+
+/* 끝난 뒤 고르기에 더하는 단추 둘(자리를 바꿔서 다시 두기, 방금 판 다시 보기) */
+.after-extra {
+  font-size: 20px;
+  font-weight: 700;
 }
 
 /* ---- 숫자 추리: 숫자 칸, 추측과 답의 표, 메모판 ----

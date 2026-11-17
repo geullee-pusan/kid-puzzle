@@ -1,5 +1,5 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
-// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js).
+// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js, 누가 이길까 duel.js).
 // 처음 만남은 src/meet.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, 힌트 단추, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
@@ -7,7 +7,7 @@
 //
 // 형식(format)이 틀에 내놓는 것:
 //   id, T(대본), padId(답하는 칸), makeId(직접 만들기 칸), homeIds(처음 화면의 자리들), ladder(사다리와 판 만들어 내기)
-//   begin(판의 처음 값) solve(판) valid(적어 둔 판) showParts(보이기) enter() draw() ended()
+//   begin(판의 처음 값. 단계, 판 번호, 직접 만든 판인지, 판을 받는다) solve(판) valid(적어 둔 판) showParts(보이기) enter() draw() ended()
 //   ruleLine(판) hints(판) hintsShown(판) touched(판) record(판, 풀이) rightLine(판, 풀이)
 //   whyPages(판) solutionPages(판, 풀이) undo() reset() onKey(글자판)
 //   homeAsk(단계) pickLine() drawSample() drawBlank() drawResume() drawLevelPicture() showMake()
@@ -19,6 +19,7 @@ import { recommend, whyUnlocked } from './core/level.js';
 import { fill } from './core/text.js';
 import { createCode } from './formats/code.js';
 import { createCoins } from './formats/coins.js';
+import { createDuel } from './formats/duel.js';
 import { createSwap } from './formats/swap.js';
 import { createTile } from './formats/tile.js';
 import { createTrace } from './formats/trace.js';
@@ -257,7 +258,7 @@ function startRound(formatId, { level, seed, small, custom, board }) {
     seed,
     small,
     custom,
-    ...F.begin({ level, custom, board }),
+    ...F.begin({ level, seed, custom, board }),
     events: [],
     hintsOpened: 0,
     answers: [],
@@ -395,14 +396,18 @@ function setFeeling(value) {
   log.saveRecord(toRecord(round.outcome));
 }
 
-/** 끝난 뒤 고른 것을 적고 기록을 보낸 다음, 고른 곳으로 간다. */
-function chooseAfter(choice) {
+/**
+ * 끝난 뒤 고른 것을 적고 기록을 보낸 다음, 고른 곳으로 간다.
+ * 형식만의 고르기(누가 이길까의 "자리를 바꿔서 다시 두기")는 갈 곳을 go로 건넨다.
+ */
+function chooseAfter(choice, go = null) {
   const format = F;
   const { level, custom } = round;
   round.after = choice;
   log.saveRecord(toRecord(round.outcome));
   log.flush();
-  if (choice === 'same' && !custom) startLevel(format, level);
+  if (go) go();
+  else if (choice === 'same' && !custom) startLevel(format, level);
   else if (choice === 'harder' && !custom) startLevel(format, Math.min(level + 1, format.ladder.MAKE_LEVEL));
   else if (choice === 'make') format.showMake();
   else showHome();
@@ -485,6 +490,13 @@ function openWhy() {
   openSheet({ title: C.why.title, pages });
 }
 
+/** 판에 적은 것을 남긴다: 끝난 판이면 기록을 고쳐 적고, 하던 판이면 기기에 적어 둔다. */
+function keep() {
+  if (!round) return;
+  if (round.done) log.saveRecord(toRecord(round.outcome));
+  else persist();
+}
+
 function openSolution() {
   round.viewedSolution = true;
   log.saveRecord(toRecord(round.outcome));
@@ -520,10 +532,14 @@ const frame = {
   persist,
   finish,
   showWhy,
+  // 아래 셋은 누가 이길까가 쓴다: 판 위에 종이를 겹쳐 보이기(방금 판 다시 보기), 끝난 뒤의 형식만의 고르기, 끝난 판에 적은 것 남기기
+  openSheet,
+  chooseAfter,
+  keep,
   say: (line, pose) => talkers.play.say(line, pose),
 };
 // 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
-const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame) };
+const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame), duel: createDuel(frame) };
 const meet = createMeet(frame);
 
 // ---- 단추 잇기 ----

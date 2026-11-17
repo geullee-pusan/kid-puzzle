@@ -40,7 +40,7 @@
       </main>
     </section>
 
-    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기)와 퍼즐 만들기, 판 고르기.
+    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까)와 퍼즐 만들기, 판 고르기.
          형식을 더할 때는 카드 하나를 "퍼즐 만들기" 앞에 더하고, "만들기" 목록에 단추 하나를 더한다 -->
     <section id="home" class="screen home" hidden>
       <header class="top">
@@ -117,6 +117,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="duel-title">
+            <h2 id="duel-title">누가 이길까</h2>
+            <div class="door-picture"><div id="home-duel-sample"></div></div>
+            <p id="home-duel-ask" class="door-ask">먼저 둘까요, 나중에 둘까요?</p>
+            <div class="door-foot">
+              <button id="home-duel-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-duel-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -150,6 +160,9 @@
               </li>
               <li>
                 <button id="home-tile-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-tile-blank"></span></span><span class="menu-name">조각 덮기</span></button>
+              </li>
+              <li>
+                <button id="home-duel-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-duel-blank"></span></span><span class="menu-name">누가 이길까</span></button>
               </li>
             </ul>
           </div>
@@ -198,6 +211,8 @@
           <!-- 조각 덮기: 판에 무늬를 입혔다 벗기는 도구. 무엇을 알려 주는지는 말하지 않는다. 무늬를 입히면 색마다 남은 빈칸의 수를 적는다 -->
           <button id="tile-pattern" class="btn wide" type="button" aria-pressed="false" hidden>판에 무늬 입히기</button>
           <div id="tile-colors" class="tile-legend" aria-live="polite" hidden></div>
+          <!-- 누가 이길까: 같은 게임의 가장 작은 판을 차례로 두어 보는 도구. 끝내면 원래 판으로 돌아온다 -->
+          <button id="duel-small" class="btn wide" type="button" aria-pressed="false" hidden>작은 판으로 두어 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -213,6 +228,8 @@
             <strong id="swap-status" class="trace-status" aria-live="polite" hidden></strong>
             <!-- 조각 덮기: 칸이 몇 개 빠진 네모 판 -->
             <div id="tile-board" hidden></div>
+            <!-- 누가 이길까: 초콜릿 한 판 또는 돌 더미. 선생님과 번갈아 둔다 -->
+            <div id="duel-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
             <div id="code-board" class="code-board" hidden>
               <div id="code-table" class="code-scroll"></div>
@@ -235,6 +252,10 @@
             <span id="tile-count" class="count tile-count" hidden>
               <span id="tile-status" class="tile-status" aria-live="polite"></span>
               <span>남은 빈칸 <strong id="tile-left">0</strong>칸</span>
+            </span>
+            <!-- 누가 이길까: 누구 차례인지, 선생님이 방금 무엇을 두었는지를 판 아래에 글로 알린다 -->
+            <span id="duel-count" class="count tile-count" hidden>
+              <span id="duel-status" class="tile-status" aria-live="polite"></span>
             </span>
             <button id="undo" class="btn" type="button">한 번 무르기</button>
             <button id="reset" class="btn" type="button">처음으로 되돌리기</button>
@@ -368,6 +389,33 @@
             </div>
           </div>
 
+          <!-- 누가 이길까: 먼저 둘지 나중에 둘지 고르고, 차례가 오면 판에서 둔다. 작은 판으로 두어 보는 동안에는 맨 위에 그 판의 이름이 나온다 -->
+          <div id="duel-pad" class="pad" hidden>
+            <div id="duel-small-box" class="choices" hidden>
+              <h2>작은 판으로 두어 보기</h2>
+              <p id="duel-small-name" class="pad-note best-line"></p>
+            </div>
+            <div id="duel-choose" class="choices">
+              <h2>누가 먼저 둘까요?</h2>
+              <button id="duel-first" class="btn huge" type="button">먼저 둘래요</button>
+              <button id="duel-second" class="btn huge" type="button">나중에 둘래요</button>
+            </div>
+            <div id="duel-turn-box" class="choices" hidden>
+              <h2 id="duel-turn" aria-live="polite"></h2>
+              <p id="duel-choco-note" class="pad-note">조각 안의 금을 누르면 그 금을 따라 쪼개져요.</p>
+              <div id="duel-stones-box" class="choices" hidden>
+                <p class="pad-note">돌을 누르면 그 돌부터 맨 위의 돌까지 골라져요.</p>
+                <p id="duel-pick-line" class="pad-note best-line" aria-live="polite"></p>
+                <button id="duel-take" class="btn good huge" type="button" disabled>가져가기</button>
+              </div>
+            </div>
+            <div id="duel-small-over" class="choices" hidden>
+              <button id="duel-small-next" class="btn huge" type="button">다음 작은 판</button>
+              <button id="duel-small-again" class="btn huge" type="button">이 판 다시 두기</button>
+            </div>
+            <button id="duel-small-back" class="btn huge" type="button" hidden>원래 판으로 돌아가기</button>
+          </div>
+
           <div id="leave-ask" class="choices" hidden>
             <h2>풀이 볼래요?</h2>
             <button id="leave-solution" class="btn huge" type="button">풀이 볼래요</button>
@@ -385,6 +433,9 @@
             <h2>다음은 무엇을 할까요?</h2>
             <button id="after-same" class="btn huge" type="button">같은 단계 새 판</button>
             <button id="after-harder" class="btn huge" type="button">더 어려운 판</button>
+            <!-- 누가 이길까에서만 보인다. 진 판 뒤에는 "자리를 바꿔서 다시 두기"가 맨 위로 간다 -->
+            <button id="duel-swap" class="btn wide after-extra" type="button" hidden>자리를 바꿔서 다시 두기</button>
+            <button id="duel-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
             <button id="after-make" class="btn huge" type="button">직접 만들기</button>
             <button id="after-stop" class="btn huge" type="button">그만하기</button>
             <button id="after-solution" class="btn" type="button">풀이 보기</button>
@@ -601,6 +652,86 @@
             <button id="tile-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
             <p id="tile-make-result" class="make-result" aria-live="polite"></p>
             <button id="tile-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-duel" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>게임</h2>
+          <div id="duel-make-games" class="segment lead">
+            <button class="btn" type="button" data-game="choco">초콜릿 쪼개기</button>
+            <button class="btn" type="button" data-game="one">한 더미</button>
+            <button class="btn" type="button" data-game="piles">여러 더미</button>
+          </div>
+          <div id="duel-make-choco" class="option-group">
+            <h2>가로</h2>
+            <div class="stepper">
+              <button id="duel-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+              <strong id="duel-make-w"></strong>
+              <button id="duel-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+            </div>
+            <h2>세로</h2>
+            <div class="stepper">
+              <button id="duel-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+              <strong id="duel-make-h"></strong>
+              <button id="duel-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+            </div>
+          </div>
+          <div id="duel-make-one" class="option-group" hidden>
+            <h2>돌의 수</h2>
+            <div class="stepper">
+              <button id="duel-make-n-fewer" class="btn" type="button" aria-label="돌 하나 줄이기">−</button>
+              <strong id="duel-make-n"></strong>
+              <button id="duel-make-n-more" class="btn" type="button" aria-label="돌 하나 늘리기">＋</button>
+            </div>
+            <h2>한 번에 가져가는 수</h2>
+            <div id="duel-make-takes" class="segment">
+              <button class="btn" type="button" data-take="1">1개씩</button>
+              <button class="btn" type="button" data-take="2">2개까지</button>
+              <button class="btn" type="button" data-take="3">3개까지</button>
+              <button class="btn" type="button" data-take="4">4개까지</button>
+            </div>
+          </div>
+          <div id="duel-make-piles" class="option-group" hidden>
+            <h2>더미의 수</h2>
+            <div id="duel-make-counts" class="segment">
+              <button class="btn" type="button" data-count="2">두 더미</button>
+              <button class="btn" type="button" data-count="3">세 더미</button>
+            </div>
+            <!-- 더미마다 한 줄: 이름, 줄이기, 돌의 수, 늘리기(세 더미가 한 화면에 들어가게 낮게 그린다) -->
+            <h2>더미마다 돌의 수</h2>
+            <div class="stepper named">
+              <span>첫째</span>
+              <button id="duel-make-p0-fewer" class="btn" type="button" aria-label="첫째 더미의 돌 하나 줄이기">−</button>
+              <strong id="duel-make-p0"></strong>
+              <button id="duel-make-p0-more" class="btn" type="button" aria-label="첫째 더미의 돌 하나 늘리기">＋</button>
+            </div>
+            <div class="stepper named">
+              <span>둘째</span>
+              <button id="duel-make-p1-fewer" class="btn" type="button" aria-label="둘째 더미의 돌 하나 줄이기">−</button>
+              <strong id="duel-make-p1"></strong>
+              <button id="duel-make-p1-more" class="btn" type="button" aria-label="둘째 더미의 돌 하나 늘리기">＋</button>
+            </div>
+            <div id="duel-make-third" class="stepper named">
+              <span>셋째</span>
+              <button id="duel-make-p2-fewer" class="btn" type="button" aria-label="셋째 더미의 돌 하나 줄이기">−</button>
+              <strong id="duel-make-p2"></strong>
+              <button id="duel-make-p2-more" class="btn" type="button" aria-label="셋째 더미의 돌 하나 늘리기">＋</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">게임을 고르고 수를 정해요. 마지막 수를 둔 쪽이 이겨요. 나중에 두는 쪽이 이기는 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="duel-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="duel-make-solve" class="btn primary huge" type="button">선생님, 누가 이길까요?</button>
+            <p id="duel-make-result" class="make-result" aria-live="polite"></p>
+            <button id="duel-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

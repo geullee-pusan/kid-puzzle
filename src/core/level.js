@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -8,6 +8,8 @@
 //   화면에는 내려갔다는 말이나 표시를 하지 않는다.
 // - 그 밖에는 그대로 둔다.
 // - 게임 판(추측을 내고 답을 듣는 숫자 추리의 판)은 "빠르게 한 번에"의 기준이 다르다. 걸린 시간이 아니라 추측 횟수가 적은 것을 본다.
+// - 선생님과 번갈아 두는 판(누가 이길까)도 기준이 다르다. 이기는 쪽을 스스로 고르고 그 판을 이긴 것을 본다.
+//   끝까지 두고 진 판은 그만둔 판이 아니다. 연달아 져도 내려가지 않는다(지는 것은 발견의 재료다).
 
 /**
  * 아래 숫자는 모두 임시값이다. 재 본 값이 아니다. 기록을 보고 고친다.
@@ -90,6 +92,26 @@ export const TUNING = {
       hintCount: 2,
       expectedSeconds: { 1: 90, 2: 180, 3: 300, 4: 240 },
     },
+    /**
+     * 누가 이길까(모두 임시). 처음 보여 줄 단계는 1단계다(맨 첫 판은 어떻게 두어도 아이가 마지막 수를 둔다).
+     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개이고, "작은 판으로 두어 보기"도 힌트 하나로 센다.
+     * fastWin: true면 "한 번에 빠르게"를 걸린 시간으로 보지 않는다.
+     *   먼저 둘지 나중에 둘지를 스스로 골랐고(chose), 그것이 잘 두면 이기는 쪽이었고(choseWinner), 그 판을 이겼으면(winner가 kid) 그렇게 본다.
+     *   고르기가 없는 맨 첫 판과 자리를 바꿔서 다시 둔 판은 넣지 않는다.
+     * 끝까지 둔 판은 이겼든 졌든 outcome이 solved다. 그래서 연달아 진 것만으로는 내려가지 않고, 연달아 그만두면 내려간다.
+     * expectedSeconds: 쓰이지 않는 자리 채움이다.
+     * whyAfter: 'finished'면 이 형식의 판을 한 번 끝까지 둔 뒤에 틀이 "왜 그럴까?"를 막지 않는다.
+     *   게임마다의 문은 이 형식이 따로 본다(그 게임을 세 판 끝까지 둔 뒤. src/core/duel.js의 whyOpen).
+     */
+    duel: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 4,
+      hintCount: 2,
+      expectedSeconds: { 1: 120, 2: 180, 3: 180, 4: 240 },
+      fastWin: true,
+      whyAfter: 'finished',
+    },
   },
 };
 
@@ -117,7 +139,7 @@ function playedRounds(records, format, tuning) {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
     // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
-    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나(moveCount), 조각을 놓았거나(placeCount), 답했거나, 힌트를 열었다
+    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나 수를 두었거나(moveCount), 조각을 놓았거나(placeCount), 답했거나(먼저 둘지 고른 것도 답이다), 힌트를 열었다
     const moves =
       (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0) + (record.moveCount ?? 0) + (record.placeCount ?? 0);
     const touched = moves > 0 || (record.answers?.length ?? 0) > 0 || (record.hintsOpened ?? 0) > 0;
@@ -130,10 +152,13 @@ const solved = (record) => record.outcome === 'solved';
 /**
  * 힌트 없이, 첫 답으로, 예상 시간보다 빠르게 맞혔는가.
  * 게임 판(그 단계에 fastGuesses가 적혀 있다)은 힌트 없이, 적은 추측으로 알아냈는가를 본다.
+ * 선생님과 번갈아 두는 판(fastWin)은 힌트 없이, 이기는 쪽을 골라 이겼는가를 본다.
  */
 function fastClean(record, tuning) {
   if (!solved(record)) return false;
   if ((record.hintsOpened ?? 0) > 0) return false;
+  // 선생님과 번갈아 두는 판: 이기는 쪽을 스스로 고르고 그 판을 이겼는가. 걸린 시간은 보지 않는다.
+  if (tuning.fastWin) return record.chose === true && record.choseWinner === true && record.winner === 'kid' && record.rematch !== true;
   const fewGuesses = tuning.fastGuesses?.[record.level];
   if (typeof fewGuesses === 'number') return Number.isInteger(record.guessCount) && record.guessCount >= 1 && record.guessCount <= fewGuesses;
   // 답을 여러 번 주고받는 판(역할 바꾸기)은 틀린 답의 수(wrongCount)를 적어 둔다. 적혀 있으면 그것이 0이어야 "한 번에"다.
