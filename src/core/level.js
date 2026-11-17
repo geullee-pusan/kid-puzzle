@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -60,6 +60,22 @@ export const TUNING = {
       fastGuesses: { 1: 4, 2: 5, 3: 6 },
       whyAfter: 'finished',
     },
+    /**
+     * 자리 바꾸기(모두 임시). 처음 보여 줄 단계는 1단계다(실패할 수 없는 작은 판에서 시작한다).
+     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개다.
+     * 개구리 판(1~3단계)은 기록의 wrongCount에 무르기와 되돌리기를 더한 수를 적는다.
+     *   그래서 무르기 없이 끝낸 판이 "한 번에"다. 4단계(짝 짓기)는 첫 답으로 맞혔는지를 본다.
+     * expectedSeconds: 재 본 값이 아니다. 가장 적은 횟수(3~24번)를 보고 넉넉하게 잡았다.
+     * whyAfter: 'fewest'면 가장 적은 횟수로 한 판을 끝낸 뒤에(기록의 fewest가 true) "왜 그럴까?"가 열린다.
+     */
+    swap: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 4,
+      hintCount: 2,
+      expectedSeconds: { 1: 60, 2: 180, 3: 240, 4: 240 },
+      whyAfter: 'fewest',
+    },
   },
 };
 
@@ -87,8 +103,8 @@ function playedRounds(records, format, tuning) {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
     // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
-    // 추측을 냈거나 들었거나(guessCount), 답했거나, 힌트를 열었다
-    const moves = (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0);
+    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나(moveCount), 답했거나, 힌트를 열었다
+    const moves = (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0) + (record.moveCount ?? 0);
     const touched = moves > 0 || (record.answers?.length ?? 0) > 0 || (record.hintsOpened ?? 0) > 0;
     return record.outcome === 'solved' || record.outcome === 'solution' || touched;
   });
@@ -155,14 +171,13 @@ export function recommend(records, format = 'coins', allTuning = TUNING) {
  * "왜 그럴까?"를 열어도 되는가. 이 형식에서 안 되는 판을 한 번 이상 만나고,
  * 그 판이 안 되는 판이라는 것을 알게 된 뒤에 열린다(임시 규칙).
  * 안 되는 판이 없는 형식(whyAfter가 'finished')은 판을 한 번 끝까지 한 뒤에 열린다.
+ * 더 좋은 답을 찾는 형식(whyAfter가 'fewest')은 가장 적은 횟수로 한 판을 끝낸 뒤에 열린다.
  */
 export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
-  const anyRound = tuningFor(format, allTuning).whyAfter === 'finished';
-  return latestById(Array.isArray(records) ? records : []).some(
-    (record) =>
-      record.kind === 'round' &&
-      record.format === format &&
-      (anyRound || record.solution?.possible === false) &&
-      (record.outcome === 'solved' || record.outcome === 'solution'),
-  );
+  const after = tuningFor(format, allTuning).whyAfter;
+  const opens = (record) => {
+    if (after === 'fewest') return record.fewest === true && record.outcome === 'solved';
+    return (after === 'finished' || record.solution?.possible === false) && (record.outcome === 'solved' || record.outcome === 'solution');
+  };
+  return latestById(Array.isArray(records) ? records : []).some((record) => record.kind === 'round' && record.format === format && opens(record));
 }

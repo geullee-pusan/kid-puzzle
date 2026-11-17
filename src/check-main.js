@@ -37,6 +37,7 @@ function drawCounts() {
     ['coins', '동전 뒤집기'],
     ['trace', '한붓그리기'],
     ['code', '숫자 추리'],
+    ['swap', '자리 바꾸기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

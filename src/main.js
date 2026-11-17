@@ -1,5 +1,6 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
-// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js). 처음 만남은 src/meet.js 에 있다.
+// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js).
+// 처음 만남은 src/meet.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, 힌트 단추, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
 // 지키는 것: 보상과 성적 표시를 두지 않는다. 시간은 기록만 하고 보여 주지 않는다. 아이가 누를 때까지 기다린다.
@@ -18,6 +19,7 @@ import { recommend, whyUnlocked } from './core/level.js';
 import { fill } from './core/text.js';
 import { createCode } from './formats/code.js';
 import { createCoins } from './formats/coins.js';
+import { createSwap } from './formats/swap.js';
 import { createTrace } from './formats/trace.js';
 import { createMeet } from './meet.js';
 import * as log from './ui/log.js';
@@ -135,7 +137,7 @@ function readCurrent() {
   return null;
 }
 
-// ---- 처음 화면(연구소): 형식마다 문 하나, 퍼즐 만들기, 하던 판. 단계 목록은 "판 고르기" 뒤에 있다. ----
+// ---- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나, 퍼즐 만들기. 단계 목록은 "판 고르기" 뒤에, 만들 형식은 "만들기" 뒤에 있다. ----
 function showHome() {
   setScreen('home');
   if (reloadIfWaiting()) return;
@@ -167,6 +169,7 @@ function showDoors() {
   const current = readCurrent();
   $('doors').hidden = false;
   $('picker').hidden = true;
+  $('make-menu').hidden = true;
   $('resume').hidden = !current;
   if (current) formats[current.format].drawResume($('resume-board'), current);
   return current;
@@ -208,8 +211,16 @@ function showPicker(format) {
   $('levels').replaceChildren(...items);
   $('doors').hidden = true;
   $('resume').hidden = true;
+  $('make-menu').hidden = true;
   $('picker').hidden = false;
   talkers.home.say(format.pickLine());
+}
+
+/** "만들기"를 누르면 나오는 목록: 어느 형식으로 만들지 고른다. 형식마다 빈 판 하나와 이름이 있다. */
+function showMakeMenu(on) {
+  $('make-menu').hidden = !on;
+  if (on) $('make-menu-close').focus();
+  else if (screen === 'home' && !$('doors').hidden) $('home-make-open').focus();
 }
 
 /** 그 단계에서 다음에 낼 판 번호. 기록에 남은 가장 큰 번호의 다음이다(방금 한 판과 같은 판은 건너뛴다). */
@@ -510,7 +521,8 @@ const frame = {
   showWhy,
   say: (line, pose) => talkers.play.say(line, pose),
 };
-const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame) };
+// 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
+const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame) };
 const meet = createMeet(frame);
 
 // ---- 단추 잇기 ----
@@ -523,6 +535,12 @@ for (const format of Object.values(formats)) {
   $(format.homeIds.make).addEventListener('click', () => format.showMake());
 }
 $('picker-close').addEventListener('click', showDoors);
+$('home-make-open').addEventListener('click', () => showMakeMenu(true));
+$('make-menu-close').addEventListener('click', () => showMakeMenu(false));
+// 목록의 바깥(어두운 곳)을 눌러도 닫힌다.
+$('make-menu').addEventListener('click', (event) => {
+  if (event.target === $('make-menu')) showMakeMenu(false);
+});
 $('continue').addEventListener('click', resumeRound);
 $('leave').addEventListener('click', askLeave);
 $('undo').addEventListener('click', () => F.undo());
@@ -548,6 +566,7 @@ $('make-leave').addEventListener('click', showHome);
 
 // 글자판이 있는 기기에서는 글자판으로 답할 수도 있다(형식이 맡는다).
 addEventListener('keydown', (event) => {
+  if (screen === 'home' && event.key === 'Escape' && !$('make-menu').hidden) showMakeMenu(false);
   if (screen !== 'play' || !round || round.done || sheet) return;
   F.onKey(event);
 });

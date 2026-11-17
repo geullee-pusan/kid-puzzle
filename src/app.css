@@ -109,6 +109,7 @@ h2 {
 
 .btn:focus-visible,
 .level:focus-visible,
+.menu-item:focus-visible,
 .memo-chip:focus-visible,
 .coin:focus-visible {
   outline: 3px solid var(--gold);
@@ -273,88 +274,89 @@ a.btn {
   padding: 12px;
 }
 
-/* 문들: 형식마다 하나(동전 뒤집기, 한붓그리기, 숫자 추리)와 퍼즐 만들기.
-   한 줄에 나란히 놓이고, 자리가 모자라면 다음 줄로 넘어간다. 가로 화면에서는 넷이 한 줄에 들어간다.
-   형식이 더 늘어 줄이 넘치면 문의 높이는 그대로 두고 처음 화면이 아래로 굴러간다. */
+/* 카드들: 형식마다 하나와, 맨 뒤의 퍼즐 만들기. 형식이 늘어도 버티게 작게 그린다.
+   한 줄에 서너 장이 놓이고(가로 1280px에서 석 장, 더 넓으면 넉 장), 넘치면 다음 줄로 간다.
+   두 줄까지는 한 화면에 들어가고, 줄이 더 많으면 이 칸만 아래로 굴러간다(선생님과 위 띠, 하던 판 띠는 그대로 있다). */
 .doors {
-  flex: 1 0 auto;
-  min-height: 320px;
-  display: flex;
-  flex-wrap: wrap;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  /* 줄의 높이: 자리가 있으면 250px까지 늘어나고, 모자라면 196px까지 줄어든다. 그보다 모자라면 굴러간다 */
+  grid-auto-rows: minmax(196px, 250px);
+  align-content: start;
   gap: 12px;
 }
 
 .panel.door {
-  flex: 1 1 250px;
   min-width: 0;
-  min-height: 300px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   height: auto;
-  padding: 12px 16px;
+  padding: 10px 14px;
   overflow: hidden;
 }
 
-/* 동전 판은 가로로 길어서 그 문을 조금 넓게 잡는다 */
-.panel.door.door-wide {
-  flex: 1.6 1 330px;
-}
-
 .door h2 {
-  font-size: 24px;
+  font-size: 22px;
+  line-height: 1.3;
 }
 
 .door-picture {
   flex: 1;
-  min-height: 120px;
-  /* 고리 판이 칸의 가로와 세로 가운데 작은 쪽에 맞춰지게 한다 */
+  min-height: 0;
+  /* 그림이 칸의 가로와 세로 가운데 작은 쪽에 맞춰지게 한다 */
   container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  overflow: hidden;
 }
 
 .door-picture > div {
   width: 100%;
 }
 
-/* 한붓그리기의 그림은 칸의 높이를 다 쓴다 */
+/* 한붓그리기의 그림과 자리 바꾸기의 판은 칸의 높이를 다 쓴다 */
 .door-picture > .figure,
+.door-picture > .swap-row,
 .board-area > .figure {
   align-self: stretch;
   height: auto;
 }
 
-/* 문 안의 동전 판은 칸이 좁아서 사이를 조금 좁힌다 */
+/* 카드 안의 동전 판은 칸의 높이를 넘지 않게 그린다 */
 .door-picture > .coins.line {
+  grid-template-columns: repeat(var(--n), minmax(0, min(60px, 100cqh)));
   gap: 6px;
 }
 
-/* 퍼즐 만들기: 형식마다 빈 판 하나. 두 칸씩 놓는다. 빈 동전 판은 가로로 길어서 한 줄을 다 쓴다.
-   형식이 늘면 빈 판이 다음 칸으로 이어진다 */
-.door-blanks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: auto;
-  grid-auto-rows: minmax(0, 1fr);
+.door-picture > .coins.ring {
+  width: min(100cqw, 100cqh);
+}
+
+/* 퍼즐 만들기 카드의 그림: 아직 정하지 않은 빈 판 */
+.make-mark {
+  display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.door-blanks > .coins {
-  grid-column: 1 / -1;
-}
-
-.door-blanks > .figure {
-  height: 100%;
+  justify-content: center;
+  max-width: 180px;
+  height: min(100%, 84px);
+  border: 3px dashed #868e96;
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .door-ask {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1.4;
   text-align: center;
   word-break: keep-all;
 }
@@ -362,33 +364,31 @@ a.btn {
 .door-foot {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
   gap: 10px;
 }
 
-/* 문 안의 단추는 한 줄에 둘씩 들어가게 한다 */
-.door-foot .btn.big,
-.door-foot.pair .btn {
-  flex: 1 1 108px;
+/* 카드 안의 단추는 한 줄에 둘이 나란히 들어간다 */
+.door-foot .btn {
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 220px;
   padding: 8px 10px;
-}
-
-.door-foot.pair .btn {
   font-weight: 700;
 }
 
-/* 하던 판 */
+/* 하던 판: 카드들 위에 놓는 낮은 띠. 카드가 굴러가도 늘 보인다 */
 .panel.resume {
+  flex: none;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 16px;
   height: auto;
-  padding: 10px 20px;
+  padding: 6px 16px;
+  overflow: hidden;
 }
 
 .resume-label {
+  flex: none;
   font-size: 20px;
   font-weight: 700;
 }
@@ -396,6 +396,9 @@ a.btn {
 .resume-picture {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 60px;
 }
 
 .resume .coins.small.line {
@@ -403,13 +406,18 @@ a.btn {
 }
 
 .resume .coins.small.ring {
-  width: 150px;
+  width: 60px;
   margin: 0;
 }
 
 .resume .figure.small {
-  width: 190px;
-  height: 104px;
+  width: 130px;
+  height: 60px;
+}
+
+.resume .swap-row.small {
+  width: min(100%, 300px);
+  height: 60px;
 }
 
 .resume .code-mini,
@@ -420,6 +428,92 @@ a.btn {
 
 .resume .code-mini {
   flex-direction: row;
+}
+
+/* "만들기" 목록: 처음 화면 위에 뜨는 작은 목록. 형식마다 빈 판 하나와 이름 */
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(31, 41, 51, 0.45);
+}
+
+.menu-box {
+  width: min(100%, 720px);
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.menu-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  min-height: 132px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.menu-picture {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 76px;
+  overflow: hidden;
+  container-type: size;
+}
+
+/* 빈 판은 그리는 쪽이 자리의 이름표를 바꿔 단다. 이름표가 무엇이든 칸을 다 쓰게 한다 */
+.menu-picture > span {
+  width: 100%;
+}
+
+.menu-picture > .figure,
+.menu-picture > .swap-row {
+  display: block;
+  height: 76px;
+}
+
+.menu-picture > .coins.line {
+  grid-template-columns: repeat(var(--n), minmax(0, 34px));
+  gap: 4px;
+}
+
+.menu-picture > .coins .coin {
+  border-width: 3px;
+  font-size: 18px;
+}
+
+.menu-name {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .panel.picker {
@@ -538,6 +632,12 @@ a.btn {
   display: block;
   width: 120px;
   height: 64px;
+}
+
+.level .swap-row.small {
+  display: block;
+  width: min(100%, 230px);
+  height: 58px;
 }
 
 .level .code-mini {
@@ -940,6 +1040,244 @@ div.coin {
   display: none;
 }
 
+/* ---- 자리 바꾸기: 한 줄로 이어진 칸과 말, 한 줄로 놓인 돌 ----
+   색만으로 알리지 않는다. 개구리는 둥글고 두꺼비는 네모나고 등에 점이 있다. 눈과 코가 보는 쪽에 있다.
+   짝이 된 돌은 둘을 포개어 그리고, 못 가는 말 앞에는 굵은 막대를 세우고 길을 막은 칸에 테두리를 두른다. */
+.swap-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.swap-svg {
+  display: block;
+  width: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--n) * 130px);
+  max-height: 100cqh;
+  margin: 0 auto;
+}
+
+.swap-row.small .swap-svg {
+  max-width: none;
+  max-height: none;
+  height: 100%;
+}
+
+.swap-row.live .swap-svg {
+  touch-action: none;
+  user-select: none;
+}
+
+.swap-row.live .swap-cell-group {
+  cursor: pointer;
+}
+
+.swap-cell {
+  fill: #e7f5ff;
+  stroke: #74a9cf;
+  stroke-width: 3;
+}
+
+.swap-cell.blocking {
+  stroke: #e67700;
+  stroke-width: 7;
+  stroke-dasharray: 14 8;
+}
+
+.swap-body {
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.swap-frog .swap-body {
+  fill: #51cf66;
+  stroke: #1b6e2c;
+}
+
+.swap-toad .swap-body {
+  fill: #e8a15a;
+  stroke: #7a4310;
+}
+
+.swap-spot {
+  fill: #7a4310;
+}
+
+.swap-eye {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.swap-pupil {
+  fill: var(--ink);
+}
+
+.swap-mouth,
+.swap-shine {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.swap-shine {
+  stroke: #fff;
+  stroke-width: 5;
+}
+
+.swap-disc {
+  fill: #ced4da;
+  stroke: #343a40;
+  stroke-width: 4;
+}
+
+.swap-stone.pair .swap-disc {
+  fill: #a5d8ff;
+  stroke: var(--bar);
+  stroke-width: 5;
+}
+
+.swap-gone {
+  fill: none;
+  stroke: #adb5bd;
+  stroke-width: 3;
+  stroke-dasharray: 5 5;
+}
+
+.swap-shelf {
+  stroke: #868e96;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.swap-ring {
+  fill: none;
+  stroke-width: 5;
+}
+
+.swap-ring.picked {
+  stroke: #e67700;
+  stroke-width: 7;
+}
+
+.swap-ring.target {
+  stroke: var(--accent);
+  stroke-dasharray: 10 8;
+}
+
+.swap-ring.refused {
+  stroke: #e67700;
+  stroke-dasharray: 3 9;
+}
+
+.swap-wall {
+  fill: #e67700;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.swap-arrow {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 2 12;
+}
+
+.swap-arrow-tip {
+  fill: var(--bar);
+}
+
+.swap-piece.dragging {
+  opacity: 0.85;
+}
+
+.swap-piece.moved > g {
+  animation: swap-land 0.22s ease;
+}
+
+@keyframes swap-land {
+  from {
+    transform: translateY(-14px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.swap-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.swap-card {
+  width: min(100%, 380px);
+}
+
+.swap-card .swap-row {
+  height: 96px;
+}
+
+.swap-card .strip-note {
+  text-align: center;
+}
+
+.swap-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swap-step {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.swap-step .swap-row {
+  height: 58px;
+}
+
+.swap-table {
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.swap-table th,
+.swap-table td {
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  word-break: keep-all;
+}
+
+.swap-table thead th {
+  background: #f1f3f5;
+  font-size: 18px;
+}
+
+.swap-table tbody td:last-child {
+  color: var(--bar);
+  font-weight: 700;
+}
+
+.best-line strong {
+  font-size: 24px;
+}
+
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .pad-note {
   margin: 0;
   font-size: 19px;
@@ -1221,11 +1559,31 @@ div.coin {
 }
 
 /* 처음 화면의 카드에서는 숨은 암호의 칸을 크게 그린다(표의 줄이 여럿일 때는 작은 칸 그대로) */
-.door-picture:not(.door-blanks) .code-mini.single .code-digit {
+.door-picture .code-mini.single .code-digit {
   width: 46px;
   height: 52px;
   border-radius: 8px;
   font-size: 30px;
+}
+
+/* 카드의 그림 칸이 낮을 때(하던 판 띠가 함께 보일 때): 쓸 수 있는 숫자의 줄을 접고, 표는 두 줄까지만 그린다 */
+@container (max-height: 100px) {
+  .door-picture .code-strip,
+  .door-picture .code-more,
+  .door-picture .code-mini-row:nth-child(n + 3) {
+    display: none;
+  }
+  .door-picture .code-mini {
+    gap: 3px;
+  }
+  .door-picture .code-mini.single .code-digit {
+    width: 40px;
+    height: 44px;
+    font-size: 26px;
+  }
+  .door-picture .code-mini:not(.single) .code-digit {
+    height: 28px;
+  }
 }
 
 /* 풀이와 "왜 그럴까?"의 그림 */
@@ -1476,6 +1834,14 @@ div.coin {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.segment.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.segment.three .btn {
+  padding: 8px 4px;
+}
+
 .segment .btn {
   min-height: 56px;
 }
@@ -1518,14 +1884,6 @@ div.coin {
   }
 }
 
-/* ---- 조금 좁은 화면: 문을 두 줄에 둘씩 놓는다 ---- */
-@media (max-width: 1180px) {
-  .panel.door,
-  .panel.door.door-wide {
-    flex: 1 1 calc(50% - 6px);
-  }
-}
-
 /* ---- 좁은 화면(세로로 든 태블릿, 휴대폰) ---- */
 @media (max-width: 980px) {
   .screen {
@@ -1538,12 +1896,12 @@ div.coin {
   .levels {
     grid-template-columns: minmax(0, 1fr);
   }
-  .panel.door,
-  .panel.door.door-wide {
-    flex: 1 1 100%;
-  }
-  .door-picture {
-    min-height: 200px;
+  /* 카드는 두 장씩(더 좁으면 한 장씩) 아래로 쌓이고, 화면 전체가 굴러간다 */
+  .doors {
+    flex: none;
+    overflow: visible;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-auto-rows: minmax(230px, auto);
   }
   .meet-panel .board-area {
     min-height: 260px;
