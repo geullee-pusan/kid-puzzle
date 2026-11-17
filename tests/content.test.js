@@ -121,6 +121,7 @@ test('화면 글에 영어 낱말이 없다(대본과 index.html)', () => {
 
 test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
   const spoken = [
+    ...Object.values(T.meet),
     ...Object.values(T.home),
     ...Object.values(T.rules),
     ...Object.values(T.guess),
@@ -213,4 +214,49 @@ test('index.html: 답 넣기에 숫자판과 "불가능해요" 단추가 있고,
   for (const label of ['같은 단계 새 판', '더 어려운 판', '직접 만들기', '그만하기']) assert.ok(screenText.includes(label), label);
   for (const label of ['쉬웠어요', '딱 좋았어요', '어려웠어요']) assert.ok(screenText.includes(label), label);
   for (const label of ['처음으로 되돌리기', '한 번 무르기', '힌트', '왜 그럴까?', '풀이 볼래요?', '이어서 하기']) assert.ok(screenText.includes(label), label);
+});
+
+test('처음 만남: 네 개짜리 판은 되고 다섯 개짜리 판은 안 된다(풀이 프로그램으로 확인)', () => {
+  const main = readFileSync(resolve(ROOT, 'src/main.js'), 'utf8');
+  const meet = main.match(/const MEET = \{ rule: '(\w+)', shape: '(\w+)', first: (\d+), second: (\d+), cannotAfter: (\d+), oddAfter: (\d+) \}/);
+  assert.ok(meet, 'MEET 값을 읽지 못했어요');
+  const [, rule, shape, first, second, cannotAfter] = meet;
+  const allHeads = (n) => ({ n, shape, rule, coins: Array(n).fill(1) });
+  const easy = solve(allHeads(Number(first)));
+  assert.equal(easy.possible, true);
+  assert.equal(easy.min, 2);
+  assert.equal(solve(allHeads(Number(second))).possible, false);
+  // "안 되는 것 같아요"는 해 본 뒤에야 나온다.
+  assert.ok(Number(cannotAfter) >= 1);
+  for (const key of ['start', 'flipped', 'fourDone', 'five', 'odd', 'reveal']) assert.ok(T.meet[key], key);
+  // 까닭은 말해 주지 않는다. 묻기만 한다.
+  assert.match(T.meet.reveal, /왜 그럴까요\?/);
+  assert.doesNotMatch(Object.values(T.meet).join(' '), /홀수|짝수/);
+  assert.ok(sentenceCount(T.meet.reveal) <= 4);
+});
+
+test('처음 화면: 단계마다 그림이 있고, 테두리를 친 동전들은 그 단계의 규칙에 맞는 한 번의 뒤집기다', () => {
+  for (const rung of LADDER) {
+    const picture = T.levels.find((entry) => entry.level === rung.level).picture;
+    assert.ok(picture, `${rung.level}단계의 그림`);
+    assert.match(picture.coins, /^[01]+$/);
+    if (!rung.rule) {
+      assert.equal(picture.blank, true);
+      continue;
+    }
+    const shape = picture.shape ?? 'line';
+    assert.equal(shape, rung.shape, `${rung.level}단계의 모양`);
+    const coins = toCoins(picture.coins);
+    assert.ok(isMove({ n: coins.length, shape, rule: rung.rule, coins }, picture.mark), `${rung.level}단계의 테두리`);
+    if (rung.start === 'all-heads') assert.equal(headCount(coins), coins.length, `${rung.level}단계는 모두 앞면`);
+    else assert.ok(headCount(coins) > 0 && headCount(coins) < coins.length, `${rung.level}단계는 섞인 판`);
+  }
+  assert.equal(T.blank, '?');
+});
+
+test('index.html: 처음 만남과 처음 화면의 단추가 있다', () => {
+  for (const label of ['건너뛰기', '동전 하나 더 놓기', '안 되는 것 같아요', '연구소로 들어가기', '해 보기', '판 고르기', '만들기', '하던 판', '처음 만남 다시 보기']) {
+    assert.ok(screenText.includes(label), label);
+  }
+  for (const id of ['meet', 'home', 'home-sample', 'home-blank', 'resume-board', 'picker', 'levels', 'meet-board']) assert.ok(html.includes(`id="${id}"`), id);
 });

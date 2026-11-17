@@ -127,11 +127,11 @@ export function loadDraft() {
   return draft && typeof draft === 'object' ? draft : null;
 }
 
-// ---- 설정(선생님 목소리) ----
+// ---- 설정(선생님 목소리, 처음 만남을 보았는지, 연구소에 와 본 적이 있는지) ----
 
 export function loadPrefs() {
   const prefs = load('prefs', null);
-  return { sound: prefs?.sound !== false, visited: prefs?.visited === true };
+  return { sound: prefs?.sound !== false, visited: prefs?.visited === true, met: prefs?.met === true };
 }
 
 export function savePrefs(prefs) {

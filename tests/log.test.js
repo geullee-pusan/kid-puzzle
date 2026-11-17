@@ -47,7 +47,7 @@ test('저장된 값이 없으면 빈 기록으로 시작한다', async () => {
   assert.equal(log.pendingCount(), 0);
   assert.equal(log.loadCurrent(), null);
   assert.equal(log.loadDraft(), null);
-  assert.deepEqual(log.loadPrefs(), { sound: true, visited: false });
+  assert.deepEqual(log.loadPrefs(), { sound: true, visited: false, met: false });
 });
 
 test('저장된 값이 깨져 있어도 오류 없이 빈 기록으로 시작한다', async () => {
@@ -65,7 +65,7 @@ test('저장된 값이 깨져 있어도 오류 없이 빈 기록으로 시작한
   assert.equal(log.pendingCount(), 0);
   assert.equal(log.loadCurrent(), null);
   assert.equal(log.loadDraft(), null);
-  assert.deepEqual(log.loadPrefs(), { sound: true, visited: false });
+  assert.deepEqual(log.loadPrefs(), { sound: true, visited: false, met: false });
   assert.deepEqual(await log.flush(), { ok: false, sent: 0, skipped: true });
 });
 

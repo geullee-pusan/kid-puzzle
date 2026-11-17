@@ -10,8 +10,38 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   </head>
   <body>
-    <!-- 처음 화면: 퍼즐 카드 하나와 단계 목록 -->
-    <section id="home" class="screen home">
+    <!-- 처음 만남: 앱을 처음 열 때 한 번. 말로 소개하지 않고 바로 만져 보게 한다. 건너뛸 수 있다. -->
+    <section id="meet" class="screen home" hidden>
+      <header class="top">
+        <h1 class="app-name">퍼즐 연구소</h1>
+        <span class="spacer"></span>
+        <button id="meet-skip" class="btn small" type="button">건너뛰기</button>
+      </header>
+
+      <div class="hello">
+        <div class="stage hello-stage"><div id="meet-teacher"></div></div>
+        <div class="dialog">
+          <span class="nametag">큐브 선생님</span>
+          <div id="meet-caption" class="caption" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <main class="home-main">
+        <section class="panel meet-panel" aria-label="판">
+          <div class="board-area"><div id="meet-board"></div></div>
+          <div class="meet-foot">
+            <button id="meet-reset" class="btn" type="button">처음으로 되돌리기</button>
+            <span class="spacer"></span>
+            <button id="meet-more" class="btn primary big" type="button" hidden>동전 하나 더 놓기</button>
+            <button id="meet-cannot" class="btn primary big" type="button" hidden>안 되는 것 같아요</button>
+            <button id="meet-enter" class="btn primary big" type="button" hidden>연구소로 들어가기</button>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <!-- 처음 화면(연구소): 퍼즐 풀기와 퍼즐 만들기 두 문, 하던 판, 판 고르기 -->
+    <section id="home" class="screen home" hidden>
       <header class="top">
         <h1 class="app-name">퍼즐 연구소</h1>
         <label class="sound"><input type="checkbox" id="sound" checked /> 선생님 목소리</label>
@@ -27,13 +57,37 @@
       </div>
 
       <main class="home-main">
-        <section class="panel puzzle-card" aria-labelledby="coins-title">
-          <div class="card-head">
-            <div>
-              <h2 id="coins-title">동전 뒤집기</h2>
-              <p class="panel-desc">동전을 눌러서 뒤집는 퍼즐이에요. 어느 단계든 고를 수 있어요.</p>
+        <div id="doors" class="doors">
+          <section class="panel door" aria-labelledby="coins-title">
+            <h2 id="coins-title">동전 뒤집기</h2>
+            <div class="door-picture"><div id="home-sample"></div></div>
+            <p class="door-ask">이 판은 될까요, 안 될까요?</p>
+            <div class="door-foot">
+              <button id="home-play" class="btn primary big" type="button">해 보기</button>
+              <button id="home-pick" class="btn big" type="button">판 고르기</button>
             </div>
-            <button id="continue" class="btn primary big" type="button" hidden>이어서 하기</button>
+          </section>
+
+          <section class="panel door" aria-labelledby="make-title">
+            <h2 id="make-title">퍼즐 만들기</h2>
+            <div class="door-picture"><div id="home-blank"></div></div>
+            <p class="door-ask">내가 만든 판, 선생님이 풀 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-make" class="btn big" type="button">만들기</button>
+            </div>
+          </section>
+        </div>
+
+        <section id="resume" class="panel resume" aria-label="하던 판" hidden>
+          <span class="resume-label">하던 판</span>
+          <div class="resume-picture"><div id="resume-board"></div></div>
+          <button id="continue" class="btn good big" type="button">이어서 하기</button>
+        </section>
+
+        <section id="picker" class="panel picker" aria-labelledby="picker-title" hidden>
+          <div class="card-head">
+            <h2 id="picker-title">판 고르기</h2>
+            <button id="picker-close" class="btn" type="button">닫기</button>
           </div>
           <ol id="levels" class="levels"></ol>
         </section>
@@ -41,6 +95,8 @@
 
       <footer class="home-foot">
         <span>더 재미있는 퍼즐을 만들려고, 어떻게 풀었는지 적어 둬요.</span>
+        <span class="spacer"></span>
+        <button id="meet-again" class="btn small" type="button">처음 만남 다시 보기</button>
         <span id="build"></span>
       </footer>
     </section>

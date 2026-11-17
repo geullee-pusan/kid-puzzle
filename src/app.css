@@ -265,7 +265,112 @@ a.btn {
 .home-main {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
   padding: 12px;
+}
+
+/* 두 문: 퍼즐 풀기(넓게)와 퍼즐 만들기 */
+.doors {
+  flex: 1;
+  min-height: 320px;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 12px;
+}
+
+.panel.door {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: auto;
+  overflow: hidden;
+}
+
+.door h2 {
+  font-size: 26px;
+}
+
+.door-picture {
+  flex: 1;
+  min-height: 120px;
+  /* 고리 판이 칸의 가로와 세로 가운데 작은 쪽에 맞춰지게 한다 */
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.door-picture > div {
+  width: 100%;
+}
+
+.door-ask {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 700;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.door-foot {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* 하던 판 */
+.panel.resume {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  height: auto;
+  padding: 10px 20px;
+}
+
+.resume-label {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.resume-picture {
+  flex: 1;
+  min-width: 0;
+}
+
+.resume .coins.small.line {
+  justify-content: start;
+}
+
+.resume .coins.small.ring {
+  width: 150px;
+  margin: 0;
+}
+
+.panel.picker {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* 처음 만남 */
+.meet-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meet-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 64px;
 }
 
 .panel {
@@ -306,7 +411,7 @@ a.btn {
 .level {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'no name tag' 'no mark tag';
+  grid-template-areas: 'no pic tag' 'no name mark';
   align-items: center;
   column-gap: 14px;
   width: 100%;
@@ -335,15 +440,40 @@ a.btn {
   text-align: center;
 }
 
+.level-picture {
+  grid-area: pic;
+  display: block;
+  padding: 6px 0 4px;
+}
+
+.level .coins.small.line {
+  justify-content: start;
+}
+
+.level .coins.small.ring {
+  display: block;
+  width: 110px;
+  margin: 0;
+}
+
+.level .coins.small.ring .coin {
+  border-width: 2px;
+}
+
+.level .coin {
+  cursor: pointer;
+}
+
 .level-name {
   grid-area: name;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 600;
   word-break: keep-all;
 }
 
 .level-tag {
   grid-area: tag;
+  justify-self: end;
   padding: 2px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -353,6 +483,7 @@ a.btn {
 
 .level-mark {
   grid-area: mark;
+  justify-self: end;
   color: var(--accent);
   font-size: 18px;
   font-weight: 700;
@@ -366,6 +497,7 @@ a.btn {
 
 .home-foot {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 0 16px 10px;
@@ -816,6 +948,15 @@ div.coin {
   }
   .levels {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .doors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .door-picture {
+    min-height: 200px;
+  }
+  .meet-panel .board-area {
+    min-height: 260px;
   }
   .table {
     min-height: 460px;
