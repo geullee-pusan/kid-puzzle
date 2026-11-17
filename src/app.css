@@ -272,12 +272,12 @@ a.btn {
   padding: 12px;
 }
 
-/* 두 문: 퍼즐 풀기(넓게)와 퍼즐 만들기 */
+/* 문 셋: 형식마다 하나(동전 뒤집기, 한붓그리기)와 퍼즐 만들기 */
 .doors {
   flex: 1;
   min-height: 320px;
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr);
   gap: 12px;
 }
 
@@ -306,6 +306,34 @@ a.btn {
 
 .door-picture > div {
   width: 100%;
+}
+
+/* 한붓그리기의 그림은 칸의 높이를 다 쓴다 */
+.door-picture > .figure,
+.board-area > .figure {
+  align-self: stretch;
+  height: auto;
+}
+
+/* 퍼즐 만들기: 빈 동전 판과 빈 그림을 위아래로 놓는다 */
+.door-pair {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.door-pair > .coins {
+  flex: none;
+}
+
+.door-pair > .figure {
+  flex: 1;
+  min-height: 0;
+}
+
+.door-foot.pair .btn.big {
+  flex: 1 1 130px;
+  min-width: 0;
+  padding: 8px 10px;
 }
 
 .door-ask {
@@ -350,6 +378,11 @@ a.btn {
 .resume .coins.small.ring {
   width: 150px;
   margin: 0;
+}
+
+.resume .figure.small {
+  width: 190px;
+  height: 104px;
 }
 
 .panel.picker {
@@ -462,6 +495,12 @@ a.btn {
 
 .level .coin {
   cursor: pointer;
+}
+
+.level .figure.small {
+  display: block;
+  width: 120px;
+  height: 64px;
 }
 
 .level-name {
@@ -705,6 +744,165 @@ div.coin {
   font-weight: 700;
   line-height: 1.4;
   text-align: center;
+}
+
+/* ---- 한붓그리기의 그림: 점과 선 ----
+   색만으로 알리지 않는다. 그은 선은 굵게, 지금 있는 점은 크게 채우고 테두리를 두르고,
+   갈 수 있는 점에는 점선 고리를, 뺀 선은 점선으로, 더한 선에는 표시를 붙인다. */
+.figure {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.figure-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.figure.live .figure-svg {
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.figure-edge {
+  fill: none;
+  stroke: #868e96;
+  stroke-linecap: round;
+}
+
+.figure-edge.used {
+  stroke: var(--accent);
+}
+
+.figure-edge.gone {
+  stroke: #adb5bd;
+  stroke-dasharray: 3 15;
+}
+
+.figure-edge.added {
+  stroke-dasharray: 24 12;
+}
+
+.figure-dot {
+  fill: #fff;
+  stroke: var(--ink);
+}
+
+.figure-point.now .figure-dot {
+  fill: var(--bar);
+  stroke: var(--bar);
+}
+
+.figure-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.figure-ring.now {
+  stroke: var(--bar);
+  stroke-width: 5;
+}
+
+.figure-ring.open {
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-dasharray: 10 8;
+}
+
+.figure-ring.picked {
+  stroke: #e67700;
+  stroke-width: 8;
+}
+
+.figure-sign circle {
+  fill: #fff;
+  stroke: var(--bar);
+  stroke-width: 3;
+}
+
+.figure-sign text,
+.figure-degree text {
+  fill: var(--bar);
+  font-weight: 700;
+}
+
+.figure-degree rect {
+  fill: #fff9db;
+  stroke: #b08900;
+  stroke-width: 3;
+}
+
+.figure-point:focus-visible,
+.figure-edge:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px 28px;
+}
+
+.figure-card {
+  width: min(100%, 264px);
+}
+
+.figure-card .figure {
+  height: 236px;
+}
+
+/* 그림이 하나뿐인 종이(풀이)에서는 크게 그린다 */
+.figure-card.big {
+  width: min(100%, 520px);
+}
+
+.figure-card.big .figure {
+  height: 330px;
+}
+
+.figure-card .strip-note {
+  text-align: center;
+}
+
+/* 막혔는지, 끝까지 그었는지를 그림 아래에 글로 알린다 */
+.board-area {
+  position: relative;
+}
+
+.trace-status {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  padding: 2px 14px;
+  border: 2px solid #b08900;
+  border-radius: 10px;
+  background: #fff9db;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.trace-status:empty {
+  display: none;
+}
+
+.pad-note {
+  margin: 0;
+  font-size: 19px;
+  word-break: keep-all;
+}
+
+.make-count {
+  font-size: 26px;
 }
 
 /* 작은 그림(풀이, "왜 그럴까?") */

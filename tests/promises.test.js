@@ -61,6 +61,19 @@ function findBanned(text) {
   return hits;
 }
 
+// 아이 화면을 그리는 코드: 틀, 처음 만남, 형식마다 하나씩, 판을 그리는 조각들
+const SCREEN_CODE = ['src/main.js', 'src/meet.js', 'src/formats/coins.js', 'src/formats/trace.js', 'src/ui/coin-board.js', 'src/ui/trace-board.js'];
+// 대본: 형식마다 하나씩
+const SCRIPTS = ['src/content/coins.json', 'src/content/trace.json'];
+
+test('검사 목록에 모든 형식의 코드와 대본이 들어 있다', () => {
+  for (const { path } of sources) {
+    if (path.startsWith('src/formats/')) assert.ok(SCREEN_CODE.includes(path), `${path}가 화면 코드 목록에 없어요`);
+    if (path.startsWith('src/content/') && !path.includes('teacher')) assert.ok(SCRIPTS.includes(path), `${path}가 대본 목록에 없어요`);
+  }
+  for (const path of [...SCREEN_CODE, ...SCRIPTS]) assert.ok(sources.some((item) => item.path === path), `${path}가 없어요`);
+});
+
 test('검사기가 보상 낱말을 찾아낸다', () => {
   assert.equal(findBanned('별을 3개 모았어요').length, 1);
   assert.equal(findBanned('점수: 10').length, 1);
@@ -70,7 +83,7 @@ test('검사기가 보상 낱말을 찾아낸다', () => {
 
 test('아이 화면의 글과 대본에 보상 낱말, 채점 표시, 재촉하는 말이 없다', () => {
   // 대본, 아이 화면, 설치 정보는 주석까지 통째로 본다.
-  const whole = ['src/content/coins.json', 'src/content/teacher.json', 'src/content/teacher-look.json', 'index.html', 'public/manifest.webmanifest'];
+  const whole = [...SCRIPTS, 'src/content/teacher.json', 'src/content/teacher-look.json', 'index.html', 'public/manifest.webmanifest'];
   const problems = [];
   for (const path of whole) for (const hit of findBanned(source(path))) problems.push(`${path} ${hit}`);
   // 아이 화면을 그리는 코드는 주석을 빼고 본다(주석에는 "점수를 두지 않는다" 같은 설명이 있다).
@@ -83,7 +96,7 @@ test('아이 화면의 글과 대본에 보상 낱말, 채점 표시, 재촉하�
 });
 
 test('아이 화면을 그리는 코드에는 글을 적지 않는다(글은 대본과 index.html에만 있다)', () => {
-  for (const path of ['src/main.js', 'src/ui/coin-board.js', 'src/ui/talker.js', 'src/ui/teacher-view.js', 'src/ui/speech.js', 'src/ui/offline.js', 'src/ui/storage.js']) {
+  for (const path of [...SCREEN_CODE, 'src/ui/talker.js', 'src/ui/teacher-view.js', 'src/ui/speech.js', 'src/ui/offline.js', 'src/ui/storage.js']) {
     const code = stripComments(source(path));
     const hangul = code.match(/[가-힣][^'"`\n]*/);
     assert.equal(hangul, null, `${path}: ${hangul?.[0]}`);
@@ -91,14 +104,15 @@ test('아이 화면을 그리는 코드에는 글을 적지 않는다(글은 대
 });
 
 test('화면에 시간을 보여 주지 않고, 스스로 넘어가는 것이 없다', () => {
-  for (const path of ['src/main.js', 'src/ui/coin-board.js', 'src/ui/talker.js']) {
+  for (const path of [...SCREEN_CODE, 'src/ui/talker.js']) {
     const code = stripComments(source(path));
     assert.doesNotMatch(code, /setInterval\s*\(/, `${path}: setInterval`);
   }
   // 걸린 시간(elapsed, stamp, seconds)은 기록에만 들어가고 화면 글자로 쓰이지 않는다.
-  const main = stripComments(source('src/main.js'));
-  for (const line of main.split('\n')) {
-    if (/textContent|append\(|replaceChildren/.test(line)) assert.doesNotMatch(line, /elapsed|stamp\(|seconds/, line.trim());
+  for (const path of SCREEN_CODE) {
+    for (const line of stripComments(source(path)).split('\n')) {
+      if (/textContent|append\(|replaceChildren/.test(line)) assert.doesNotMatch(line, /elapsed|stamp\(|seconds/, `${path}: ${line.trim()}`);
+    }
   }
 });
 

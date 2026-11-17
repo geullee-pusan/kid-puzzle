@@ -116,14 +116,16 @@ export function clearCurrent() {
   remove(CURRENT);
 }
 
-// ---- 직접 만들기에서 만들던 판 ----
+// ---- 직접 만들기에서 만들던 판. 형식마다 하나씩 둔다(동전 뒤집기는 예전부터 쓰던 자리를 그대로 쓴다). ----
 
-export function saveDraft(draft) {
-  return save(DRAFT, draft);
+const draftKey = (format) => (format === 'coins' ? DRAFT : `${DRAFT}-${format}`);
+
+export function saveDraft(draft, format = 'coins') {
+  return save(draftKey(format), draft);
 }
 
-export function loadDraft() {
-  const draft = load(DRAFT, null);
+export function loadDraft(format = 'coins') {
+  const draft = load(draftKey(format), null);
   return draft && typeof draft === 'object' ? draft : null;
 }
 

@@ -31,13 +31,21 @@ function drawCounts() {
     ['하던 판', yes(log.loadCurrent())],
     ['기기 저장소를 쓸 수 있음', yes(available())],
   ]);
-  const advice = recommend(log.allRecords(), 'coins');
-  facts($('advice'), [
-    ['먼저 보여 줄 단계', `${advice.level}단계${advice.small ? ' (동전 수가 적은 판)' : ''}`],
-    ['더 어려운 판 권하기', advice.offerHarder ? `예 (${advice.harderLevel}단계)` : '아니요'],
-    ['까닭', advice.reason],
-    ['"왜 그럴까?" 열림', yes(whyUnlocked(log.allRecords(), 'coins'))],
-  ]);
+  // 수준 맞추기는 형식마다 따로 계산한다.
+  const rows = [];
+  for (const [format, name] of [
+    ['coins', '동전 뒤집기'],
+    ['trace', '한붓그리기'],
+  ]) {
+    const advice = recommend(log.allRecords(), format);
+    rows.push(
+      [`${name}: 먼저 보여 줄 단계`, `${advice.level}단계${advice.small ? ' (작은 판)' : ''}`],
+      [`${name}: 더 어려운 판 권하기`, advice.offerHarder ? `예 (${advice.harderLevel}단계)` : '아니요'],
+      [`${name}: 까닭`, advice.reason],
+      [`${name}: "왜 그럴까?" 열림`, yes(whyUnlocked(log.allRecords(), format))],
+    );
+  }
+  facts($('advice'), rows);
 }
 
 async function drawOffline(mode) {

@@ -129,6 +129,18 @@ test('하던 판을 적어 두고 다시 읽는다. 지우면 없다', async () 
   assert.equal(again.loadCurrent(), null);
 });
 
+test('직접 만들기에서 만들던 판은 형식마다 따로 적어 둔다(동전 뒤집기는 예전 자리를 그대로 쓴다)', async () => {
+  const storage = fakeStorage({ 'kidpuzzle.draft': JSON.stringify({ n: 4, coins: [1, 1, 0, 0] }) });
+  const log = await freshLog(storage);
+  assert.deepEqual(log.loadDraft(), { n: 4, coins: [1, 1, 0, 0] }, '예전에 저장된 동전 판');
+  assert.deepEqual(log.loadDraft('coins'), { n: 4, coins: [1, 1, 0, 0] });
+  assert.equal(log.loadDraft('trace'), null);
+  assert.equal(log.saveDraft({ edges: [[0, 1]] }, 'trace'), true);
+  assert.deepEqual(log.loadDraft('trace'), { edges: [[0, 1]] });
+  assert.deepEqual(log.loadDraft('coins'), { n: 4, coins: [1, 1, 0, 0] });
+  assert.ok(storage.map.has('kidpuzzle.draft-trace'));
+});
+
 test('설정이 없으면 보내지 않고 조용히 건너뛴다(네트워크를 부르지 않는다)', async () => {
   const log = await freshLog(fakeStorage());
   const calls = fakeFetch(ok);

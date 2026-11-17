@@ -217,7 +217,8 @@ test('index.html: 답 넣기에 숫자판과 "불가능해요" 단추가 있고,
 });
 
 test('처음 만남: 네 개짜리 판은 되고 다섯 개짜리 판은 안 된다(풀이 프로그램으로 확인)', () => {
-  const main = readFileSync(resolve(ROOT, 'src/main.js'), 'utf8');
+  // 처음 만남의 코드는 src/meet.js에 있다.
+  const main = readFileSync(resolve(ROOT, 'src/meet.js'), 'utf8');
   const meet = main.match(/const MEET = \{ rule: '(\w+)', shape: '(\w+)', first: (\d+), second: (\d+), cannotAfter: (\d+), oddAfter: (\d+) \}/);
   assert.ok(meet, 'MEET 값을 읽지 못했어요');
   const [, rule, shape, first, second, cannotAfter] = meet;

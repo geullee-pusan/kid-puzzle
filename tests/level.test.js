@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { TUNING, latestById, recommend, whyUnlocked } from '../src/core/level.js';
+import { TUNING, latestById, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 
 let serial = 0;
 /** 기록 하나를 만든다. 기본값은 "2단계를 힌트 없이 한 번에 30초 만에 맞힘"이다. */
@@ -134,4 +134,82 @@ test('"왜 그럴까?"는 안 되는 판을 한 번 이상 끝까지 만난 뒤�
   assert.equal(whyUnlocked([round({ solution: impossible, outcome: 'solution' })]), true);
   assert.equal(whyUnlocked([round({ solution: impossible, format: 'paths' })]), false);
   assert.equal(whyUnlocked([round({ solution: impossible, level: 6, custom: true })]), true);
+});
+
+// ---- 형식마다 값을 따로 둔다 ----
+
+/** 한붓그리기 기록 하나. 기본값은 "1단계를 힌트 없이 한 번에 30초 만에 끝까지 그음"이다. */
+function trace(overrides = {}) {
+  serial += 1;
+  return {
+    kind: 'round',
+    id: `t${serial}`,
+    format: 'trace',
+    level: 1,
+    custom: false,
+    solution: { possible: true, starts: [0, 3], path: [0, 1, 3, 0, 2, 3] },
+    strokeCount: 5,
+    hintsOpened: 0,
+    answers: [{ t: 25, answer: 'traced', correct: true, guess: null }],
+    seconds: 30,
+    outcome: 'solved',
+    ...overrides,
+  };
+}
+
+test('형식마다 값을 따로 둔다: 한붓그리기는 1단계에서 시작하고, 그림을 만들어 내는 단계는 1~4단계다', () => {
+  assert.deepEqual(Object.keys(TUNING.formats).sort(), ['coins', 'trace']);
+  assert.deepEqual(recommend([], 'trace'), { level: 1, small: false, offerHarder: false, harderLevel: null, reason: 'start' });
+  assert.equal(tuningFor('trace').startLevel, 1);
+  assert.equal(tuningFor('trace').bottomLevel, 1);
+  assert.equal(tuningFor('trace').topLevel, 4);
+  assert.equal(tuningFor('trace').hintCount, 2);
+  assert.deepEqual(Object.keys(tuningFor('trace').expectedSeconds), ['1', '2', '3', '4']);
+  // 함께 쓰는 값은 그대로 물려받는다.
+  assert.equal(tuningFor('trace').fastStreak, TUNING.fastStreak);
+  assert.equal(tuningFor('trace').quitStreak, TUNING.quitStreak);
+  // 따로 적지 않은 형식은 맨 위의 값을 쓴다.
+  assert.equal(tuningFor('coins').startLevel, 2);
+  assert.equal(tuningFor('paths').startLevel, TUNING.startLevel);
+});
+
+test('한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다', () => {
+  const coins = [round(), round()];
+  const traces = [trace({ level: 3, outcome: 'left', hintsOpened: 2, answers: [] })];
+  assert.equal(recommend([...coins, ...traces], 'coins').reason, 'fast');
+  assert.deepEqual(recommend([...coins, ...traces], 'trace'), { level: 2, small: false, offerHarder: false, harderLevel: null, reason: 'stuck' });
+  assert.equal(recommend(coins, 'trace').reason, 'start');
+  assert.equal(whyUnlocked([round({ solution: { possible: false, min: null } })], 'trace'), false);
+  assert.equal(whyUnlocked([trace({ solution: { possible: false, starts: [], path: [] } })], 'trace'), true);
+  assert.equal(whyUnlocked([trace({ solution: { possible: false, starts: [], path: [] } })], 'coins'), false);
+});
+
+test('한붓그리기: 연달아 2판을 빠르게 한 번에 맞히면 더 어려운 판을 권하고, 맨 위(4단계)에서는 직접 만들기(5단계)를 권한다', () => {
+  assert.deepEqual(recommend([trace(), trace()], 'trace'), { level: 1, small: false, offerHarder: true, harderLevel: 2, reason: 'fast' });
+  const top = recommend([trace({ level: 4 }), trace({ level: 4 })], 'trace');
+  assert.equal(top.offerHarder, true);
+  assert.equal(top.harderLevel, 5);
+  // 예상 시간은 형식마다 다르다: 한붓그리기 2단계는 40초 안쪽이어야 "빠르게"다.
+  const slow = tuningFor('trace').expectedSeconds[2];
+  assert.equal(recommend([trace({ level: 2, seconds: slow - 1 }), trace({ level: 2, seconds: slow })], 'trace').offerHarder, false);
+  assert.equal(recommend([trace({ level: 2, seconds: slow - 1 }), trace({ level: 2, seconds: slow - 1 })], 'trace').offerHarder, true);
+  // "불가능해요"로 한 번 틀리고 끝까지 그은 판은 한 번에 맞힌 판이 아니다.
+  const retried = trace({ answers: [{ t: 5, answer: 'impossible', correct: false, guess: 'impossible-no-try' }, { t: 25, answer: 'traced', correct: true, guess: null }] });
+  assert.equal(recommend([trace(), retried], 'trace').offerHarder, false);
+});
+
+test('한붓그리기: 맨 아래 단계에서 막히면 작은 그림을 먼저 보여 주고, 직접 만든 그림과 만들기 단계는 보지 않는다', () => {
+  const stuck = trace({ outcome: 'left', hintsOpened: 2, answers: [] });
+  assert.deepEqual(recommend([stuck], 'trace'), { level: 1, small: true, offerHarder: false, harderLevel: null, reason: 'stuck' });
+  const custom = trace({ level: 5, custom: true, outcome: 'left' });
+  assert.equal(recommend([custom, custom], 'trace').reason, 'start');
+});
+
+test('한붓그리기: 선을 긋거나 그림을 고친 판은 손댄 판으로 센다. 들여다보기만 한 판은 세지 않는다', () => {
+  const peek = () => trace({ level: 3, outcome: 'left', answers: [], strokeCount: 0, editCount: 0, hintsOpened: 0 });
+  assert.equal(recommend([peek(), peek()], 'trace').reason, 'start');
+  const drew = () => trace({ level: 3, outcome: 'left', answers: [], strokeCount: 4 });
+  assert.equal(recommend([drew(), drew()], 'trace').reason, 'quit');
+  const edited = () => trace({ level: 4, outcome: 'left', answers: [], strokeCount: 0, editCount: 1 });
+  assert.deepEqual(recommend([edited(), edited()], 'trace'), { level: 3, small: false, offerHarder: false, harderLevel: null, reason: 'quit' });
 });
