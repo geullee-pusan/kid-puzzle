@@ -40,6 +40,7 @@ function drawCounts() {
     ['swap', '자리 바꾸기'],
     ['tile', '조각 덮기'],
     ['duel', '누가 이길까'],
+    ['tax', '약수 세금'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

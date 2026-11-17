@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -10,6 +10,8 @@
 // - 게임 판(추측을 내고 답을 듣는 숫자 추리의 판)은 "빠르게 한 번에"의 기준이 다르다. 걸린 시간이 아니라 추측 횟수가 적은 것을 본다.
 // - 선생님과 번갈아 두는 판(누가 이길까)도 기준이 다르다. 이기는 쪽을 스스로 고르고 그 판을 이긴 것을 본다.
 //   끝까지 두고 진 판은 그만둔 판이 아니다. 연달아 져도 내려가지 않는다(지는 것은 발견의 재료다).
+// - 더 좋은 답을 찾는 판(약수 세금)도 기준이 다르다. 다시 해 보기 몇 번 안에 가장 큰 합에 닿은 것을 본다.
+//   "여기까지 할래요"로 끝낸 판은 그만둔 판이 아니다(끝까지 한 판이다). 하다가 나간 판만 그만둔 판이다.
 
 /**
  * 아래 숫자는 모두 임시값이다. 재 본 값이 아니다. 기록을 보고 고친다.
@@ -112,6 +114,24 @@ export const TUNING = {
       fastWin: true,
       whyAfter: 'finished',
     },
+    /**
+     * 약수 세금(모두 임시). 처음 보여 줄 단계는 1단계다(어떻게 가져도 끝이 나고 합이 나온다. 실패할 수 없다).
+     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개이고, "카드마다 낼 세금 보기"도 힌트 하나로 센다.
+     * fastRetries: 이 수가 적혀 있으면 "한 번에 빠르게"를 걸린 시간으로 보지 않는다.
+     *   힌트 없이, 다시 해 보기 이만큼 안에(기록의 retries) 가장 큰 합에 닿았으면(reachedBest) 그렇게 본다.
+     * "여기까지 할래요"로 끝낸 판은 outcome이 solved다. 그래서 그만둔 판으로 세지 않는다. 하다가 나간 판만 그만둔 판이다.
+     * expectedSeconds: 쓰이지 않는 자리 채움이다.
+     * whyAfter: 'best'면 이 형식의 만들어 낸 판을 가장 큰 합으로 한 번 끝낸 뒤에(기록의 reachedBest가 true) "왜 그럴까?"가 열린다.
+     */
+    tax: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 4,
+      hintCount: 2,
+      expectedSeconds: { 1: 120, 2: 240, 3: 300, 4: 360 },
+      fastRetries: 2,
+      whyAfter: 'best',
+    },
   },
 };
 
@@ -139,7 +159,7 @@ function playedRounds(records, format, tuning) {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
     // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
-    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나 수를 두었거나(moveCount), 조각을 놓았거나(placeCount), 답했거나(먼저 둘지 고른 것도 답이다), 힌트를 열었다
+    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나 수를 두었거나 카드를 가졌거나(moveCount), 조각을 놓았거나(placeCount), 답했거나(먼저 둘지 고른 것도 답이다), 힌트를 열었다
     const moves =
       (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0) + (record.moveCount ?? 0) + (record.placeCount ?? 0);
     const touched = moves > 0 || (record.answers?.length ?? 0) > 0 || (record.hintsOpened ?? 0) > 0;
@@ -153,12 +173,15 @@ const solved = (record) => record.outcome === 'solved';
  * 힌트 없이, 첫 답으로, 예상 시간보다 빠르게 맞혔는가.
  * 게임 판(그 단계에 fastGuesses가 적혀 있다)은 힌트 없이, 적은 추측으로 알아냈는가를 본다.
  * 선생님과 번갈아 두는 판(fastWin)은 힌트 없이, 이기는 쪽을 골라 이겼는가를 본다.
+ * 더 좋은 답을 찾는 판(fastRetries)은 힌트 없이, 다시 해 보기 몇 번 안에 가장 큰 합에 닿았는가를 본다.
  */
 function fastClean(record, tuning) {
   if (!solved(record)) return false;
   if ((record.hintsOpened ?? 0) > 0) return false;
   // 선생님과 번갈아 두는 판: 이기는 쪽을 스스로 고르고 그 판을 이겼는가. 걸린 시간은 보지 않는다.
   if (tuning.fastWin) return record.chose === true && record.choseWinner === true && record.winner === 'kid' && record.rematch !== true;
+  // 더 좋은 답을 찾는 판: 다시 해 보기 몇 번 안에 가장 큰 합에 닿았는가. 걸린 시간은 보지 않는다.
+  if (Number.isInteger(tuning.fastRetries)) return record.reachedBest === true && Number.isInteger(record.retries) && record.retries <= tuning.fastRetries;
   const fewGuesses = tuning.fastGuesses?.[record.level];
   if (typeof fewGuesses === 'number') return Number.isInteger(record.guessCount) && record.guessCount >= 1 && record.guessCount <= fewGuesses;
   // 답을 여러 번 주고받는 판(역할 바꾸기)은 틀린 답의 수(wrongCount)를 적어 둔다. 적혀 있으면 그것이 0이어야 "한 번에"다.
@@ -212,11 +235,13 @@ export function recommend(records, format = 'coins', allTuning = TUNING) {
  * 그 판이 안 되는 판이라는 것을 알게 된 뒤에 열린다(임시 규칙).
  * 안 되는 판이 없는 형식(whyAfter가 'finished')은 판을 한 번 끝까지 한 뒤에 열린다.
  * 더 좋은 답을 찾는 형식(whyAfter가 'fewest')은 가장 적은 횟수로 한 판을 끝낸 뒤에 열린다.
+ * 약수 세금(whyAfter가 'best')은 만들어 낸 판을 가장 큰 합으로 한 번 끝낸 뒤에 열린다(직접 만든 판은 세지 않는다).
  */
 export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
   const after = tuningFor(format, allTuning).whyAfter;
   const opens = (record) => {
     if (after === 'fewest') return record.fewest === true && record.outcome === 'solved';
+    if (after === 'best') return record.reachedBest === true && record.custom !== true && record.outcome === 'solved';
     return (after === 'finished' || record.solution?.possible === false) && (record.outcome === 'solved' || record.outcome === 'solution');
   };
   return latestById(Array.isArray(records) ? records : []).some((record) => record.kind === 'round' && record.format === format && opens(record));

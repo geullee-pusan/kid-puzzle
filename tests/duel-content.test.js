@@ -100,7 +100,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 마지막 수를 둔 쪽이 
   assert.match(part('id="duel-pad"', 'id="leave-ask"'), /id="duel-take"[^>]*>가져가기</);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 나중에 두는 쪽이 이기는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 6, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 7, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[5]) <= 3, guides[5]);
   assert.match(guides[5], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?/);
 });
@@ -694,9 +694,9 @@ test('index.html: 누가 이길까의 카드, 판, 답하는 칸, 도구가 있�
   assert.match(code, /\$\('undo'\)\.hidden = true;\s*\$\('reset'\)\.hidden = true;/);
 });
 
-test('처음 화면: 카드 일곱 장이 가로 1280px에서 두 줄에 들어간다(한 줄에 넉 장)', () => {
+test('처음 화면: 카드 여덟 장이 가로 1280px에서 두 줄에 들어간다(한 줄에 넉 장)', () => {
   const cards = part('id="doors"', 'id="make-menu"');
-  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 7);
+  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 8);
   const css = read('src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const doors = css.match(/\n\.doors \{([^}]*)\}/)[1];
   const [, width] = doors.match(/grid-template-columns:\s*repeat\(auto-fill,\s*minmax\((\d+)px,\s*1fr\)\)/);
@@ -705,7 +705,7 @@ test('처음 화면: 카드 일곱 장이 가로 1280px에서 두 줄에 들어�
   // 가로 1280px(안쪽 1256px)에서 한 줄에 넉 장이라, 여덟 장까지 두 줄이다.
   const perRow = Math.floor((1256 + Number(gap)) / (Number(width) + Number(gap)));
   assert.equal(perRow, 4);
-  assert.ok(Math.ceil(7 / perRow) === 2);
+  assert.ok(Math.ceil(8 / perRow) === 2);
   // 높이 800px에서 하던 판 띠가 있어도(카드 칸의 높이 426px) 두 줄이 굴리지 않고 들어간다.
   assert.ok(2 * Number(low) + Number(gap) <= 426);
 });

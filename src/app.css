@@ -275,7 +275,7 @@ a.btn {
 }
 
 /* 카드들: 형식마다 하나와, 맨 뒤의 퍼즐 만들기. 형식이 늘어도 버티게 작게 그린다.
-   한 줄에 서너 장이 놓이고(가로 1280px에서 석 장, 더 넓으면 넉 장), 넘치면 다음 줄로 간다.
+   한 줄에 서너 장이 놓이고(가로 1280px부터 넉 장, 그보다 좁으면 석 장), 넘치면 다음 줄로 간다.
    두 줄까지는 한 화면에 들어가고, 줄이 더 많으면 이 칸만 아래로 굴러간다(선생님과 위 띠, 하던 판 띠는 그대로 있다). */
 .doors {
   flex: 1;
@@ -1830,6 +1830,356 @@ button.duel-stone {
 .after-extra {
   font-size: 20px;
   font-weight: 700;
+}
+
+/* ---- 약수 세금: 수 카드들, 그 아래의 한 줄 글, 가진 카드와 세금으로 나간 카드의 두 자리 ----
+   색만으로 알리지 않는다. 고른 카드는 굵은 테두리에 귀퉁이의 동그란 표시, 세금으로 나갈 카드는 점선 테두리에 귀퉁이의 세모 표시,
+   가질 수 없는 카드는 흐리고 가는 점선 테두리, 카드가 나간 자리는 빈 점선 칸이다.
+   가진 카드는 실선 테두리의 작은 카드로, 세금으로 나간 카드는 점선 테두리의 작은 카드로 차례대로 쌓는다.
+   카드는 30장일 때도 손가락으로 누를 만한 크기(52px 이상)로 그린다. */
+.tax-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 카드가 늘어도 판이 위아래로 움직이지 않게 위에 붙여 그리고, 판 둘레의 빈자리를 줄인다 */
+.board-area:has(> #tax-board:not([hidden])) {
+  align-items: flex-start;
+  padding: 2px;
+}
+
+.tax-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 76px));
+  justify-content: center;
+  gap: 6px;
+}
+
+.tax-card,
+.tax-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 52px;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.tax-card {
+  border: 3px solid #495057;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  user-select: none;
+}
+
+button.tax-card {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tax-card:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.tax-slot {
+  border: 2px dotted #ced4da;
+}
+
+.tax-card.shut {
+  border: 2px dotted #868e96;
+  background: #f1f3f5;
+  color: #868e96;
+}
+
+.tax-card.refused {
+  box-shadow: 0 0 0 3px #b08900;
+}
+
+.tax-card.pick {
+  border-color: var(--accent);
+  background: #e7f5ff;
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+.tax-card.pick::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.tax-card.due,
+.tax-card.left {
+  border: 3px dashed #d9480f;
+  background: #fff4e6;
+  color: #862e09;
+}
+
+.tax-card.due::after,
+.tax-card.left::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  border: 6px solid transparent;
+  border-top: 10px solid #d9480f;
+  border-bottom: 0;
+}
+
+.tax-card.left {
+  opacity: 0.7;
+}
+
+/* 직접 만들기에서 뺀 카드 */
+.tax-card.off {
+  border: 2px dashed #adb5bd;
+  background: transparent;
+  color: #adb5bd;
+  text-decoration: line-through;
+}
+
+/* 도구: 카드마다 낼 세금의 합을 수 아래에 작게 적는다(세금으로 나간 카드와 같은 점선 테두리) */
+.tax-cost {
+  margin-top: 1px;
+  padding: 0 5px;
+  border: 2px dashed #d9480f;
+  border-radius: 6px;
+  background: #fff4e6;
+  color: #862e09;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tax-card:has(.tax-cost) .tax-num {
+  font-size: 20px;
+}
+
+/* 판 아래의 한 줄 글: 무엇이 세금으로 나갈지, 왜 못 가지는지. 글이 없어도 자리는 그대로 둔다 */
+.tax-status {
+  align-self: center;
+  min-height: 26px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.tax-status:not(:empty) {
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #fff9db;
+  box-shadow: 0 0 0 2px #b08900;
+}
+
+/* 두 자리: 이름과 합, 그 옆에 차례대로 쌓인 작은 카드 */
+.tax-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  min-height: 36px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.tax-tray.held {
+  background: #f1f8ff;
+}
+
+.tax-tray.gone {
+  border-style: dashed;
+  background: #fff8f0;
+}
+
+.tax-tray-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-right: 6px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.tax-tray-label strong {
+  font-size: 20px;
+}
+
+.tax-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 3px;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tax-chip.held {
+  border: 2px solid #1864ab;
+  color: #1864ab;
+}
+
+.tax-chip.gone {
+  border: 2px dashed #d9480f;
+  color: #862e09;
+}
+
+.tax-chip.gone.left {
+  border-style: dotted;
+  opacity: 0.75;
+}
+
+.tax-chip.fresh {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+
+/* 판 아래: 이 판에서 가장 많이 가진 합. 단추들과 한 줄에 들어가게 두 줄로 접어 적는다 */
+.tax-count {
+  max-width: 190px;
+  font-size: 18px;
+  line-height: 24px;
+  word-break: keep-all;
+}
+
+.tax-count strong {
+  min-width: 0;
+  font-size: 24px;
+}
+
+/* 작은 그림(처음 화면, 하던 판, 판 고르기, "만들기" 목록): 수 카드 몇 장 */
+.tax-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tax-chip.mini {
+  min-width: 40px;
+  height: 44px;
+  border: 3px solid #495057;
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+.tax-chip.mini.blank {
+  border: 3px dashed #868e96;
+  background: transparent;
+}
+
+.tax-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.tax-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #868e96;
+}
+
+.resume .tax-mini,
+.level .tax-mini {
+  justify-content: flex-start;
+}
+
+.level .tax-chip.mini {
+  min-width: 34px;
+  height: 38px;
+  font-size: 20px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.tax-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 260px);
+}
+
+/* 그림이 하나뿐인 장에서는 조금 넓게 그린다(둘이면 나란히 들어가는 너비로 둔다) */
+.tax-figure:only-child {
+  width: min(100%, 360px);
+}
+
+.tax-figure.wide {
+  width: min(100%, 600px);
+}
+
+.tax-figure .strip-note {
+  margin: 0;
+  text-align: center;
+}
+
+.tax-board.small .tax-grid {
+  grid-template-columns: repeat(var(--cols), minmax(0, 44px));
+}
+
+.tax-board.small .tax-card,
+.tax-board.small .tax-slot {
+  min-height: 0;
+}
+
+.tax-board.small .tax-card {
+  font-size: 20px;
+}
+
+.tax-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 6px 18px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.tax-step {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tax-step .strip-caption {
+  min-width: 46px;
+}
+
+.tax-step-pay {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* 좁은 화면에서는 한 줄에 들어가는 만큼만 놓는다(카드가 52px보다 작아지지 않게) */
+@media (max-width: 700px) {
+  .tax-board:not(.small) .tax-grid {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  }
 }
 
 /* ---- 숫자 추리: 숫자 칸, 추측과 답의 표, 메모판 ----

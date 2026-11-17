@@ -16,3 +16,11 @@ export function fill(template, values = {}) {
 export function sentenceCount(text) {
   return text.split(/[.?!]+/).filter((part) => part.trim().length > 0).length;
 }
+
+/**
+ * 수를 소리 내어 읽었을 때 받침으로 끝나는가. 수 뒤에 붙는 말("15예요", "16이에요")을 고를 때 쓴다.
+ * 2(이), 4(사), 5(오), 9(구)로 끝나는 수만 받침이 없다. 0으로 끝나는 수(십, 백, 영)는 받침이 있다.
+ */
+export function endsClosed(number) {
+  return ![2, 4, 5, 9].includes(Math.abs(Math.trunc(number)) % 10);
+}
