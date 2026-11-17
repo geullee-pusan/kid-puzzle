@@ -1,5 +1,5 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
-// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js).
+// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js).
 // 처음 만남은 src/meet.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, 힌트 단추, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
@@ -20,6 +20,7 @@ import { fill } from './core/text.js';
 import { createCode } from './formats/code.js';
 import { createCoins } from './formats/coins.js';
 import { createSwap } from './formats/swap.js';
+import { createTile } from './formats/tile.js';
 import { createTrace } from './formats/trace.js';
 import { createMeet } from './meet.js';
 import * as log from './ui/log.js';
@@ -522,7 +523,7 @@ const frame = {
   say: (line, pose) => talkers.play.say(line, pose),
 };
 // 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
-const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame) };
+const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame) };
 const meet = createMeet(frame);
 
 // ---- 단추 잇기 ----

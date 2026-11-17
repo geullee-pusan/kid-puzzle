@@ -319,10 +319,12 @@ a.btn {
   width: 100%;
 }
 
-/* 한붓그리기의 그림과 자리 바꾸기의 판은 칸의 높이를 다 쓴다 */
+/* 한붓그리기의 그림과 자리 바꾸기의 판, 조각 덮기의 판은 칸의 높이를 다 쓴다 */
 .door-picture > .figure,
 .door-picture > .swap-row,
-.board-area > .figure {
+.door-picture > .tile-board,
+.board-area > .figure,
+.board-area > .tile-board {
   align-self: stretch;
   height: auto;
 }
@@ -420,6 +422,12 @@ a.btn {
   height: 60px;
 }
 
+.resume .tile-board.small {
+  width: 90px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
 .resume .code-mini,
 .resume .code-mini-row {
   align-items: center;
@@ -497,6 +505,10 @@ a.btn {
 .menu-picture > .figure,
 .menu-picture > .swap-row {
   display: block;
+  height: 76px;
+}
+
+.menu-picture > .tile-board {
   height: 76px;
 }
 
@@ -638,6 +650,12 @@ a.btn {
   display: block;
   width: min(100%, 230px);
   height: 58px;
+}
+
+.level .tile-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
 }
 
 .level .code-mini {
@@ -1270,6 +1288,216 @@ div.coin {
 
 .best-line strong {
   font-size: 24px;
+}
+
+/* ---- 조각 덮기: 칸이 몇 개 빠진 네모 판과 그 위에 놓는 조각 ----
+   색만으로 알리지 않는다. 조각은 굵은 테두리로 하나씩 가르고, 빠진 칸은 어둡게 메우고 빗금을 긋는다.
+   무늬를 입히면 색마다 칸 가운데에 작은 모양(동그라미, 세모, 네모)도 함께 그린다.
+   조각이 들어갈 수 없는 빈칸에는 굵은 점선 테두리를 두른다. */
+.tile-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tile-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 104px);
+  max-height: calc(var(--h) * 104px);
+}
+
+.tile-board.small .tile-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.tile-board.live .tile-svg {
+  touch-action: none;
+  user-select: none;
+}
+
+.tile-board.live .tile-cell-group {
+  cursor: pointer;
+}
+
+/* 큰 판(여덟 칸)도 칸이 누를 만한 크기가 되게, 판 둘레의 빈자리를 줄인다 */
+.board-area:has(> #tile-board:not([hidden])) {
+  padding: 2px;
+}
+
+/* 판 아래: 윗줄에 짧은 글(왜 안 놓였는지, 막혔는지), 아랫줄에 남은 빈칸의 수. 글이 없어도 윗줄의 자리는 그대로 둔다 */
+.tile-count {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 26px;
+}
+
+.tile-count strong {
+  font-size: 22px;
+}
+
+.tile-status {
+  height: 22px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.tile-status:not(:empty) {
+  align-self: flex-start;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #fff9db;
+  box-shadow: 0 0 0 2px #b08900;
+}
+
+.tile-cell {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.tile-cell.tile-color-0 {
+  fill: #fff3bf;
+}
+
+.tile-cell.tile-color-1 {
+  fill: #a5d8ff;
+}
+
+.tile-cell.tile-color-2 {
+  fill: #ffc9c9;
+}
+
+.tile-mark {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.tile-hole {
+  fill: #495057;
+  stroke: #212529;
+  stroke-width: 3;
+}
+
+.tile-hatch {
+  stroke: #adb5bd;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.tile-piece {
+  fill: rgba(11, 79, 92, 0.3);
+  stroke: var(--bar);
+  stroke-width: 8;
+  stroke-linejoin: round;
+}
+
+.tile-pick {
+  fill: rgba(252, 196, 25, 0.35);
+  stroke: #e67700;
+  stroke-width: 7;
+}
+
+.tile-dead {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 9;
+  stroke-dasharray: 15 9;
+}
+
+.tile-ring {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 7;
+  stroke-dasharray: 11 8;
+}
+
+.tile-loop {
+  stroke: #c2255c;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.tile-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+/* 무늬의 색마다 남은 빈칸의 수 */
+.tile-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 20px;
+}
+
+.tile-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tile-legend-mark {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+
+/* 답하는 칸에 그리는 이 판의 조각 */
+.tile-piece-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 20px;
+}
+
+.tile-piece-picture {
+  flex: none;
+  width: calc(var(--w) * 32px);
+  height: calc(var(--h) * 32px);
+}
+
+.tile-piece-picture .tile-svg {
+  max-width: none;
+  max-height: none;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.tile-card {
+  width: min(100%, 250px);
+}
+
+.tile-card > .tile-board {
+  height: 224px;
+}
+
+.tile-card.big {
+  width: min(100%, 420px);
+}
+
+.tile-card.big > .tile-board {
+  height: 330px;
+}
+
+.tile-card .tile-legend {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.tile-card .strip-note {
+  text-align: center;
 }
 
 .option-group {

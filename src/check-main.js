@@ -38,6 +38,7 @@ function drawCounts() {
     ['trace', '한붓그리기'],
     ['code', '숫자 추리'],
     ['swap', '자리 바꾸기'],
+    ['tile', '조각 덮기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

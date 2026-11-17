@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -76,6 +76,20 @@ export const TUNING = {
       expectedSeconds: { 1: 60, 2: 180, 3: 240, 4: 240 },
       whyAfter: 'fewest',
     },
+    /**
+     * 조각 덮기(모두 임시). 처음 보여 줄 단계는 1단계다(늘 되는 작은 판을 덮기만 하면 된다).
+     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개이고, "판에 무늬 입히기"도 힌트 하나로 센다.
+     * 첫 답으로 맞혔는지를 본다(되는 판은 다 덮은 것이, 안 되는 판은 "불가능해요"가 답이다).
+     * expectedSeconds: 재 본 값이 아니다. 놓는 조각의 수(7~21개)를 보고 넉넉하게 잡았다.
+     * "왜 그럴까?"는 이 형식의 안 되는 판을 한 번 끝까지 만난 뒤에 열리고, 조각마다 따로 연다(src/core/tile.js의 whyOpen).
+     */
+    tile: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 4,
+      hintCount: 2,
+      expectedSeconds: { 1: 90, 2: 180, 3: 300, 4: 240 },
+    },
   },
 };
 
@@ -103,8 +117,9 @@ function playedRounds(records, format, tuning) {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
     // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
-    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나(moveCount), 답했거나, 힌트를 열었다
-    const moves = (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0) + (record.moveCount ?? 0);
+    // 추측을 냈거나 들었거나(guessCount), 말을 움직였거나(moveCount), 조각을 놓았거나(placeCount), 답했거나, 힌트를 열었다
+    const moves =
+      (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0) + (record.moveCount ?? 0) + (record.placeCount ?? 0);
     const touched = moves > 0 || (record.answers?.length ?? 0) > 0 || (record.hintsOpened ?? 0) > 0;
     return record.outcome === 'solved' || record.outcome === 'solution' || touched;
   });
