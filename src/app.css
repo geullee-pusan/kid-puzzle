@@ -1,0 +1,826 @@
+/* 퍼즐 연구소. 기준은 갤럭시 탭 울트라 가로 화면이고, 좁은 화면에서는 한 줄로 쌓는다.
+   단추는 손가락으로 누르기 좋게 크게(작아도 48px, 주요 단추는 64px 이상), 글자는 18px 이상.
+   색만으로 뜻을 전하지 않는다(글자를 함께 쓴다).
+   선생님, 대화창, 위 띠의 모양은 같은 아이를 위한 파이썬 학습 앱의 app.css에서 가져왔다. */
+:root {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --ink: #1f2933;
+  --muted: #52606d;
+  --line: #cbd2d9;
+  --bar: #0b4f5c;
+  --accent: #1c7ed6;
+  --good: #2b8a3e;
+  --gold: #fcc419;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 18px/1.5 system-ui, 'Noto Sans KR', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.screen {
+  height: 100%;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+/* ---- 단추 ---- */
+.btn {
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.small {
+  padding: 4px 14px;
+  font-size: 18px;
+}
+
+.btn.big {
+  min-height: 64px;
+  min-width: 150px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.btn.huge {
+  min-height: 68px;
+  width: 100%;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.btn.wide {
+  width: 100%;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn.good {
+  background: var(--good);
+  border-color: var(--good);
+  color: #fff;
+}
+
+.btn[aria-pressed='true'] {
+  border-color: var(--bar);
+  background: var(--bar);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn:focus-visible,
+.level:focus-visible,
+.coin:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ---- 선생님(파이썬 학습 앱, 주산 앱과 같은 모습) ---- */
+.teacher-stage {
+  position: absolute;
+  inset: 0 0 10px 0;
+  perspective: 1100px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.teacher-scene {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform-style: preserve-3d;
+}
+
+.teacher-part,
+.teacher-box {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.teacher-moving {
+  transition: transform 0.35s ease;
+}
+
+.teacher-face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  backface-visibility: hidden;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stage {
+  position: relative;
+  height: 196px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(#dbeafe, #eff6ff 72%, #d3f9d8 72%);
+  overflow: hidden;
+}
+
+.dialog {
+  position: relative;
+  align-self: stretch;
+  padding: 34px 18px 14px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #fff;
+}
+
+.nametag {
+  position: absolute;
+  left: 14px;
+  top: -1px;
+  padding: 0 10px;
+  border-radius: 0 0 8px 8px;
+  background: var(--gold);
+  color: #3a2a00;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.caption {
+  font-size: 21px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.hello {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 12px 0;
+}
+
+.hello .hello-stage {
+  height: 132px;
+}
+
+.hello .dialog {
+  display: flex;
+  align-items: center;
+  min-height: 132px;
+}
+
+/* ---- 위 띠 ---- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  padding: 6px 12px;
+  background: var(--bar);
+  color: #fff;
+}
+
+.app-name {
+  font-size: 22px;
+}
+
+.sound {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-left: auto;
+  font-size: 18px;
+}
+
+.sound input {
+  width: 26px;
+  height: 26px;
+}
+
+.where {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.where span {
+  font-size: 18px;
+  opacity: 0.85;
+}
+
+.where strong {
+  font-size: 20px;
+}
+
+/* ---- 처음 화면 ---- */
+.home,
+.play {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-main {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+}
+
+.panel {
+  height: 100%;
+  overflow: auto;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.card-head h2 {
+  font-size: 26px;
+}
+
+.panel-desc {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.levels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.level {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'no name tag' 'no mark tag';
+  align-items: center;
+  column-gap: 14px;
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 16px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.level-no {
+  grid-area: no;
+  min-width: 76px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #e7f5ff;
+  color: #0b4f5c;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.level-name {
+  grid-area: name;
+  font-size: 21px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.level-tag {
+  grid-area: tag;
+  padding: 2px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.level-mark {
+  grid-area: mark;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.level.recommended {
+  border-color: var(--accent);
+  box-shadow: inset 8px 0 0 var(--accent);
+  background: #f1f8ff;
+}
+
+.home-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px 10px;
+  color: var(--muted);
+}
+
+#build {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* ---- 판 화면 ---- */
+.play-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 350px;
+  gap: 12px;
+  padding: 12px;
+}
+
+.side,
+.answer,
+.table {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.side h2,
+.answer h2 {
+  font-size: 19px;
+}
+
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hint-card {
+  padding: 10px 12px;
+  border-left: 5px solid var(--gold);
+  border-radius: 8px;
+  background: #fff9db;
+}
+
+.hint-card p {
+  margin: 2px 0 0;
+  word-break: keep-all;
+}
+
+.table {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rule {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f1f3f5;
+  font-size: 20px;
+  word-break: keep-all;
+}
+
+.board-area {
+  flex: 1;
+  min-height: 0;
+  /* 고리 판이 칸의 가로와 세로 가운데 작은 쪽에 맞춰지게 한다 */
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.board-area > div {
+  width: 100%;
+}
+
+.board-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.count {
+  margin-right: auto;
+  font-size: 20px;
+}
+
+.count strong {
+  display: inline-block;
+  min-width: 1.6em;
+  font-size: 26px;
+  text-align: center;
+}
+
+/* ---- 동전 ---- */
+.coins.line {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 96px));
+  justify-content: center;
+  gap: 10px;
+}
+
+.coins.ring {
+  position: relative;
+  width: min(100%, 400px);
+  width: min(100cqw, 100cqh, 400px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.coin {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 0;
+  border: 4px solid #b08900;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe680, #fcc419 70%);
+  color: #4a3500;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition: box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+div.coin {
+  cursor: default;
+}
+
+.coin.tails {
+  border-color: #868e96;
+  border-style: double;
+  border-width: 6px;
+  background: radial-gradient(circle at 35% 30%, #f8f9fa, #ced4da 70%);
+  color: #343a40;
+}
+
+.coins.ring .coin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.coin.selected {
+  box-shadow: 0 0 0 5px #fff, 0 0 0 10px var(--accent);
+}
+
+.coin.blocked {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.coin.marked {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent);
+}
+
+.coin.flipped .coin-face {
+  animation: coin-flip 0.32s ease;
+}
+
+@keyframes coin-flip {
+  from {
+    transform: rotateY(180deg) scale(0.6);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.coin-tag {
+  position: absolute;
+  right: -12px;
+  top: -14px;
+  min-width: 24px;
+  padding: 0 4px;
+  border: 1px solid var(--bar);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--bar);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* 작은 그림(풀이, "왜 그럴까?") */
+.coins.small.line {
+  grid-template-columns: repeat(var(--n), 44px);
+  gap: 8px;
+}
+
+.coins.small.ring {
+  width: 190px;
+}
+
+.board-area > .coins.ring {
+  min-width: 250px;
+}
+
+/* 글자(가, 나, 다)를 붙인 그림은 동전을 조금 크게 그려 글자가 앞뒤 글자를 가리지 않게 한다 */
+.coins.small.tagged.line {
+  grid-template-columns: repeat(var(--n), 54px);
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.coins.small.tagged.ring {
+  width: 280px;
+  margin: 12px 16px 0;
+}
+
+.coins.small .coin {
+  border-width: 3px;
+  font-size: 18px;
+}
+
+.coins.small .coin.tails {
+  border-width: 4px;
+}
+
+/* ---- 판 위에 겹치는 종이: 풀이, "왜 그럴까?" ---- */
+.sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.sheet-head h2 {
+  font-size: 22px;
+}
+
+.sheet-page {
+  color: var(--muted);
+}
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 4px;
+}
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strip-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 12px;
+  padding-top: 8px;
+}
+
+.strip-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.strip-caption {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.strip-arrow {
+  color: var(--muted);
+  font-size: 26px;
+}
+
+.strip-note {
+  margin: 6px 0 0;
+  font-size: 19px;
+  word-break: keep-all;
+}
+
+/* ---- 오른쪽: 답 넣기, 나갈 때, 끝난 뒤 ---- */
+.pad,
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answer-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+}
+
+.answer-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 64px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 34px;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.key {
+  min-height: 60px;
+  padding: 4px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.key.word {
+  grid-column: span 2;
+  font-size: 20px;
+}
+
+.feelings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.feelings .btn {
+  padding: 8px 4px;
+  font-size: 18px;
+}
+
+/* ---- 직접 만들기 ---- */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stepper .btn {
+  min-width: 64px;
+  min-height: 64px;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.stepper strong {
+  font-size: 26px;
+}
+
+.segment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.segment.column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.segment .btn {
+  min-height: 56px;
+}
+
+.make-result {
+  min-height: 3em;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f3f5;
+  font-size: 20px;
+  word-break: keep-all;
+}
+
+.make-result:empty {
+  visibility: hidden;
+}
+
+/* ---- 낮은 화면(작은 태블릿, 창을 줄인 PC): 답 넣는 칸이 한 화면에 들어가게 조금 줄인다 ---- */
+@media (max-height: 800px) {
+  .key {
+    min-height: 48px;
+  }
+  .btn.huge {
+    min-height: 64px;
+  }
+  .answer-box {
+    height: 52px;
+  }
+  .pad,
+  .choices {
+    gap: 8px;
+  }
+}
+
+/* ---- 좁은 화면(세로로 든 태블릿, 휴대폰) ---- */
+@media (max-width: 980px) {
+  .screen {
+    height: auto;
+    min-height: 100%;
+  }
+  .play-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .levels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .table {
+    min-height: 460px;
+  }
+  .panel {
+    height: auto;
+  }
+}

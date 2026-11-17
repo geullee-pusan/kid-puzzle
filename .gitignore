@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.claude/
+# 인증키와 개인 설정은 저장소에 넣지 않는다.
+.env
+.env.*
+*.local

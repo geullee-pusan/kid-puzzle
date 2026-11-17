@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b4f5c" />
+    <title>퍼즐 연구소 점검</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  </head>
+  <body>
+    <header>
+      <h1>퍼즐 연구소 점검 (부모·개발용)</h1>
+      <span id="build"></span>
+      <a href="./">← 앱으로</a>
+    </header>
+    <main>
+      <section>
+        <h2>기록 보내기 설정</h2>
+        <p class="help">비공개 저장소 하나에만 쓸 수 있는 인증키를 넣어요. 키는 이 기기에만 저장돼요. 설정이 없으면 앱은 기록을 기기에만 쌓아 둬요.</p>
+        <form id="syncform">
+          <label for="repo">기록 저장소 (주인/이름)</label>
+          <input id="repo" autocomplete="off" autocapitalize="off" spellcheck="false" />
+          <label for="token">인증키</label>
+          <input id="token" type="password" autocomplete="off" />
+          <div class="row">
+            <button type="submit">저장</button>
+            <button id="synctest" type="button">지금 보내 보기</button>
+          </div>
+        </form>
+        <p id="syncstatus" class="help" role="status"></p>
+      </section>
+
+      <section>
+        <h2>기록</h2>
+        <dl id="counts" class="facts"></dl>
+        <div class="row">
+          <button id="flush" type="button">못 보낸 기록 보내기</button>
+          <button id="export" type="button">기록 내보내기 (JSON 보기)</button>
+          <button id="copy" type="button">복사</button>
+          <button id="clear" type="button">기록 지우기</button>
+        </div>
+        <p id="recordstatus" class="help" role="status"></p>
+        <pre id="dump" hidden></pre>
+      </section>
+
+      <section>
+        <h2>수준 맞추기 (기록에서 다시 계산한 값)</h2>
+        <dl id="advice" class="facts"></dl>
+      </section>
+
+      <section>
+        <h2>설치와 오프라인</h2>
+        <dl id="offline" class="facts"></dl>
+        <div class="row">
+          <button id="recheck" type="button">다시 점검</button>
+        </div>
+        <p class="help">오프라인 확인: 한 번 연 뒤 연결을 끊고(비행기 모드) 앱을 다시 열어 봐요. "받아 둔 파일"이 0보다 크고 "이 화면을 맡고 있음"이 "예"여야 해요.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/check-main.js"></script>
+  </body>
+</html>
