@@ -36,6 +36,7 @@ function drawCounts() {
   for (const [format, name] of [
     ['coins', '동전 뒤집기'],
     ['trace', '한붓그리기'],
+    ['code', '숫자 추리'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

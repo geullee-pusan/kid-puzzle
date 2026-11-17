@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -7,6 +7,7 @@
 // - 힌트를 다 열고도 못 풀었거나 연달아 그만두면 → 다음에는 한 단계 아래의 판(맨 아래 단계면 작은 판)을 먼저 보여 준다.
 //   화면에는 내려갔다는 말이나 표시를 하지 않는다.
 // - 그 밖에는 그대로 둔다.
+// - 게임 판(추측을 내고 답을 듣는 숫자 추리의 판)은 "빠르게 한 번에"의 기준이 다르다. 걸린 시간이 아니라 추측 횟수가 적은 것을 본다.
 
 /**
  * 아래 숫자는 모두 임시값이다. 재 본 값이 아니다. 기록을 보고 고친다.
@@ -42,6 +43,23 @@ export const TUNING = {
       hintCount: 2,
       expectedSeconds: { 1: 60, 2: 40, 3: 60, 4: 120 },
     },
+    /**
+     * 숫자 추리(모두 임시). 처음 보여 줄 단계는 2단계다. 판을 만들어 내는 단계는 1~5단계다.
+     * 힌트는 질문 두 개이고, "남은 후보 수 보기"도 힌트 하나로 센다.
+     * fastGuesses: 추측을 내서 알아내는 판(1~3단계)에서 "빠르게"로 보는 추측 횟수의 위 끝.
+     *   남은 후보 가운데 아무것이나 내는 컴퓨터의 평균(3.7번, 5.2번, 5.5번)쯤으로 잡았다. 이 단계들은 시간을 보지 않는다.
+     * expectedSeconds: 4단계(표만 보고 알아내기)와 5단계(역할 바꾸기)에서만 쓴다. 1~3단계의 값은 쓰이지 않는 자리 채움이다.
+     * whyAfter: 'finished'면 이 형식의 판을 한 번 끝까지 한 뒤에 "왜 그럴까?"가 열린다(안 되는 판이 없는 형식이다).
+     */
+    code: {
+      startLevel: 2,
+      bottomLevel: 1,
+      topLevel: 5,
+      hintCount: 2,
+      expectedSeconds: { 1: 180, 2: 240, 3: 360, 4: 240, 5: 240 },
+      fastGuesses: { 1: 4, 2: 5, 3: 6 },
+      whyAfter: 'finished',
+    },
   },
 };
 
@@ -68,8 +86,9 @@ function playedRounds(records, format, tuning) {
   return latestById(records).filter((record) => {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
-    // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount), 답했거나, 힌트를 열었다
-    const moves = (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0);
+    // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
+    // 추측을 냈거나 들었거나(guessCount), 답했거나, 힌트를 열었다
+    const moves = (record.flipCount ?? 0) + (record.strokeCount ?? 0) + (record.editCount ?? 0) + (record.guessCount ?? 0);
     const touched = moves > 0 || (record.answers?.length ?? 0) > 0 || (record.hintsOpened ?? 0) > 0;
     return record.outcome === 'solved' || record.outcome === 'solution' || touched;
   });
@@ -77,11 +96,19 @@ function playedRounds(records, format, tuning) {
 
 const solved = (record) => record.outcome === 'solved';
 
-/** 힌트 없이, 첫 답으로, 예상 시간보다 빠르게 맞혔는가 */
+/**
+ * 힌트 없이, 첫 답으로, 예상 시간보다 빠르게 맞혔는가.
+ * 게임 판(그 단계에 fastGuesses가 적혀 있다)은 힌트 없이, 적은 추측으로 알아냈는가를 본다.
+ */
 function fastClean(record, tuning) {
   if (!solved(record)) return false;
   if ((record.hintsOpened ?? 0) > 0) return false;
-  if ((record.answers?.length ?? 0) !== 1) return false;
+  const fewGuesses = tuning.fastGuesses?.[record.level];
+  if (typeof fewGuesses === 'number') return Number.isInteger(record.guessCount) && record.guessCount >= 1 && record.guessCount <= fewGuesses;
+  // 답을 여러 번 주고받는 판(역할 바꾸기)은 틀린 답의 수(wrongCount)를 적어 둔다. 적혀 있으면 그것이 0이어야 "한 번에"다.
+  if (Number.isInteger(record.wrongCount)) {
+    if (record.wrongCount !== 0) return false;
+  } else if ((record.answers?.length ?? 0) !== 1) return false;
   const limit = tuning.expectedSeconds[record.level];
   return typeof record.seconds === 'number' && typeof limit === 'number' && record.seconds < limit;
 }
@@ -127,13 +154,15 @@ export function recommend(records, format = 'coins', allTuning = TUNING) {
 /**
  * "왜 그럴까?"를 열어도 되는가. 이 형식에서 안 되는 판을 한 번 이상 만나고,
  * 그 판이 안 되는 판이라는 것을 알게 된 뒤에 열린다(임시 규칙).
+ * 안 되는 판이 없는 형식(whyAfter가 'finished')은 판을 한 번 끝까지 한 뒤에 열린다.
  */
-export function whyUnlocked(records, format = 'coins') {
+export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
+  const anyRound = tuningFor(format, allTuning).whyAfter === 'finished';
   return latestById(Array.isArray(records) ? records : []).some(
     (record) =>
       record.kind === 'round' &&
       record.format === format &&
-      record.solution?.possible === false &&
+      (anyRound || record.solution?.possible === false) &&
       (record.outcome === 'solved' || record.outcome === 'solution'),
   );
 }

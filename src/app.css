@@ -109,6 +109,7 @@ h2 {
 
 .btn:focus-visible,
 .level:focus-visible,
+.memo-chip:focus-visible,
 .coin:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
@@ -272,25 +273,36 @@ a.btn {
   padding: 12px;
 }
 
-/* 문 셋: 형식마다 하나(동전 뒤집기, 한붓그리기)와 퍼즐 만들기 */
+/* 문들: 형식마다 하나(동전 뒤집기, 한붓그리기, 숫자 추리)와 퍼즐 만들기.
+   한 줄에 나란히 놓이고, 자리가 모자라면 다음 줄로 넘어간다. 가로 화면에서는 넷이 한 줄에 들어간다.
+   형식이 더 늘어 줄이 넘치면 문의 높이는 그대로 두고 처음 화면이 아래로 굴러간다. */
 .doors {
-  flex: 1;
+  flex: 1 0 auto;
   min-height: 320px;
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
 .panel.door {
+  flex: 1 1 250px;
+  min-width: 0;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: auto;
+  padding: 12px 16px;
   overflow: hidden;
 }
 
+/* 동전 판은 가로로 길어서 그 문을 조금 넓게 잡는다 */
+.panel.door.door-wide {
+  flex: 1.6 1 330px;
+}
+
 .door h2 {
-  font-size: 26px;
+  font-size: 24px;
 }
 
 .door-picture {
@@ -315,30 +327,33 @@ a.btn {
   height: auto;
 }
 
-/* 퍼즐 만들기: 빈 동전 판과 빈 그림을 위아래로 놓는다 */
-.door-pair {
-  flex-direction: column;
+/* 문 안의 동전 판은 칸이 좁아서 사이를 조금 좁힌다 */
+.door-picture > .coins.line {
+  gap: 6px;
+}
+
+/* 퍼즐 만들기: 형식마다 빈 판 하나. 두 칸씩 놓는다. 빈 동전 판은 가로로 길어서 한 줄을 다 쓴다.
+   형식이 늘면 빈 판이 다음 칸으로 이어진다 */
+.door-blanks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
 }
 
-.door-pair > .coins {
-  flex: none;
+.door-blanks > .coins {
+  grid-column: 1 / -1;
 }
 
-.door-pair > .figure {
-  flex: 1;
-  min-height: 0;
-}
-
-.door-foot.pair .btn.big {
-  flex: 1 1 130px;
-  min-width: 0;
-  padding: 8px 10px;
+.door-blanks > .figure {
+  height: 100%;
 }
 
 .door-ask {
   margin: 0;
-  font-size: 23px;
+  font-size: 20px;
   font-weight: 700;
   text-align: center;
   word-break: keep-all;
@@ -348,7 +363,19 @@ a.btn {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* 문 안의 단추는 한 줄에 둘씩 들어가게 한다 */
+.door-foot .btn.big,
+.door-foot.pair .btn {
+  flex: 1 1 108px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.door-foot.pair .btn {
+  font-weight: 700;
 }
 
 /* 하던 판 */
@@ -383,6 +410,16 @@ a.btn {
 .resume .figure.small {
   width: 190px;
   height: 104px;
+}
+
+.resume .code-mini,
+.resume .code-mini-row {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.resume .code-mini {
+  flex-direction: row;
 }
 
 .panel.picker {
@@ -501,6 +538,14 @@ a.btn {
   display: block;
   width: 120px;
   height: 64px;
+}
+
+.level .code-mini {
+  align-items: flex-start;
+}
+
+.level .code-mini-row {
+  justify-content: flex-start;
 }
 
 .level-name {
@@ -905,6 +950,337 @@ div.coin {
   font-size: 26px;
 }
 
+/* ---- 숫자 추리: 숫자 칸, 추측과 답의 표, 메모판 ----
+   색만으로 알리지 않는다. 답은 글과 수로 적고, 견줘 볼 줄에는 글자 표시를 붙이고,
+   메모판에서 지운 숫자에는 줄을 긋고 테두리를 점선으로 바꾼다. */
+.code-digits {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.code-digit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 48px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.code-digit.empty {
+  border-style: dashed;
+  border-color: #868e96;
+}
+
+.code-digit.next {
+  border-style: solid;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px #d0ebff;
+}
+
+.code-digits.small {
+  gap: 3px;
+}
+
+.code-digits.small .code-digit {
+  width: 28px;
+  height: 34px;
+  border-radius: 6px;
+  font-size: 20px;
+}
+
+.code-slots {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+}
+
+.code-slots .code-digit {
+  width: 56px;
+  height: 60px;
+  font-size: 34px;
+}
+
+.code-board {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.code-scroll {
+  flex: 1;
+  align-self: stretch;
+  min-height: 0;
+  overflow: auto;
+}
+
+.code-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.code-table th,
+.code-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  word-break: keep-all;
+}
+
+.code-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f3f5;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.code-table tbody .col-no {
+  white-space: nowrap;
+}
+
+.code-table tbody .col-hit,
+.code-table tbody .col-place {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.code-table tbody .col-left {
+  color: var(--bar);
+  font-weight: 700;
+}
+
+.code-table .row-start th,
+.code-table .row-start td {
+  background: #f8f9fa;
+}
+
+.code-table .row-label th,
+.code-table .row-label td {
+  background: #e7f5ff;
+}
+
+.code-table .row-pending td {
+  background: #fff9db;
+}
+
+.code-table .row-flagged th,
+.code-table .row-flagged td {
+  border-top: 3px solid #e67700;
+  border-bottom: 3px solid #e67700;
+  background: #fff4e6;
+}
+
+.code-flag {
+  display: block;
+  margin-top: 2px;
+  padding: 0 6px;
+  border: 2px solid #e67700;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 18px;
+}
+
+/* 메모판이 열려 있는 동안에는 표의 줄을 낮게 그린다 */
+.code-board.with-memo .code-table td,
+.code-board.with-memo .code-table th {
+  padding: 2px 8px;
+}
+
+.code-board.with-memo .code-table .code-digit {
+  width: 36px;
+  height: 38px;
+  font-size: 24px;
+}
+
+/* 메모판 */
+.code-memo {
+  flex: none;
+  padding: 8px 10px;
+  border: 2px dashed #b08900;
+  border-radius: 10px;
+  background: #fff9db;
+}
+
+.code-memo-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+}
+
+.code-memo-head span {
+  flex: 1;
+  min-width: 200px;
+  font-size: 18px;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.memo-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memo-pos {
+  flex: none;
+  width: 84px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.memo-chips {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 52px));
+  gap: 4px;
+}
+
+.memo-chip {
+  min-height: 48px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.memo-chip.struck {
+  border-style: dashed;
+  border-color: #868e96;
+  background: #e9ecef;
+  color: #868e96;
+  text-decoration: line-through;
+  text-decoration-thickness: 3px;
+}
+
+.memo-chip:disabled {
+  cursor: default;
+}
+
+/* 작은 그림(처음 화면의 카드, 판 고르기, 하던 판) */
+.code-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.code-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.code-mini-label {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.code-mini-line {
+  font-size: 18px;
+  word-break: keep-all;
+}
+
+.code-strip {
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.code-mini > .code-more {
+  line-height: 1;
+}
+
+/* 처음 화면의 카드에서는 숨은 암호의 칸을 크게 그린다(표의 줄이 여럿일 때는 작은 칸 그대로) */
+.door-picture:not(.door-blanks) .code-mini.single .code-digit {
+  width: 46px;
+  height: 52px;
+  border-radius: 8px;
+  font-size: 30px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.code-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 540px);
+}
+
+.code-answer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 20px;
+}
+
+.code-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.code-more {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.code-card .strip-note {
+  text-align: center;
+}
+
+/* 답 두 수를 고르는 단추들 */
+.picks {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+  gap: 6px;
+}
+
+.picks .btn {
+  min-height: 48px;
+  padding: 4px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* 직접 만들기: 표 아래의 단추와 풀이 프로그램이 알려 준 말 */
+.make-foot .make-result {
+  flex: 1 1 100%;
+  min-height: 0;
+}
+
 /* 작은 그림(풀이, "왜 그럴까?") */
 .coins.small.line {
   grid-template-columns: repeat(var(--n), 44px);
@@ -1129,9 +1505,24 @@ div.coin {
   .answer-box {
     height: 52px;
   }
+  .code-slots .code-digit {
+    height: 52px;
+  }
+  /* 메모판을 연 동안에는 규칙 글을 접어 표가 보일 자리를 낸다(규칙은 메모판을 닫으면 다시 보인다) */
+  .table:has(.code-board.with-memo:not([hidden])) .rule {
+    display: none;
+  }
   .pad,
   .choices {
     gap: 8px;
+  }
+}
+
+/* ---- 조금 좁은 화면: 문을 두 줄에 둘씩 놓는다 ---- */
+@media (max-width: 1180px) {
+  .panel.door,
+  .panel.door.door-wide {
+    flex: 1 1 calc(50% - 6px);
   }
 }
 
@@ -1147,8 +1538,9 @@ div.coin {
   .levels {
     grid-template-columns: minmax(0, 1fr);
   }
-  .doors {
-    grid-template-columns: minmax(0, 1fr);
+  .panel.door,
+  .panel.door.door-wide {
+    flex: 1 1 100%;
   }
   .door-picture {
     min-height: 200px;

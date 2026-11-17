@@ -158,7 +158,7 @@ function trace(overrides = {}) {
 }
 
 test('형식마다 값을 따로 둔다: 한붓그리기는 1단계에서 시작하고, 그림을 만들어 내는 단계는 1~4단계다', () => {
-  assert.deepEqual(Object.keys(TUNING.formats).sort(), ['coins', 'trace']);
+  assert.deepEqual(Object.keys(TUNING.formats).sort(), ['code', 'coins', 'trace']);
   assert.deepEqual(recommend([], 'trace'), { level: 1, small: false, offerHarder: false, harderLevel: null, reason: 'start' });
   assert.equal(tuningFor('trace').startLevel, 1);
   assert.equal(tuningFor('trace').bottomLevel, 1);

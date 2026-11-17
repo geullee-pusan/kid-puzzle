@@ -1,5 +1,5 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
-// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js). 처음 만남은 src/meet.js 에 있다.
+// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js). 처음 만남은 src/meet.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, 힌트 단추, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
 // 지키는 것: 보상과 성적 표시를 두지 않는다. 시간은 기록만 하고 보여 주지 않는다. 아이가 누를 때까지 기다린다.
@@ -16,6 +16,7 @@ import look from './content/teacher-look.json';
 import teacherData from './content/teacher.json';
 import { recommend, whyUnlocked } from './core/level.js';
 import { fill } from './core/text.js';
+import { createCode } from './formats/code.js';
 import { createCoins } from './formats/coins.js';
 import { createTrace } from './formats/trace.js';
 import { createMeet } from './meet.js';
@@ -509,7 +510,7 @@ const frame = {
   showWhy,
   say: (line, pose) => talkers.play.say(line, pose),
 };
-const formats = { coins: createCoins(frame), trace: createTrace(frame) };
+const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame) };
 const meet = createMeet(frame);
 
 // ---- 단추 잇기 ----
