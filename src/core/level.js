@@ -12,6 +12,7 @@
 //   끝까지 두고 진 판은 그만둔 판이 아니다. 연달아 져도 내려가지 않는다(지는 것은 발견의 재료다).
 // - 더 좋은 답을 찾는 판(약수 세금)도 기준이 다르다. 다시 해 보기 몇 번 안에 가장 큰 합에 닿은 것을 본다.
 //   "여기까지 할래요"로 끝낸 판은 그만둔 판이 아니다(끝까지 한 판이다). 하다가 나간 판만 그만둔 판이다.
+// - 작은 판("더 작은 판으로"로 연 곁판. 기록의 side가 true)은 세지 않는다. 원래 판을 돕는 판이라서 수준도, "왜 그럴까?"가 열리는 때도 바꾸지 않는다.
 
 /**
  * 아래 숫자는 모두 임시값이다. 재 본 값이 아니다. 기록을 보고 고친다.
@@ -28,7 +29,11 @@ export const TUNING = {
   fastStreak: 2,
   /** 연달아 몇 판을 그만두면 더 쉬운 판을 먼저 보여 주는가(임시) */
   quitStreak: 2,
-  /** 한 판에 있는 힌트의 수. "힌트를 다 열었다"를 가리는 데 쓴다 */
+  /**
+   * 한 판에 있는 힌트의 수. "힌트를 다 열었다"를 가리는 데 쓴다.
+   * 기록의 hintsOpened는 연 질문 힌트의 수에, 형식의 도구 단추를 쓴 것과 "더 작은 판으로"를 연 것을 하나씩 더한 수다.
+   * "막혔어요"에서 규칙을 다시 본 것은 세지 않는다.
+   */
   hintCount: 2,
   /** 단계별 예상 시간(초, 임시). 이보다 빨리 맞히면 "빠르게"로 본다. 화면에는 보여 주지 않는다 */
   expectedSeconds: { 1: 45, 2: 75, 3: 120, 4: 180, 5: 180 },
@@ -96,7 +101,7 @@ export const TUNING = {
     },
     /**
      * 누가 이길까(모두 임시). 처음 보여 줄 단계는 1단계다(맨 첫 판은 어떻게 두어도 아이가 마지막 수를 둔다).
-     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개이고, "작은 판으로 두어 보기"도 힌트 하나로 센다.
+     * 판을 내는 단계는 1~4단계다. 힌트는 질문 두 개다.
      * fastWin: true면 "한 번에 빠르게"를 걸린 시간으로 보지 않는다.
      *   먼저 둘지 나중에 둘지를 스스로 골랐고(chose), 그것이 잘 두면 이기는 쪽이었고(choseWinner), 그 판을 이겼으면(winner가 kid) 그렇게 본다.
      *   고르기가 없는 맨 첫 판과 자리를 바꿔서 다시 둔 판은 넣지 않는다.
@@ -153,9 +158,14 @@ export function latestById(records) {
   return order.map((id) => byId.get(id));
 }
 
-/** 수준을 따질 때 보는 판: 이 형식의, 만들어 낸 판. 들여다보기만 하고 나간 판은 뺀다. */
+/** 작은 판(곁판)의 기록을 뺀 목록. 작은 판의 기록에는 side: true가 붙어 있다. */
+export function withoutSide(records) {
+  return (Array.isArray(records) ? records : []).filter((record) => !(record && typeof record === 'object' && record.side === true));
+}
+
+/** 수준을 따질 때 보는 판: 이 형식의, 만들어 낸 판. 들여다보기만 하고 나간 판과 작은 판(곁판)은 뺀다. */
 function playedRounds(records, format, tuning) {
-  return latestById(records).filter((record) => {
+  return latestById(withoutSide(records)).filter((record) => {
     if (record.kind !== 'round' || record.format !== format || record.custom) return false;
     if (!Number.isInteger(record.level) || record.level < tuning.bottomLevel || record.level > tuning.topLevel) return false;
     // 손댄 판: 동전을 뒤집었거나(flipCount), 선을 긋거나 그림을 고쳤거나(strokeCount, editCount),
@@ -236,6 +246,7 @@ export function recommend(records, format = 'coins', allTuning = TUNING) {
  * 안 되는 판이 없는 형식(whyAfter가 'finished')은 판을 한 번 끝까지 한 뒤에 열린다.
  * 더 좋은 답을 찾는 형식(whyAfter가 'fewest')은 가장 적은 횟수로 한 판을 끝낸 뒤에 열린다.
  * 약수 세금(whyAfter가 'best')은 만들어 낸 판을 가장 큰 합으로 한 번 끝낸 뒤에 열린다(직접 만든 판은 세지 않는다).
+ * 작은 판(곁판)은 어느 형식에서도 세지 않는다.
  */
 export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
   const after = tuningFor(format, allTuning).whyAfter;
@@ -244,5 +255,5 @@ export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
     if (after === 'best') return record.reachedBest === true && record.custom !== true && record.outcome === 'solved';
     return (after === 'finished' || record.solution?.possible === false) && (record.outcome === 'solved' || record.outcome === 'solution');
   };
-  return latestById(Array.isArray(records) ? records : []).some((record) => record.kind === 'round' && record.format === format && opens(record));
+  return latestById(withoutSide(records)).some((record) => record.kind === 'round' && record.format === format && opens(record));
 }

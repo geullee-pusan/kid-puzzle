@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { TUNING, latestById, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
+import { finishedCount, lostStreak, whyOpen as duelWhyOpen } from '../src/core/duel.js';
+import { TUNING, latestById, recommend, tuningFor, whyUnlocked, withoutSide } from '../src/core/level.js';
+import { whyOpen as tileWhyOpen } from '../src/core/tile.js';
 
 let serial = 0;
 /** 기록 하나를 만든다. 기본값은 "2단계를 힌트 없이 한 번에 30초 만에 맞힘"이다. */
@@ -212,4 +214,38 @@ test('한붓그리기: 선을 긋거나 그림을 고친 판은 손댄 판으로
   assert.equal(recommend([drew(), drew()], 'trace').reason, 'quit');
   const edited = () => trace({ level: 4, outcome: 'left', answers: [], strokeCount: 0, editCount: 1 });
   assert.deepEqual(recommend([edited(), edited()], 'trace'), { level: 3, small: false, offerHarder: false, harderLevel: null, reason: 'quit' });
+});
+
+test('작은 판(곁판)의 기록은 세지 않는다: 수준도, 권하기도, "왜 그럴까?"가 열리는 때도 바꾸지 않는다', () => {
+  const side = (overrides = {}) => round({ side: true, sideOf: 'r-origin', sideTurn: 0, seed: null, ...overrides });
+  // 빼는 함수: side가 true인 기록만 뺀다. 예전 기록(side가 없다)과 다른 종류의 기록은 그대로 둔다.
+  const plain = round();
+  assert.deepEqual(withoutSide([plain, side(), { kind: 'made' }, null, side({ outcome: 'left' })]), [plain, { kind: 'made' }, null]);
+  assert.deepEqual(withoutSide(undefined), []);
+  // 작은 판만 있으면 기록이 없는 것과 같다.
+  assert.deepEqual(recommend([side(), side(), side()]), recommend([]));
+  // 작은 판을 빠르게 연달아 풀어도 더 어려운 판을 권하지 않는다.
+  assert.equal(recommend([round(), side(), side()]).offerHarder, false);
+  assert.deepEqual(recommend([round(), side(), round()]), recommend([round(), round()]));
+  // 작은 판을 그만두거나 힌트를 다 열고 못 풀어도 내려가지 않는다.
+  const quitSide = () => side({ level: 4, outcome: 'left', answers: [], flipCount: 3, hintsOpened: 2 });
+  assert.deepEqual(recommend([round({ level: 4, seconds: 300 }), quitSide(), quitSide()]), { level: 4, small: false, offerHarder: false, harderLevel: null, reason: 'steady' });
+  // 권할 단계는 마지막으로 한 "원래 판"의 단계다.
+  assert.equal(recommend([round({ level: 3 }), side({ level: 5 })]).level, 3);
+  // 작은 판에서 안 되는 판을 알아냈어도 "왜 그럴까?"는 열리지 않는다.
+  const impossible = { solution: { possible: false, min: null }, answers: [{ t: 9, answer: 'impossible', correct: true, guess: null }] };
+  assert.equal(whyUnlocked([side(impossible)]), false);
+  assert.equal(whyUnlocked([side(impossible), round(impossible)]), true);
+  // 형식마다 따로 여는 문도 같다.
+  assert.equal(whyUnlocked([side({ format: 'code' })], 'code'), false);
+  assert.equal(whyUnlocked([side({ format: 'swap', fewest: true })], 'swap'), false);
+  assert.equal(whyUnlocked([side({ format: 'tax', reachedBest: true })], 'tax'), false);
+  const duel = (overrides = {}) => round({ format: 'duel', mode: 'one', winner: 'teacher', ...overrides });
+  assert.equal(finishedCount([duel(), duel(), duel({ side: true })], 'one'), 2);
+  assert.equal(duelWhyOpen([duel(), duel(), duel({ side: true })], 'one'), false);
+  assert.equal(duelWhyOpen([duel(), duel(), duel()], 'one'), true);
+  assert.equal(lostStreak([duel(), duel({ side: true, winner: 'kid' })]), 1);
+  const tile = (overrides = {}) => round({ format: 'tile', board: { w: 4, h: 4, piece: 'domino', holes: [0, 15] }, solution: { possible: false }, ...overrides });
+  assert.equal(tileWhyOpen([tile({ side: true })], 'domino'), false);
+  assert.equal(tileWhyOpen([tile()], 'domino'), true);
 });

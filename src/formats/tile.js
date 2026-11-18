@@ -1,5 +1,5 @@
 // 조각 덮기: 판 화면에서 이 형식이 맡는 부분(판, 답하는 칸, 막혔을 때와 맞혔을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/tile.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 판의 종류(mode)는 단계가 정한다.
@@ -10,6 +10,7 @@
 // 지나온 길(trail)은 처음으로 되돌린 뒤부터 놓고 들어낸 일의 목록이다. "한 번 무르기"는 그 맨 뒤의 일을 없던 것으로 한다.
 // 판에 무늬를 입히는 단추는 도구다. 무엇을 알려 주는지 말하지 않는다. 처음 누를 때 힌트 하나를 연 것으로 적는다.
 import T from '../content/tile.json';
+import { smallerTile } from '../core/smaller.js';
 import { fill } from '../core/text.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/tile-ladder.js';
 import { MAX_SIZE, MIN_SIZE, PATTERNS, PIECES, PIECE_IDS, checkBoard, colorCounts, deadCells, diagnoseImpossible, isStuck, placeProblem, replay, solve, whyFits, whyOpen, xyOf } from '../core/tile.js';
@@ -238,9 +239,9 @@ export function createTile(frame) {
 
   /** 까닭을 남겨 둔 판(ㄱ자 세 칸의 안 되는 판)을 맞힌 것이 이번이 처음인가 */
   function firstEllImpossible(round, solution) {
-    if (round.custom || round.board.piece !== 'ell' || solution.reason !== 'search') return false;
-    const before = log
-      .allRecords()
+    if (round.side || round.custom || round.board.piece !== 'ell' || solution.reason !== 'search') return false;
+    const before = frame
+      .records()
       .filter((record) => record.kind === 'round' && record.format === FORMAT && !record.custom && record.id !== round.id)
       .filter((record) => record.board?.piece === 'ell' && record.solution?.possible === false && record.outcome === 'solved');
     return before.length === 0;
@@ -278,7 +279,7 @@ export function createTile(frame) {
    */
   function whyPages(round) {
     const slides = T.why[round.board.piece];
-    if (!slides || !whyOpen(log.allRecords(), round.board.piece)) return null;
+    if (!slides || !whyOpen(frame.records(), round.board.piece)) return null;
     // 직접 만든 판 가운데는 무늬가 아닌 까닭으로 안 되는 판이 있다. 그런 판에서는 맞지 않는 까닭을 들려주지 않는다.
     if (!whyFits(round.board.piece, frame.solution)) return null;
     return slides.map((slide) => ({
@@ -455,8 +456,14 @@ export function createTile(frame) {
     },
     ruleLine: (round) => T.rules[round.mode === 'cover' ? 'cover' : round.board.piece],
     hints: (round) => T.hints[round.board.piece],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.placeCount > 0,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view(round) {
+      const state = replay(round.board, round.trail);
+      return { placed: state.placed, left: state.left, pattern: round.pattern };
+    },
+    /** 이 판보다 작은 판: 같은 조각, 한 단 작은 판. 뺀 칸은 원래 판과 닮은 자리다 */
+    smaller: (round, turn) => smallerTile({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const state = replay(round.board, round.trail);
       return {

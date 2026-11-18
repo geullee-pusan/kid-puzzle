@@ -1,5 +1,5 @@
 // 누가 이길까: 판 화면에서 이 형식이 맡는 부분(판, 먼저 둘지 고르기, 선생님이 두는 차례, 끝났을 때 하는 말, 다시 보기와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/duel.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 선생님(컴퓨터)과 번갈아 둔다. 어느 게임이든 마지막 수를 둔 쪽이 이긴다.
@@ -9,11 +9,12 @@
 // 판이 끝나면 누가 마지막 수를 두었는지를 사실로만 말한다. 몇 번 이기고 졌는지는 세어 보여 주지 않는다.
 // 선생님은 자기 차례에 잠깐 뜸을 들이고 둔다. 무엇을 두었는지는 판(방금 생긴 조각, 방금 가져간 돌의 자리)과 말로 보인다.
 // 선생님의 수는 (단계, 판 번호, 지금까지 둔 수들)로 정해진다. 그래서 나갔다가 돌아와도 같은 수를 둔다.
-// "작은 판으로 두어 보기"는 도구다. 같은 게임의 가장 작은 판을 차례로 두어 보고, 끝내면 원래 판으로 돌아온다.
-//   작은 판에서 둔 것은 하던 판에 남기지 않는다(기록에는 남긴다). 처음 열 때 힌트 하나를 연 것으로 적는다.
+// 작은 판으로 두어 보는 일은 틀의 "더 작은 판으로"가 맡는다(예전에는 이 형식만의 도구 단추였다).
+//   같은 게임의 가장 작은 판을 작은 것부터 차례로 낸다. 작은 판도 판 하나라서 먼저 둘지 고르고 끝까지 둔다.
 import T from '../content/duel.json';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../core/duel-ladder.js';
-import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, copyBoard, finishedCount, gameOf, isOver, isWin, lostStreak, movesOf, otherOf, replay, slipsOf, smallBoards, solve, startState, teacherMove, turnOf, whyOpen } from '../core/duel.js';
+import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, copyBoard, finishedCount, gameOf, isOver, isWin, lostStreak, movesOf, otherOf, replay, slipsOf, solve, startState, teacherMove, turnOf, whyOpen } from '../core/duel.js';
+import { smallerDuel } from '../core/smaller.js';
 import { fill } from '../core/text.js';
 import { drawGame, gameCard, marksCard, tableCard } from '../ui/duel-board.js';
 
@@ -36,7 +37,6 @@ export function createDuel(frame) {
   const { $, log } = frame;
   let pick = null; // 골라 둔 돌 { pile, take }
   let flash = null; // 방금 누른 것이 왜 안 되는지. 다음에 무엇을 누르면 지운다
-  let practice = null; // 작은 판으로 두어 보는 중이면 그 판 { list, at, board, first, trail }
   let timer = null; // 선생님이 뜸을 들이는 중이면 그 타이머
   let preset = null; // 자리를 바꿔서 다시 둘 때, 새 판에 미리 정해 줄 것 { first, rematchOf }
   let draft = null; // 직접 만들기에서 만들던 판
@@ -70,9 +70,6 @@ export function createDuel(frame) {
   /** 판과 둔 수들로 그릴 것을 만든다 */
   const viewOf = (board, trail) => ({ board, state: replay(board, trail).state, fresh: freshOf(board, trail.at(-1)), labels: labelsOf(board) });
 
-  /** 지금 두고 있는 판: 작은 판으로 두어 보는 중이면 그 판, 아니면 하던 판 */
-  const gameNow = () => practice ?? frame.round;
-
   function clearTimer() {
     if (timer !== null) clearTimeout(timer);
     timer = null;
@@ -81,7 +78,6 @@ export function createDuel(frame) {
   function forget() {
     pick = null;
     flash = null;
-    practice = null;
     clearTimer();
   }
 
@@ -97,12 +93,12 @@ export function createDuel(frame) {
 
   function draw() {
     const { round } = frame;
-    const game = gameNow();
+    const game = round;
     const { board } = game;
     const played = replay(board, game.trail);
     const chosen = game.first !== null;
     const over = chosen && played.over;
-    const live = chosen && !over && (practice !== null || !round.done);
+    const live = chosen && !over && !round.done;
     const mine = live && turnOf(game.first, game.trail.length) === 'kid';
     const stones = board.kind !== 'choco';
     if (!mine) pick = null;
@@ -115,9 +111,7 @@ export function createDuel(frame) {
     });
     $('duel-status').textContent = flash ?? statusOf(game, played);
 
-    // 오른쪽 칸: 고르기 → 차례 → (작은 판이 끝났으면) 다음 작은 판
-    $('duel-small-box').hidden = practice === null;
-    if (practice) $('duel-small-name').textContent = nameOf(board);
+    // 오른쪽 칸: 고르기 → 차례
     $('duel-choose').hidden = chosen;
     $('duel-turn-box').hidden = !live;
     if (live) {
@@ -127,16 +121,10 @@ export function createDuel(frame) {
       $('duel-pick-line').textContent = pick === null ? T.pick.none : fill(T.pick[board.kind], { n: pick.take, pile: T.piles[pick.pile] });
       $('duel-take').disabled = pick === null;
     }
-    $('duel-small-over').hidden = !(practice && over);
-    if (practice) $('duel-small-next').hidden = practice.at >= practice.list.length - 1;
-    $('duel-small-back').hidden = practice === null;
-
-    // 왼쪽 칸의 도구 단추: 끝난 판에서는 쓰지 않는다. 이보다 작은 판이 없으면 쓸 수 없다.
-    $('duel-small').disabled = round.done || smallBoards(round.board).length === 0;
-    $('duel-small').setAttribute('aria-pressed', String(practice !== null));
 
     // 끝난 뒤 고르기에 이 형식만의 것 둘을 더한다. 진 판 뒤에는 "자리를 바꿔서 다시 두기"를 맨 위에 둔다.
-    const done = round.done && practice === null;
+    // 작은 판을 끝낸 뒤에는 틀의 두 단추(원래 판으로 돌아가기, 작은 판 하나 더)만 나온다.
+    const done = round.done && !round.side;
     const lost = done && round.winner === 'teacher';
     $('duel-swap').hidden = !(done && round.first !== null);
     $('duel-replay').hidden = !(done && round.trail.length > 0);
@@ -154,15 +142,16 @@ export function createDuel(frame) {
   function wait() {
     clearTimer();
     const { round } = frame;
-    const game = gameNow();
-    if (!round || (practice === null && round.done) || game.first === null) return;
+    const game = round;
+    if (!round || round.done || game.first === null) return;
     if (replay(game.board, game.trail).over || turnOf(game.first, game.trail.length) !== 'teacher') return;
     const turns = game.trail.length;
     timer = setTimeout(() => {
       timer = null;
-      if (frame.round !== round || gameNow() !== game || game.trail.length !== turns || (practice === null && round.done)) return;
-      const options = practice ? { first: game.first } : { level: round.custom ? null : round.level, seed: round.custom ? null : round.seed, first: game.first };
-      const move = teacherMove(game.board, game.trail, options);
+      if (frame.round !== round || game.trail.length !== turns || round.done) return;
+      // 직접 만든 판과 작은 판에는 판 번호가 없다.
+      const numbered = !round.custom && !round.side;
+      const move = teacherMove(game.board, game.trail, { level: numbered ? round.level : null, seed: numbered ? round.seed : null, first: game.first });
       if (move) play('teacher', move);
     }, THINK_MS);
   }
@@ -170,8 +159,8 @@ export function createDuel(frame) {
   /** 수 하나를 둔다. 차례가 아닌 쪽의 수와 둘 수 없는 수는 두지 않는다. */
   function play(who, move) {
     const { round } = frame;
-    const game = gameNow();
-    if (game.first === null || (practice === null && round.done)) return;
+    const game = round;
+    if (game.first === null || round.done) return;
     if (turnOf(game.first, game.trail.length) !== who) return;
     const next = applyMove(game.board, replay(game.board, game.trail).state, move);
     if (next === null) return;
@@ -179,19 +168,6 @@ export function createDuel(frame) {
     pick = null;
     flash = null;
     const over = isOver(game.board, next);
-
-    if (practice) {
-      frame.note('small-move', { by: who, ...move });
-      if (over) {
-        round.smallGames += 1;
-        frame.note('small-over', { board: copyBoard(game.board), first: game.first, winner: who });
-      }
-      draw();
-      frame.persist();
-      if (over) frame.say(T.play[`small-over-${who}`]);
-      else if (who === 'teacher') frame.say(moveText(T.play, 'teacher', game.board, move));
-      return;
-    }
 
     frame.note('move', { by: who, turn: game.trail.length, ...move });
     if (over) {
@@ -209,17 +185,14 @@ export function createDuel(frame) {
   /** "먼저 둘래요" / "나중에 둘래요". 이 고르기가 이 형식의 답이다. */
   function choose(first) {
     const { round, solution } = frame;
-    const game = gameNow();
-    if (!round || game.first !== null || (practice === null && round.done)) return;
+    const game = round;
+    if (!round || game.first !== null || round.done) return;
     game.first = first;
-    if (practice) frame.note('small-pick', { first });
-    else {
-      const answer = first === 'kid' ? 'first' : 'second';
-      // correct: 잘 두면 이기는 쪽을 골랐는가. 화면에서는 알리지 않는다(두어 보면 알게 된다).
-      const correct = (first === 'kid') === solution.first;
-      round.answers.push({ t: frame.stamp(), answer, correct, guess: null });
-      frame.note('pick', { first, answer, correct });
-    }
+    const answer = first === 'kid' ? 'first' : 'second';
+    // correct: 잘 두면 이기는 쪽을 골랐는가. 화면에서는 알리지 않는다(두어 보면 알게 된다).
+    const correct = (first === 'kid') === solution.first;
+    round.answers.push({ t: frame.stamp(), answer, correct, guess: null });
+    frame.note('pick', { first, answer, correct });
     draw();
     frame.persist();
     frame.say(T.play[first === 'kid' ? 'picked-first' : 'picked-second']);
@@ -227,7 +200,7 @@ export function createDuel(frame) {
 
   /** 돌을 눌렀다: 그 돌부터 맨 위의 돌까지를 골라 둔다. 같은 돌을 다시 누르면 고른 것을 푼다. */
   function tapStone(pile, take) {
-    const { board } = gameNow();
+    const { board } = frame.round;
     if (board.kind === 'one' && take > board.max) {
       pick = null;
       flash = fill(T.status['over-max'], { k: board.max });
@@ -240,51 +213,6 @@ export function createDuel(frame) {
 
   function takePicked() {
     if (pick !== null) play('kid', { pile: pick.pile, take: pick.take });
-  }
-
-  // ---- 작은 판으로 두어 보기 ----
-  function startSmall(list, at) {
-    practice = { list, at, board: list[at], first: null, trail: [] };
-    pick = null;
-    flash = null;
-  }
-
-  function toggleSmall() {
-    const { round } = frame;
-    if (!round || round.done) return;
-    if (practice) {
-      leaveSmall();
-      return;
-    }
-    const list = smallBoards(round.board);
-    if (list.length === 0) return;
-    round.smallUsed = true;
-    round.smallOpened += 1;
-    startSmall(list, 0);
-    frame.note('small', { on: true, board: copyBoard(list[0]) });
-    draw();
-    frame.persist();
-    frame.say(T.play['small-open'], 'point');
-  }
-
-  /** 다음 작은 판(step 1) 또는 같은 작은 판을 다시(step 0) */
-  function moveSmall(step) {
-    if (!practice) return;
-    const at = Math.min(practice.at + step, practice.list.length - 1);
-    startSmall(practice.list, at);
-    frame.note('small-next', { board: copyBoard(practice.board) });
-    draw();
-    if (step > 0) frame.say(T.play['small-next'], 'point');
-  }
-
-  /** 원래 판으로 돌아온다. 작은 판에서 본 것을 여기에 쓸 수 있는지 묻는다. */
-  function leaveSmall() {
-    if (!practice) return;
-    forget();
-    frame.note('small', { on: false });
-    draw();
-    frame.persist();
-    frame.say(T.play['small-back'], 'point');
   }
 
   // ---- 끝난 뒤: 자리를 바꿔서 다시 두기, 방금 판 다시 보기 ----
@@ -338,6 +266,8 @@ export function createDuel(frame) {
   /** 끝났을 때 하는 말: 누가 마지막 수를 두었는지를 사실로 말한다. */
   function rightLine(round) {
     const parts = [T.right[`${round.winner}-${kindOf(round.board)}`]];
+    // 작은 판을 끝냈을 때는 덧붙이지 않는다(끝난 뒤에 고를 것이 다르다).
+    if (round.side) return parts;
     const records = log.allRecords();
     // 덧붙이는 말은 하나만 한다(한 번에 한 가지만 말한다).
     if (!round.chose && !round.rematch) parts.push(T.right['first-board']);
@@ -496,10 +426,6 @@ export function createDuel(frame) {
   $('duel-first').addEventListener('click', () => choose('kid'));
   $('duel-second').addEventListener('click', () => choose('teacher'));
   $('duel-take').addEventListener('click', takePicked);
-  $('duel-small').addEventListener('click', toggleSmall);
-  $('duel-small-next').addEventListener('click', () => moveSmall(1));
-  $('duel-small-again').addEventListener('click', () => moveSmall(0));
-  $('duel-small-back').addEventListener('click', leaveSmall);
   $('duel-swap').addEventListener('click', rematch);
   $('duel-replay').addEventListener('click', openReplay);
   $('duel-make-games').addEventListener('click', (event) => {
@@ -551,9 +477,6 @@ export function createDuel(frame) {
         rematch: start !== null, // 자리를 바꿔서 다시 두는 판인가
         rematchOf: start?.rematchOf ?? null, // 그렇다면 바로 앞 판의 번호
         replayCount: 0, // "방금 판 다시 보기"를 연 수
-        smallUsed: false, // "작은 판으로 두어 보기"를 한 번이라도 열었는가
-        smallOpened: 0, // 그 단추로 작은 판을 연 수
-        smallGames: 0, // 작은 판을 끝까지 둔 수
       };
     },
     solve(round) {
@@ -567,14 +490,13 @@ export function createDuel(frame) {
       const played = replay(saved.board, saved.trail);
       // 끝난 판은 하던 판이 아니다. 먼저 두는 쪽을 정하기 전에는 둔 수가 없다.
       if (!played.ok || played.over || (saved.first === null && saved.trail.length > 0)) return false;
-      if (typeof saved.chose !== 'boolean' || typeof saved.rematch !== 'boolean' || typeof saved.smallUsed !== 'boolean') return false;
-      return saved.winner === null && [saved.replayCount, saved.smallOpened, saved.smallGames].every(count);
+      if (typeof saved.chose !== 'boolean' || typeof saved.rematch !== 'boolean') return false;
+      return saved.winner === null && count(saved.replayCount);
     },
-    /** 판 화면에서 이 형식의 것(판, 판 아래의 글, 도구 단추, 끝난 뒤의 단추 둘)을 보이거나 감춘다. 이 형식에는 무르기와 되돌리기가 없다. */
+    /** 판 화면에서 이 형식의 것(판, 판 아래의 글, 끝난 뒤의 단추 둘)을 보이거나 감춘다. 이 형식에는 무르기와 되돌리기가 없다. */
     showParts(on) {
       $('duel-board').hidden = !on;
       $('duel-count').hidden = !on;
-      $('duel-small').hidden = !on;
       if (on) {
         // 무르기와 되돌리기는 숫자 추리의 showParts가 앞에서 보이게 해 둔다. 이 형식의 판에서는 다시 감춘다.
         $('undo').hidden = true;
@@ -593,8 +515,11 @@ export function createDuel(frame) {
       return T.rules[round.mode];
     },
     hints: (round) => T.hints[round.mode],
-    hintsShown: (round) => round.hintsOpened,
-    touched: (round) => round.trail.length > 0 || (round.chose && round.first !== null) || round.smallUsed,
+    touched: (round) => round.trail.length > 0 || (round.chose && round.first !== null),
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ first: round.first, turns: round.trail.length, state: replay(round.board, round.trail).state }),
+    /** 이 판보다 작은 판: 같은 게임의 가장 작은 판들을 작은 것부터 차례로 */
+    smaller: (round, turn) => smallerDuel({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const chosen = round.first !== null;
       const moves = round.trail.map((move, index) => ({ by: turnOf(round.first, index), ...move }));
@@ -617,11 +542,6 @@ export function createDuel(frame) {
         rematch: round.rematch,
         rematchOf: round.rematchOf,
         replayCount: round.replayCount,
-        // 질문 힌트와 "작은 판으로 두어 보기"를 함께 센다.
-        hintsOpened: round.hintsOpened + (round.smallUsed ? 1 : 0),
-        smallUsed: round.smallUsed,
-        smallOpened: round.smallOpened,
-        smallGames: round.smallGames,
       };
     },
     rightLine,

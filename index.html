@@ -202,6 +202,8 @@
     <section id="play" class="screen play" hidden>
       <header class="top">
         <button id="leave" class="btn small" type="button">← 나가기</button>
+        <!-- 작은 판을 하는 동안에는 "나가기" 자리에 이 단추가 있다. 하던 판은 그대로 간직되어 있다 -->
+        <button id="side-back" class="btn small" type="button" hidden>← 원래 판으로</button>
         <div class="where"><span id="where-format">동전 뒤집기</span><strong id="where-title"></strong></div>
       </header>
 
@@ -214,9 +216,18 @@
       </div>
 
       <main class="play-grid">
-        <!-- 왼쪽: 힌트와 설명 -->
+        <!-- 왼쪽: 막혔을 때 누르는 단추, 힌트, 도구, 설명 -->
         <section class="side" aria-label="힌트">
-          <button id="hint" class="btn wide" type="button">힌트</button>
+          <!-- 아이가 스스로 누른다. 누르면 그 자리에 세 고르기가 펼쳐지고(글은 대본에 있다), 고르지 않고 닫아도 된다. 몇 번 눌렀는지는 보여 주지 않는다 -->
+          <button id="stuck" class="btn wide" type="button" aria-expanded="false" aria-controls="stuck-menu">막혔어요</button>
+          <div id="stuck-menu" class="stuck-menu" hidden>
+            <button id="stuck-rule" class="btn wide stuck-choice" type="button"></button>
+            <button id="stuck-next" class="btn wide stuck-choice" type="button"></button>
+            <button id="stuck-why" class="btn wide stuck-choice" type="button"></button>
+            <button id="stuck-close" class="btn wide stuck-close" type="button">닫기</button>
+          </div>
+          <!-- 같은 규칙의 더 작은 판을 연다. 하던 판은 그대로 간직한다. 더 작은 판이 없는 판에서는 보이지 않는다 -->
+          <button id="smaller" class="btn wide" type="button" hidden>더 작은 판으로</button>
           <div id="hints" class="hints"></div>
           <button id="trace-degrees" class="btn wide" type="button" aria-pressed="false" hidden>점마다 선의 수 보기</button>
           <button id="code-left" class="btn wide" type="button" aria-pressed="false" hidden>남은 후보 수 보기</button>
@@ -224,8 +235,6 @@
           <!-- 조각 덮기: 판에 무늬를 입혔다 벗기는 도구. 무엇을 알려 주는지는 말하지 않는다. 무늬를 입히면 색마다 남은 빈칸의 수를 적는다 -->
           <button id="tile-pattern" class="btn wide" type="button" aria-pressed="false" hidden>판에 무늬 입히기</button>
           <div id="tile-colors" class="tile-legend" aria-live="polite" hidden></div>
-          <!-- 누가 이길까: 같은 게임의 가장 작은 판을 차례로 두어 보는 도구. 끝내면 원래 판으로 돌아온다 -->
-          <button id="duel-small" class="btn wide" type="button" aria-pressed="false" hidden>작은 판으로 두어 보기</button>
           <!-- 약수 세금: 지금 가질 수 있는 카드마다 세금으로 나갈 수의 합을 작게 적어 주는 도구 -->
           <button id="tax-costs" class="btn wide" type="button" aria-pressed="false" hidden>카드마다 낼 세금 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
@@ -420,12 +429,8 @@
             <button id="tax-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
           </div>
 
-          <!-- 누가 이길까: 먼저 둘지 나중에 둘지 고르고, 차례가 오면 판에서 둔다. 작은 판으로 두어 보는 동안에는 맨 위에 그 판의 이름이 나온다 -->
+          <!-- 누가 이길까: 먼저 둘지 나중에 둘지 고르고, 차례가 오면 판에서 둔다 -->
           <div id="duel-pad" class="pad" hidden>
-            <div id="duel-small-box" class="choices" hidden>
-              <h2>작은 판으로 두어 보기</h2>
-              <p id="duel-small-name" class="pad-note best-line"></p>
-            </div>
             <div id="duel-choose" class="choices">
               <h2>누가 먼저 둘까요?</h2>
               <button id="duel-first" class="btn huge" type="button">먼저 둘래요</button>
@@ -440,11 +445,6 @@
                 <button id="duel-take" class="btn good huge" type="button" disabled>가져가기</button>
               </div>
             </div>
-            <div id="duel-small-over" class="choices" hidden>
-              <button id="duel-small-next" class="btn huge" type="button">다음 작은 판</button>
-              <button id="duel-small-again" class="btn huge" type="button">이 판 다시 두기</button>
-            </div>
-            <button id="duel-small-back" class="btn huge" type="button" hidden>원래 판으로 돌아가기</button>
           </div>
 
           <div id="leave-ask" class="choices" hidden>
@@ -455,13 +455,16 @@
           </div>
 
           <div id="after" class="choices" hidden>
-            <h2>이 판은 어땠어요?</h2>
+            <h2 id="after-feel">이 판은 어땠어요?</h2>
             <div id="feelings" class="feelings">
               <button class="btn" type="button" data-feeling="easy">쉬웠어요</button>
               <button class="btn" type="button" data-feeling="right">딱 좋았어요</button>
               <button class="btn" type="button" data-feeling="hard">어려웠어요</button>
             </div>
             <h2>다음은 무엇을 할까요?</h2>
+            <!-- 작은 판을 끝낸 뒤에는 이 둘만 보인다(느낌 표시와 아래의 단추들은 내지 않는다) -->
+            <button id="after-back" class="btn good huge" type="button" hidden>원래 판으로 돌아가기</button>
+            <button id="after-more" class="btn huge" type="button" hidden>작은 판 하나 더</button>
             <button id="after-same" class="btn huge" type="button">같은 단계 새 판</button>
             <button id="after-harder" class="btn huge" type="button">더 어려운 판</button>
             <!-- 누가 이길까에서만 보인다. 진 판 뒤에는 "자리를 바꿔서 다시 두기"가 맨 위로 간다 -->

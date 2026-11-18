@@ -67,12 +67,7 @@
     "teacher-one": "선생님은 {n}개를 가져갔어요.",
     "teacher-piles": "선생님은 {pile} 더미에서 {n}개를 가져갔어요.",
     "rematch-kid": "아까와 같은 판이에요. 이번에는 먼저 두어 보세요.",
-    "rematch-teacher": "아까와 같은 판이에요. 이번에는 선생님이 먼저 둘게요.",
-    "small-open": "같은 게임의 작은 판이에요. 여기서 몇 판 두어 볼 수 있어요.",
-    "small-next": "조금 더 큰 판이에요.",
-    "small-over-kid": "이 작은 판은 마지막 수를 두었어요.",
-    "small-over-teacher": "이 작은 판은 선생님이 마지막 수를 두었어요.",
-    "small-back": "원래 판으로 돌아왔어요. 작은 판에서 본 것을 여기에 쓸 수 있을까요?"
+    "rematch-teacher": "아까와 같은 판이에요. 이번에는 선생님이 먼저 둘게요."
   },
   "hints": {
     "choco": [

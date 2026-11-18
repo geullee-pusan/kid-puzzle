@@ -1,5 +1,5 @@
 // 한붓그리기: 판 화면에서 이 형식이 맡는 부분(그림, 답하는 단추, 맞혔을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/trace.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 판의 종류(mode)는 단계가 정한다.
@@ -9,6 +9,7 @@
 //   fix    선 하나를 더하거나 빼서 고친다. 고친 뒤에는 고친 그림을 그어 볼 수 있다(4단계)
 // 판이 끝난 뒤에도 그림은 그어 볼 수 있다(확인용). 끝난 뒤에 그은 것은 횟수에 넣지 않는다.
 import T from '../content/trace.json';
+import { smallerTrace } from '../core/smaller.js';
 import { fill } from '../core/text.js';
 import { LADDER, MAKE_LEVEL, MAKE_POINTS, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/trace-ladder.js';
 import { applyEdit, canAddEdge, checkFigure, diagnose, edgeIndex, fixesOf, solve, walk } from '../core/trace.js';
@@ -546,8 +547,11 @@ export function createTrace(frame) {
     },
     ruleLine: (round) => T.rules[round.mode],
     hints: (round) => T.hints[round.mode],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.strokeCount > 0 || round.editCount > 0 || round.path.length > 0,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ path: round.path.slice(), edit: round.edit ? editText(round.edit) : null, chosen: round.chosen }),
+    /** 이 판보다 작은 판: 점이 넷이나 다섯인 그림. 판의 종류(긋기, 가리기, 시작점 고르기, 고치기)는 그대로다 */
+    smaller: (round, turn) => smallerTrace({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const answer = { possible: solution.possible, starts: solution.starts, path: solution.path };
       if (solution.fixes) answer.fixes = solution.fixes.map(editText);

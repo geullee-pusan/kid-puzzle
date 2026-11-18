@@ -213,7 +213,7 @@ test('index.html: 답 넣기에 숫자판과 "불가능해요" 단추가 있고,
   assert.match(html, /id="impossible"[^>]*>불가능해요</);
   for (const label of ['같은 단계 새 판', '더 어려운 판', '직접 만들기', '그만하기']) assert.ok(screenText.includes(label), label);
   for (const label of ['쉬웠어요', '딱 좋았어요', '어려웠어요']) assert.ok(screenText.includes(label), label);
-  for (const label of ['처음으로 되돌리기', '한 번 무르기', '힌트', '왜 그럴까?', '풀이 볼래요?', '이어서 하기']) assert.ok(screenText.includes(label), label);
+  for (const label of ['처음으로 되돌리기', '한 번 무르기', '막혔어요', '왜 그럴까?', '풀이 볼래요?', '이어서 하기']) assert.ok(screenText.includes(label), label);
 });
 
 test('처음 만남: 네 개짜리 판은 되고 다섯 개짜리 판은 안 된다(풀이 프로그램으로 확인)', () => {

@@ -1,9 +1,10 @@
 // 동전 뒤집기: 판 화면에서 이 형식이 맡는 부분(동전 판, 숫자판, 맞혔을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/coins.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 import T from '../content/coins.json';
 import { MAX_COINS, RULES, applyMove, checkBoard, diagnose, headCount, isMove, selectable, solve } from '../core/coins.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/ladder.js';
+import { smallerCoins } from '../core/smaller.js';
 import { fill } from '../core/text.js';
 import { drawCoins, drawStrip } from '../ui/coin-board.js';
 
@@ -301,8 +302,11 @@ export function createCoins(frame) {
     },
     ruleLine: (round) => T.rules[ruleKey(round.board)],
     hints: (round) => T.hints[ruleKey(round.board)],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.flipCount > 0,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ coins: round.coins.join(''), flips: round.trail.length }),
+    /** 이 판보다 작은 판: 같은 뒤집는 규칙과 모양, 동전을 둘 줄인 판 */
+    smaller: (round, turn) => smallerCoins({ board: round.board }, turn),
     record(round, solution) {
       return {
         board: { n: round.board.n, shape: round.board.shape, rule: round.board.rule, coins: round.board.coins.join('') },

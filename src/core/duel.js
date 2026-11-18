@@ -34,7 +34,7 @@ export const LIMITS = {
 /** 그 게임을 몇 판 끝까지 둔 뒤에 "왜 그럴까?"가 열리는가(임시) */
 export const WHY_AFTER = 3;
 
-/** 작은 판으로 두어 보기에서 내는 판의 수의 위 끝(임시) */
+/** "더 작은 판으로"에서 차례로 내는 작은 판의 수의 위 끝(임시) */
 export const SMALL_COUNT = 6;
 
 const whole = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
@@ -331,7 +331,7 @@ export function randomKidWinRate(board, kidFirst) {
   return rate(positionOf(board, startState(board)), kidFirst);
 }
 
-// ---- 작은 판으로 두어 보기 ----
+// ---- 작은 판: 틀의 "더 작은 판으로"가 이 목록을 차례로 낸다(src/core/smaller.js) ----
 
 const totalOf = (board) => (board.kind === 'choco' ? board.w * board.h : board.kind === 'one' ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
 
@@ -372,10 +372,12 @@ export function whyOpen(records, game) {
   return game !== 'three' && finishedCount(records, game) >= WHY_AFTER;
 }
 
-/** 끝까지 둔 판들(오래된 것부터). 이긴 판도 진 판도 들어간다. 직접 만든 판과 자리를 바꿔 다시 둔 판도 센다 */
+/** 끝까지 둔 판들(오래된 것부터). 이긴 판도 진 판도 들어간다. 직접 만든 판과 자리를 바꿔 다시 둔 판도 센다. 작은 판(곁판)은 세지 않는다 */
 function finishedRounds(records) {
   if (!Array.isArray(records)) return [];
-  return latestById(records).filter((record) => record.kind === 'round' && record.format === 'duel' && record.outcome === 'solved' && (record.winner === 'kid' || record.winner === 'teacher'));
+  return latestById(records).filter(
+    (record) => record.kind === 'round' && record.format === 'duel' && record.side !== true && record.outcome === 'solved' && (record.winner === 'kid' || record.winner === 'teacher'),
+  );
 }
 
 /** 그 게임을 끝까지 둔 판의 수 */

@@ -1,5 +1,5 @@
 // 자리 바꾸기: 판 화면에서 이 형식이 맡는 부분(판, 답하는 칸, 막혔을 때와 맞혔을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/swap.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 판의 종류(mode)는 단계가 정한다.
@@ -11,6 +11,7 @@
 // 개구리 판은 끝까지 간 길의 길이가 늘 같다(풀이 프로그램으로 확인했다). 그래서 길의 길이로는 "가장 적은 횟수"를 물을 수 없다.
 // 무른 움직임까지 세어야 "한 번도 헛걸음하지 않고 끝까지 가기"가 가장 적은 횟수가 된다.
 import T from '../content/swap.json';
+import { smallerSwap } from '../core/smaller.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/swap-ladder.js';
 import { MAX_FROGS, MAX_STONES, MIN_STONES, SKIPS, blockOf, checkBoard, diagnoseImpossible, isDone, isStuck, movesFrom, replay, solve, startCells, stuckKind } from '../core/swap.js';
 import { fill } from '../core/text.js';
@@ -300,8 +301,8 @@ export function createSwap(frame) {
       parts.push(fill(T.right.fewest, { m: solution.min }));
       if (round.completions.length > 1) parts.push(fill(T.right['fewest-after'], { first: round.completions[0] }));
       // 가장 적은 횟수로 처음 끝낸 판이면 "왜 그럴까?"가 생겼다고 알려 준다.
-      const fewest = log.allRecords().filter((record) => record.kind === 'round' && record.format === FORMAT && record.fewest === true);
-      if (fewest.length === 1) parts.push(T.right['why-invite']);
+      const fewest = frame.records().filter((record) => record.kind === 'round' && record.format === FORMAT && record.fewest === true);
+      if (!round.side && fewest.length === 1) parts.push(T.right['why-invite']);
       return parts;
     }
     if (back === 0) parts.push(fill(T.right['swapped-clean'], { m: round.moveCount }));
@@ -514,8 +515,11 @@ export function createSwap(frame) {
     },
     ruleLine: (round) => (round.mode === 'pairs' ? fill(T.rules.pairs, { k: round.board.skip }) : T.rules[round.mode]),
     hints: (round) => T.hints[round.mode],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.moveCount > 0,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ cells: cellsOf(round), count: round.count }),
+    /** 이 판보다 작은 판: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 짓기는 돌을 둘 줄인 판 */
+    smaller: (round, turn) => smallerSwap({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const frogs = isFrogs(round.board);
       return {

@@ -1,5 +1,5 @@
 // 약수 세금: 판 화면에서 이 형식이 맡는 부분(판, 답하는 칸, 끝났을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/tax.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 이 형식에는 틀린 답이 없다. 더 좋은 답을 찾는 형식이다.
@@ -10,6 +10,7 @@
 // 가진 수의 합은 이 놀이의 내용이다. 다른 것으로 바꿔 보여 주지 않는다. 이 판에서 가장 많이 가진 합만 판 아래에 적는다.
 // "카드마다 낼 세금 보기"는 도구다. 처음 누를 때 힌트 하나를 연 것으로 적는다.
 import T from '../content/tax.json';
+import { smallerTax } from '../core/smaller.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/tax-ladder.js';
 import { MAX_CARD, MIN_N, cardsUpTo, checkBoard, plainN, replay, solve, takeable, taxOf } from '../core/tax.js';
 import { endsClosed, fill } from '../core/text.js';
@@ -226,8 +227,8 @@ export function createTax(frame) {
     const parts = [fill(T.right.best, facts(solution.best, solution.total - solution.best))];
     parts.push(retries === 0 ? T.right['first-try'] : fill(T.right.after, { r: retries }));
     // 가장 큰 합으로 처음 끝낸 판이면 "왜 그럴까?"가 생겼다고 알려 준다.
-    const reached = log.allRecords().filter((record) => record.kind === 'round' && record.format === FORMAT && record.reachedBest === true && !record.custom);
-    if (!round.custom && reached.length === 1) parts.push(T.right['why-invite']);
+    const reached = frame.records().filter((record) => record.kind === 'round' && record.format === FORMAT && record.reachedBest === true && !record.custom);
+    if (!round.custom && !round.side && reached.length === 1) parts.push(T.right['why-invite']);
     return parts;
   }
 
@@ -435,8 +436,11 @@ export function createTax(frame) {
     },
     ruleLine: () => T.rules.play,
     hints: (round) => T.hints[rungOf(round.level).hint],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.moveCount > 0,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ taken: round.taken.slice(), tries: round.completions.length }),
+    /** 이 판보다 작은 판: 카드가 넷에서 여섯 장인 판 */
+    smaller: (round, turn) => smallerTax({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const state = replay(round.board, round.taken);
       return {

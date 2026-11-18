@@ -2,20 +2,22 @@
 // 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js, 누가 이길까 duel.js, 약수 세금 tax.js).
 // 처음 만남은 src/meet.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
-// 틀이 쓰는 글(처음 화면의 말, 단계 표시, 힌트 단추, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
+// 틀이 쓰는 글(처음 화면의 말, 단계 표시, "막혔어요"의 세 고르기, 작은 판의 말, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
 // 지키는 것: 보상과 성적 표시를 두지 않는다. 시간은 기록만 하고 보여 주지 않는다. 아이가 누를 때까지 기다린다.
+//   "막혔어요"는 아이가 스스로 누른다. 틀이 먼저 묻지 않고, 몇 번 눌렀는지 보여 주지 않는다.
 //
 // 형식(format)이 틀에 내놓는 것:
 //   id, T(대본), padId(답하는 칸), makeId(직접 만들기 칸), homeIds(처음 화면의 자리들), ladder(사다리와 판 만들어 내기)
 //   begin(판의 처음 값. 단계, 판 번호, 직접 만든 판인지, 판을 받는다) solve(판) valid(적어 둔 판) showParts(보이기) enter() draw() ended()
-//   ruleLine(판) hints(판) hintsShown(판) touched(판) record(판, 풀이) rightLine(판, 풀이)
+//   ruleLine(판) hints(판. 힌트 1과 힌트 2) touched(판) record(판, 풀이) rightLine(판, 풀이)
+//   view(판. 지금 판의 모습을 짧게 적은 것) smaller(판, 차례. 이 판보다 작은 판. 없으면 null)
 //   whyPages(판) solutionPages(판, 풀이) undo() reset() onKey(글자판)
 //   homeAsk(단계) pickLine() drawSample() drawBlank() drawResume() drawLevelPicture() showMake()
 import './app.css';
 import C from './content/coins.json';
 import look from './content/teacher-look.json';
 import teacherData from './content/teacher.json';
-import { recommend, whyUnlocked } from './core/level.js';
+import { recommend, whyUnlocked, withoutSide } from './core/level.js';
 import { fill } from './core/text.js';
 import { createCode } from './formats/code.js';
 import { createCoins } from './formats/coins.js';
@@ -33,6 +35,10 @@ import { createTeacher } from './ui/teacher-view.js';
 
 /** 형식이 적혀 있지 않은 예전 값은 동전 뒤집기의 것이다. */
 const OLD_FORMAT = 'coins';
+/** "막혔어요"에서 고르는 셋: 규칙 다시 보기, 힌트 1(무엇을 해 볼지), 힌트 2(어디를 볼지) */
+const HELP = { rule: null, next: 0, why: 1 };
+/** 눈에 띄게 한 것(규칙 글, "왜 그럴까?" 단추)이 다시 가라앉기까지의 시간(밀리초) */
+const FLASH_MS = 3600;
 const $ = (id) => document.getElementById(id);
 
 // ---- 선생님 ----
@@ -51,6 +57,11 @@ let solution = null; // 그 판을 풀이 프로그램으로 푼 결과(저장�
 let F = null; // 지금 하는 판의 형식
 let clockSince = null; // 시계가 가는 중이면 시작한 때
 let sheet = null; // 판 위에 겹쳐 보여 주는 풀이나 설명
+let origin = null; // 작은 판을 하는 동안 간직해 둔 원래 판 { round, finished(끝까지 한 작은 판의 수) }
+let stuckOpen = false; // "막혔어요"의 세 고르기가 펼쳐져 있는가
+let asking = false; // 원래 판으로 돌아와 선생님이 한 번 묻는 중인가. 아이가 무엇이든 누를 때까지 형식이 스스로 하는 말(선생님이 둔 수)로 덮지 않는다
+const smallerMemo = new Map(); // 이미 구해 둔 작은 판(판 번호와 차례마다)
+const flashing = new Map(); // 눈에 띄게 해 둔 것들과, 다시 가라앉힐 타이머
 const homeNext = {}; // 처음 화면에 그려 둔 판(형식마다 하나). "해 보기"를 누르면 이 판이 열린다
 
 function setScreen(name) {
@@ -64,7 +75,14 @@ function clearRound() {
   round = null;
   solution = null;
   F = null;
+  origin = null;
+  stuckOpen = false;
+  asking = false;
+  smallerMemo.clear();
 }
+
+/** 수준 맞추기와 "왜 그럴까?"가 보는 기록. 작은 판의 기록은 세지 않는다. */
+const records = () => withoutSide(log.allRecords());
 
 // ---- 시계: 판 화면이 보이는 동안만 간다. 기록만 하고 화면에는 보여 주지 않는다. ----
 function startClock() {
@@ -75,45 +93,60 @@ function stopClock() {
   clockSince = null;
 }
 const elapsed = () => (round ? round.elapsed + (clockSince === null ? 0 : (performance.now() - clockSince) / 1000) : 0);
-const stamp = () => Math.round(elapsed() * 10) / 10;
+const tenth = (seconds) => Math.round(seconds * 10) / 10;
+const stamp = () => tenth(elapsed());
 
 function note(type, data = {}) {
   round.events.push({ t: stamp(), type, ...data });
 }
 
 // ---- 기록 ----
-function toRecord(outcome) {
-  return {
+/** 판 하나의 기록. 작은 판을 하는 동안에는 간직해 둔 원래 판(r)의 기록도 이것으로 만든다(그 판의 시계는 멈춰 있다). */
+function toRecord(outcome, r = round) {
+  const mine = r === round;
+  const format = formats[r.format];
+  const record = {
     kind: 'round',
     v: 1,
-    id: round.id,
-    format: round.format,
-    level: round.level,
-    seed: round.seed,
-    small: round.small,
-    custom: round.custom,
-    startedAt: round.startedAt,
-    endedAt: round.endedAt ?? new Date().toISOString(),
-    events: round.events,
-    hintsOpened: round.hintsOpened,
-    answers: round.answers,
-    seconds: stamp(),
+    id: r.id,
+    format: r.format,
+    level: r.level,
+    seed: r.seed,
+    small: r.small,
+    custom: r.custom,
+    // 작은 판(곁판)인가. 그렇다면 원래 판의 번호와, 그 판에서 몇 번째로 연 작은 판인지(0부터)
+    side: r.side === true,
+    sideOf: r.sideOf ?? null,
+    sideTurn: r.sideTurn ?? null,
+    startedAt: r.startedAt,
+    endedAt: r.endedAt ?? new Date().toISOString(),
+    events: r.events,
+    hintsOpened: r.hintsOpened,
+    // "막혔어요"에서 고른 것마다의 수, 이 판에서 작은 판을 연 수와 끝까지 한 수. 화면에는 보여 주지 않는다
+    help: helpOf(r),
+    sideOpened: r.sideOpened ?? 0,
+    sideDone: r.sideDone ?? 0,
+    answers: r.answers,
+    seconds: mine ? stamp() : tenth(r.elapsed),
     outcome,
     quit: outcome !== 'solved',
-    viewedSolution: round.viewedSolution,
-    viewedWhy: round.viewedWhy,
-    after: round.after,
-    feeling: round.feeling,
-    offeredHarder: round.offeredHarder,
-    resumes: round.resumes,
+    viewedSolution: r.viewedSolution,
+    viewedWhy: r.viewedWhy,
+    after: r.after,
+    feeling: r.feeling,
+    offeredHarder: r.offeredHarder,
+    resumes: r.resumes,
     // 형식마다 남기는 것: 판의 처음 모습, 풀이 프로그램의 결과, 누른 횟수들
-    ...F.record(round, solution),
+    ...format.record(r, mine ? solution : format.solve(r)),
   };
+  // 작은 판으로 가 본 판은 힌트 하나를 연 것으로 센다(형식의 도구 단추와 같게).
+  if (record.sideOpened > 0) record.hintsOpened += 1;
+  return record;
 }
 
-/** 하던 판을 기기에 적어 둔다. 껐다 켜도 그대로 이어서 할 수 있다. */
+/** 하던 판을 기기에 적어 둔다. 껐다 켜도 그대로 이어서 할 수 있다. 작은 판은 적어 두지 않는다(하던 판은 원래 판이다). */
 function persist() {
-  if (!round) return;
+  if (!round || round.side) return;
   if (round.done) log.clearCurrent();
   else log.saveCurrent({ ...round, elapsed: elapsed() });
 }
@@ -127,6 +160,7 @@ function readCurrent() {
     const ok =
       Boolean(format) &&
       saved.done !== true &&
+      saved.side !== true &&
       format.valid(saved) &&
       Array.isArray(saved.events) &&
       Array.isArray(saved.answers) &&
@@ -153,7 +187,7 @@ function showHome() {
 
   // "해 보기"로 열릴 판을 미리 만들어 그대로 보여 준다. 수준 맞추기가 권하는 단계의 다음 판이다.
   for (const format of Object.values(formats)) {
-    const advice = recommend(log.allRecords(), format.id);
+    const advice = recommend(records(), format.id);
     const made = format.ladder.generateBoard(advice.level, pickSeed(format, advice.level, advice.small), { small: advice.small });
     homeNext[format.id] = { level: advice.level, seed: made.seed, small: advice.small, custom: false, board: made.board };
     format.drawSample($(format.homeIds.sample), made.board);
@@ -180,7 +214,7 @@ function showDoors() {
 
 /** 판 고르기: 형식마다, 단계마다 그림 한 장. */
 function showPicker(format) {
-  const advice = recommend(log.allRecords(), format.id);
+  const advice = recommend(records(), format.id);
   const items = format.ladder.LADDER.map((rung) => {
     const entry = format.T.levels.find((item) => item.level === rung.level);
     const item = document.createElement('li');
@@ -226,10 +260,9 @@ function showMakeMenu(on) {
   else if (screen === 'home' && !$('doors').hidden) $('home-make-open').focus();
 }
 
-/** 그 단계에서 다음에 낼 판 번호. 기록에 남은 가장 큰 번호의 다음이다(방금 한 판과 같은 판은 건너뛴다). */
+/** 그 단계에서 다음에 낼 판 번호. 기록에 남은 가장 큰 번호의 다음이다(방금 한 판과 같은 판은 건너뛴다). 작은 판의 기록은 보지 않는다. */
 function pickSeed(format, level, small) {
-  const seeds = log
-    .allRecords()
+  const seeds = records()
     .filter((record) => record.kind === 'round' && record.format === format.id && record.level === level && !record.custom && Number.isInteger(record.seed))
     .map((record) => record.seed);
   if (seeds.length === 0) return 1;
@@ -242,15 +275,16 @@ function startLevel(format, level) {
     return;
   }
   // 수준 맞추기가 "작은 판부터"라고 하면 조용히 따른다. 화면에는 알리지 않는다.
-  const advice = recommend(log.allRecords(), format.id);
+  const advice = recommend(records(), format.id);
   const small = advice.small && advice.level === level;
   const made = format.ladder.generateBoard(level, pickSeed(format, level, small), { small });
   startRound(format.id, { level, seed: made.seed, small, custom: false, board: made.board });
 }
 
-function startRound(formatId, { level, seed, small, custom, board }) {
+/** 새 판의 처음 값. more에는 작은 판(곁판)일 때의 표시가 들어온다. */
+function newRound(formatId, { level, seed, small, custom, board }, more = {}) {
   F = formats[formatId];
-  round = {
+  return {
     id: log.newId('r'),
     startedAt: new Date().toISOString(),
     endedAt: null,
@@ -261,7 +295,16 @@ function startRound(formatId, { level, seed, small, custom, board }) {
     custom,
     ...F.begin({ level, seed, custom, board }),
     events: [],
-    hintsOpened: 0,
+    hintsOpened: 0, // 연 힌트의 수
+    hintsSeen: [], // 연 힌트의 번호(0은 힌트 1, 1은 힌트 2)
+    help: { rule: 0, next: 0, why: 0 }, // "막혔어요"에서 고른 것마다의 수
+    side: false, // 작은 판(곁판)인가
+    sideOf: null, // 그렇다면 원래 판의 번호
+    sideTurn: null, // 원래 판에서 몇 번째로 연 작은 판인가(0부터)
+    sideOffered: false, // "더 작은 판으로" 단추를 내보였는가
+    sideOpened: 0, // 이 판에서 작은 판을 연 수
+    sideDone: 0, // 그 가운데 끝까지 한 수
+    sideNext: 0, // 다음에 열 작은 판의 차례
     answers: [],
     elapsed: 0,
     done: false,
@@ -272,7 +315,13 @@ function startRound(formatId, { level, seed, small, custom, board }) {
     feeling: null,
     offeredHarder: false,
     resumes: 0,
+    ...more,
   };
+}
+
+function startRound(formatId, start) {
+  origin = null;
+  round = newRound(formatId, start);
   solution = F.solve(round);
   persist();
   showPlay(F.ruleLine(round));
@@ -284,6 +333,7 @@ function resumeRound() {
     showHome();
     return;
   }
+  origin = null;
   round = saved;
   F = formats[round.format];
   solution = F.solve(round);
@@ -299,8 +349,17 @@ function showPlay(line) {
   for (const format of Object.values(formats)) format.showParts(format === F);
   F.enter();
   closeSheet();
+  stuckOpen = false;
+  calm();
+  // 작은 판에서는 "나가기" 자리에 "원래 판으로"가 있고, 제목에 작은 판임이 보인다.
+  $('leave').hidden = round.side;
+  $('side-back').hidden = !round.side;
   $('where-format').textContent = F.T.title;
-  $('where-title').textContent = round.custom ? C.customTitle : fill(C.levelTitle, { level: round.level, tag: C.tags[F.ladder.rungOf(round.level).tag] });
+  $('where-title').textContent = round.side
+    ? C.side.title
+    : round.custom
+      ? C.customTitle
+      : fill(C.levelTitle, { level: round.level, tag: C.tags[F.ladder.rungOf(round.level).tag] });
   $('rule').textContent = F.ruleLine(round);
   showPanel('pad');
   drawHints();
@@ -318,42 +377,185 @@ function showPanel(name) {
 
 function whyAvailable() {
   if (!round || !F.whyPages(round)) return false;
-  if (!whyUnlocked(log.allRecords(), round.format)) return false;
-  // 해 본 뒤에만 연다: 이 판에서 한 번이라도 손댔거나, 답했거나, 판이 끝났을 때
-  return round.done || F.touched(round) || round.answers.length > 0;
+  if (!whyUnlocked(records(), round.format)) return false;
+  // 해 본 뒤에만 연다: 이 판에서 한 번이라도 손댔거나, 답했거나, 작은 판으로 가 봤거나, 판이 끝났을 때
+  return round.done || F.touched(round) || round.answers.length > 0 || (round.sideOpened ?? 0) > 0;
 }
 
 function showWhy() {
   $('why').hidden = !whyAvailable();
 }
 
-// ---- 힌트: 질문 한 문장씩. 다 열어도 풀이는 보이지 않는다. ----
-function drawHints() {
-  const list = F.hints(round);
-  const cards = list.slice(0, F.hintsShown(round)).map((text, index) => {
-    const card = document.createElement('div');
-    card.className = 'hint-card';
-    const title = document.createElement('strong');
-    title.textContent = fill(C.hintTitle, { no: index + 1 });
-    const body = document.createElement('p');
-    body.textContent = text;
-    card.append(title, body);
-    return card;
-  });
-  $('hints').replaceChildren(...cards);
-  const left = list.length - F.hintsShown(round);
-  $('hint').textContent = left > 0 ? C.hintButton.more : C.hintButton.none;
-  $('hint').disabled = left <= 0 || round.done;
+// ---- 눈에 띄게 하기: 규칙 글과 "왜 그럴까?" 단추를 잠깐 도드라지게 한다. 스스로 넘어가는 것은 없다. ----
+function flash(element) {
+  clearTimeout(flashing.get(element));
+  element.classList.remove('flash');
+  // 같은 것을 다시 눈에 띄게 할 때도 처음부터 다시 도드라지게 한다.
+  void element.offsetWidth;
+  element.classList.add('flash');
+  flashing.set(
+    element,
+    setTimeout(() => {
+      element.classList.remove('flash');
+      flashing.delete(element);
+    }, FLASH_MS),
+  );
 }
 
-function openHint() {
+function calm() {
+  for (const [element, timer] of flashing) {
+    clearTimeout(timer);
+    element.classList.remove('flash');
+  }
+  flashing.clear();
+}
+
+// ---- "막혔어요": 아이가 누르면 셋 가운데 고른다. 고르지 않고 닫아도 된다. ----
+// 힌트는 질문 한 문장씩 둘이다(힌트 1은 무엇을 해 볼지, 힌트 2는 어디를 볼지). 다 열어도 풀이는 보이지 않는다.
+/** 연 힌트의 번호들. 예전에 적어 둔 판에는 연 수(hintsOpened)만 있다. 그때는 앞에서부터 연 것이다. */
+const seenHints = (r = round) => (Array.isArray(r.hintsSeen) ? r.hintsSeen : Array.from({ length: r.hintsOpened ?? 0 }, (_, index) => index));
+const helpOf = (r) => ({ rule: r.help?.rule ?? 0, next: r.help?.next ?? 0, why: r.help?.why ?? 0 });
+
+/** 이 판보다 작은 판. 없으면 null. 같은 판, 같은 차례에는 늘 같은 판이 나온다. */
+function smallerOf(r, turn = r.sideNext ?? 0) {
+  const key = `${r.id}:${turn}`;
+  if (!smallerMemo.has(key)) smallerMemo.set(key, formats[r.format].smaller(r, turn));
+  return smallerMemo.get(key);
+}
+
+/** 왼쪽 칸: "막혔어요" 단추와 세 고르기, "더 작은 판으로" 단추, 열린 힌트 카드 */
+function drawHints() {
   const list = F.hints(round);
-  if (round.done || round.hintsOpened >= list.length) return;
-  round.hintsOpened += 1;
-  note('hint', { no: round.hintsOpened });
+  const cards = seenHints()
+    .slice()
+    .sort((a, b) => a - b)
+    .map((index) => {
+      const card = document.createElement('div');
+      card.className = 'hint-card';
+      const title = document.createElement('strong');
+      title.textContent = fill(C.hintTitle, { no: index + 1 });
+      const body = document.createElement('p');
+      body.textContent = list[index];
+      card.append(title, body);
+      return card;
+    });
+  $('hints').replaceChildren(...cards);
+  if (round.done) stuckOpen = false;
+  $('stuck').disabled = round.done;
+  $('stuck').setAttribute('aria-expanded', String(stuckOpen));
+  $('stuck-menu').hidden = !stuckOpen;
+  // "더 작은 판으로"는 첫째나 둘째를 고른 뒤에 보인다. 작은 판에서는 다시 내지 않고, 더 작은 판이 없으면 보이지 않는다.
+  $('smaller').hidden = !(round.sideOffered && !round.done && !round.side && smallerOf(round) !== null);
+}
+
+/** "막혔어요"를 눌렀다: 세 고르기를 펼치거나 접는다. */
+function toggleStuck(open = !stuckOpen) {
+  if (!round || round.done || open === stuckOpen) return;
+  stuckOpen = open;
+  note(open ? 'help-open' : 'help-close');
   drawHints();
   persist();
-  talkers.play.say(list[round.hintsOpened - 1], 'point');
+  if (!open) $('stuck').focus();
+}
+
+/**
+ * 셋 가운데 하나를 골랐다. 선생님은 고른 것에 맞는 말 하나만 한다.
+ *   rule  규칙을 다시 말하고 규칙 글을 눈에 띄게 한다. "더 작은 판으로"를 내보인다
+ *   next  힌트 1을 연다. "더 작은 판으로"를 내보인다
+ *   why   힌트 2를 연다. 이 판에 "왜 그럴까?"가 열려 있으면 그 단추를 눈에 띄게 한다
+ * 이미 연 힌트를 다시 고르면 다시 말해 줄 뿐 새로 세지 않는다. 규칙 다시 보기는 힌트로 세지 않는다.
+ */
+function pickHelp(choice) {
+  if (!round || round.done || !(choice in HELP)) return;
+  const list = F.hints(round);
+  const index = HELP[choice];
+  const seen = seenHints();
+  const fresh = index !== null && !seen.includes(index);
+  if (fresh) {
+    round.hintsSeen = [...seen, index];
+    round.hintsOpened = round.hintsSeen.length;
+  }
+  round.help = { ...helpOf(round), [choice]: helpOf(round)[choice] + 1 };
+  // 무엇을 골랐는지와 그때의 판 모습을 남긴다.
+  note('help', { choice, fresh, view: F.view(round) });
+  if (fresh) note('hint', { no: index + 1 });
+  if (choice !== 'why') round.sideOffered = true;
+  stuckOpen = false;
+  drawHints();
+  showWhy();
+  persist();
+  $('stuck').focus();
+  if (choice === 'rule') {
+    flash($('rule'));
+    talkers.play.say(F.ruleLine(round), 'point');
+    return;
+  }
+  if (choice === 'why' && !$('why').hidden) flash($('why'));
+  talkers.play.say(list[index], 'point');
+}
+
+// ---- "더 작은 판으로": 같은 규칙의 더 작은 판을 연다. 하던 판은 그대로 간직한다(끝난 것도, 나간 것도 아니다). ----
+function openSide() {
+  if (!round || round.done || round.side) return;
+  const turn = round.sideNext ?? 0;
+  const small = smallerOf(round, turn);
+  if (!small) return;
+  round.sideOpened = (round.sideOpened ?? 0) + 1;
+  note('side', { on: true, turn, board: small.board });
+  // 원래 판의 시계를 멈춘다. 작은 판에 쓴 시간은 원래 판의 걸린 시간에 넣지 않는다.
+  stopClock();
+  persist();
+  origin = { round, finished: 0 };
+  startSide(turn, small.board, C.side.open);
+}
+
+/** 작은 판 하나를 시작한다. 단계와 판의 종류는 원래 판을 따른다. 판 번호는 없다. */
+function startSide(turn, board, line) {
+  const parent = origin.round;
+  round = newRound(parent.format, { level: parent.level, seed: null, small: false, custom: parent.custom, board }, { side: true, sideOf: parent.id, sideTurn: turn });
+  solution = F.solve(round);
+  showPlay(line);
+}
+
+/** 작은 판을 끝낸 뒤 "작은 판 하나 더": 다음 차례의 작은 판을 연다. */
+function moreSide() {
+  if (!origin || !round.side || !round.done) return;
+  const parent = origin.round;
+  const turn = round.sideTurn + 1;
+  const small = smallerOf(parent, turn);
+  if (!small) return;
+  round.after = 'more';
+  log.saveRecord(toRecord(round.outcome));
+  parent.sideOpened = (parent.sideOpened ?? 0) + 1;
+  parent.events.push({ t: tenth(parent.elapsed), type: 'side', on: true, turn, board: small.board });
+  log.saveCurrent(parent);
+  startSide(turn, small.board, C.side.more);
+}
+
+/**
+ * 원래 판으로 돌아간다. 판은 떠날 때 모습 그대로다.
+ * 작은 판을 끝까지 했으면 선생님이 한 번 묻는다("작은 판에서 본 것을 여기에 쓸 수 있나요?"). 하다가 돌아왔으면 돌아왔다는 사실만 말한다.
+ */
+function backToOrigin() {
+  if (!origin || !round.side) return;
+  if (round.done) {
+    round.after = 'back';
+    log.saveRecord(toRecord(round.outcome));
+  } else {
+    note('leave');
+    stopClock();
+    log.saveRecord({ ...toRecord('left'), endedAt: new Date().toISOString() });
+  }
+  log.flush();
+  const finished = origin.finished > 0;
+  round = origin.round;
+  origin = null;
+  F = formats[round.format];
+  solution = F.solve(round);
+  showPlay(finished ? C.side.back : C.side.early);
+  asking = finished;
+  note('side', { on: false, finished });
+  persist();
 }
 
 /** 판을 끝낸다. outcome: 'solved'(맞힘) | 'solution'(그만두고 풀이를 봄) */
@@ -364,17 +566,32 @@ function finish(outcome) {
   round.endedAt = new Date().toISOString();
   F.ended();
   log.saveRecord(toRecord(outcome));
-  log.clearCurrent();
+  const side = round.side;
+  if (side) {
+    // 작은 판을 끝까지 했다. 원래 판에 적어 둔다(다음에 여는 작은 판은 그다음 차례다). 하던 판은 여전히 원래 판이다.
+    const parent = origin.round;
+    origin.finished += 1;
+    parent.sideDone = (parent.sideDone ?? 0) + 1;
+    parent.sideNext = round.sideTurn + 1;
+    log.saveCurrent(parent);
+  } else log.clearCurrent();
 
   // 끝난 뒤 고를 것. 느낌 표시는 안 눌러도 된다.
+  // 작은 판을 끝낸 뒤에는 "원래 판으로 돌아가기"와 "작은 판 하나 더"만 낸다.
   const top = F.ladder.TOP_LEVEL;
-  const advice = recommend(log.allRecords(), round.format);
-  round.offeredHarder = outcome === 'solved' && !round.custom && advice.offerHarder && advice.level === round.level;
-  $('after-same').hidden = round.custom;
-  $('after-harder').hidden = round.custom || round.level >= top;
+  const advice = recommend(records(), round.format);
+  round.offeredHarder = !side && outcome === 'solved' && !round.custom && advice.offerHarder && advice.level === round.level;
+  $('after-feel').hidden = side;
+  $('feelings').hidden = side;
+  $('after-back').hidden = !side;
+  $('after-more').hidden = !side || smallerOf(origin.round, round.sideTurn + 1) === null;
+  $('after-same').hidden = side || round.custom;
+  $('after-harder').hidden = side || round.custom || round.level >= top;
+  $('after-make').hidden = side;
+  $('after-stop').hidden = side;
   $('after-harder').classList.toggle('primary', round.offeredHarder && round.level < top);
   $('after-make').classList.toggle('primary', round.offeredHarder && round.level >= top);
-  $('after-solution').hidden = outcome !== 'solved';
+  $('after-solution').hidden = side || outcome !== 'solved';
   for (const button of $('feelings').querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
   showPanel('after');
   drawHints();
@@ -402,6 +619,10 @@ function setFeeling(value) {
  * 형식만의 고르기(누가 이길까의 "자리를 바꿔서 다시 두기")는 갈 곳을 go로 건넨다.
  */
 function chooseAfter(choice, go = null) {
+  if (round.side) {
+    backToOrigin();
+    return;
+  }
   const format = F;
   const { level, custom } = round;
   round.after = choice;
@@ -416,6 +637,10 @@ function chooseAfter(choice, go = null) {
 
 // ---- 나가기: 풀이를 볼지 묻는다. 안 보고 나가도 되고, 나가도 판은 그대로 남는다. ----
 function askLeave() {
+  if (round.side) {
+    backToOrigin();
+    return;
+  }
   if (round.done) {
     chooseAfter('stop');
     return;
@@ -516,6 +741,8 @@ function openMake(formatId) {
 const frame = {
   $,
   log,
+  // 수준 맞추기와 "왜 그럴까?"가 보는 기록(작은 판의 기록은 빠져 있다). 형식도 지난 기록을 볼 때는 이것을 쓴다
+  records,
   talkers,
   get round() {
     return round;
@@ -537,7 +764,10 @@ const frame = {
   openSheet,
   chooseAfter,
   keep,
-  say: (line, pose) => talkers.play.say(line, pose),
+  // 형식이 하는 말. 돌아와서 묻는 말("작은 판에서 본 것을 여기에 쓸 수 있나요?")은 아이가 무엇이든 누르기 전에는 덮지 않는다
+  say(line, pose) {
+    if (!asking) talkers.play.say(line, pose);
+  },
 };
 // 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
 const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame), duel: createDuel(frame), tax: createTax(frame) };
@@ -561,9 +791,17 @@ $('make-menu').addEventListener('click', (event) => {
 });
 $('continue').addEventListener('click', resumeRound);
 $('leave').addEventListener('click', askLeave);
+$('side-back').addEventListener('click', backToOrigin);
 $('undo').addEventListener('click', () => F.undo());
 $('reset').addEventListener('click', () => F.reset());
-$('hint').addEventListener('click', openHint);
+// "막혔어요"의 세 고르기의 글은 대본에 있다.
+for (const choice of Object.keys(HELP)) {
+  $(`stuck-${choice}`).textContent = C.stuck.choices[choice];
+  $(`stuck-${choice}`).addEventListener('click', () => pickHelp(choice));
+}
+$('stuck').addEventListener('click', () => toggleStuck());
+$('stuck-close').addEventListener('click', () => toggleStuck(false));
+$('smaller').addEventListener('click', openSide);
 $('why').addEventListener('click', openWhy);
 $('leave-solution').addEventListener('click', leaveWithSolution);
 $('leave-go').addEventListener('click', leaveQuietly);
@@ -572,6 +810,8 @@ $('feelings').addEventListener('click', (event) => {
   const value = event.target.closest('button')?.dataset.feeling;
   if (value) setFeeling(value);
 });
+$('after-back').addEventListener('click', backToOrigin);
+$('after-more').addEventListener('click', moreSide);
 $('after-same').addEventListener('click', () => chooseAfter('same'));
 $('after-harder').addEventListener('click', () => chooseAfter('harder'));
 $('after-make').addEventListener('click', () => chooseAfter('make'));
@@ -582,20 +822,41 @@ $('sheet-next').addEventListener('click', () => turnSheet(1));
 $('sheet-close').addEventListener('click', closeSheet);
 $('make-leave').addEventListener('click', showHome);
 
+// 아이가 무엇이든 누르면 돌아와서 묻던 말은 끝난 것이다(그 누름에 형식이 하는 말부터 다시 들린다).
+for (const type of ['pointerdown', 'keydown', 'click']) {
+  addEventListener(
+    type,
+    () => {
+      asking = false;
+    },
+    true,
+  );
+}
+
 // 글자판이 있는 기기에서는 글자판으로 답할 수도 있다(형식이 맡는다).
 addEventListener('keydown', (event) => {
   if (screen === 'home' && event.key === 'Escape' && !$('make-menu').hidden) showMakeMenu(false);
-  if (screen !== 'play' || !round || round.done || sheet) return;
+  if (screen !== 'play' || !round) return;
+  if (event.key === 'Escape' && stuckOpen) {
+    toggleStuck(false);
+    return;
+  }
+  if (round.done || sheet) return;
+  // 왼쪽 칸의 단추("막혔어요"와 세 고르기, 도구)를 글자판으로 누르는 것은 그 단추의 일이다. 답으로 받지 않는다.
+  if ((event.key === 'Enter' || event.key === ' ') && event.target instanceof Element && event.target.closest('.side button')) return;
   F.onKey(event);
 });
 
 // 화면을 가리거나 닫을 때: 시계를 멈추고 하던 판을 적어 둔다. 돌아오면 그대로 이어진다.
 function goAway() {
   if (screen !== 'play' || !round || round.done || clockSince === null) return;
+  const now = new Date().toISOString();
   note('away');
   stopClock();
   persist();
-  log.saveRecord({ ...toRecord('left'), endedAt: new Date().toISOString() });
+  log.saveRecord({ ...toRecord('left'), endedAt: now });
+  // 작은 판을 하던 중이면 간직해 둔 원래 판의 기록도 남긴다(이대로 앱이 닫혀도 원래 판이 하던 판이다).
+  if (origin) log.saveRecord({ ...toRecord('left', origin.round), endedAt: now });
 }
 function comeBack() {
   if (screen !== 'play' || !round || round.done || clockSince !== null) return;

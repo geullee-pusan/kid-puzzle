@@ -240,24 +240,31 @@ test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어�
   assert.match(T.hints.two[1], /어느 더미에서 몇 개를 가져갔나요\?$/);
 });
 
-test('"작은 판으로 두어 보기"는 힌트 칸에 있는 도구다. 끝내면 원래 판으로 돌아와 묻는다', () => {
+test('작은 판으로 두어 보는 일은 틀의 "더 작은 판으로"가 맡는다. 같은 일을 하는 단추가 둘 있지 않다. 끝내면 원래 판으로 돌아와 묻는다', () => {
+  // 힌트 칸(왼쪽)에는 틀의 단추 하나뿐이다. 이 형식만의 "작은 판으로 두어 보기" 단추는 없다.
   const side = part('<section class="side" aria-label="힌트">', '</section>');
-  assert.match(side, /id="duel-small"[^>]*>작은 판으로 두어 보기</);
-  // 작은 판에서도 먼저 둘지 고르고, 끝나면 다음 작은 판이나 원래 판으로 간다.
-  const pad = part('id="duel-pad"', 'id="leave-ask"');
-  assert.match(pad, /id="duel-small-next"[^>]*>다음 작은 판</);
-  assert.match(pad, /id="duel-small-again"[^>]*>이 판 다시 두기</);
-  assert.match(pad, /id="duel-small-back"[^>]*>원래 판으로 돌아가기</);
-  // 돌아오면 작은 판에서 본 것을 원래 판에 쓸 수 있는지 묻는다. 무엇을 보았어야 하는지는 말하지 않는다.
-  assert.equal(T.play['small-back'], '원래 판으로 돌아왔어요. 작은 판에서 본 것을 여기에 쓸 수 있을까요?');
-  for (const key of ['small-open', 'small-next', 'small-over-kid', 'small-over-teacher', 'small-back']) {
-    assert.doesNotMatch(T.play[key], /홀수|짝수|나머지|따라|같게|때문/, key);
-  }
-  // 화면 코드: 처음 열 때 힌트 하나를 연 것으로 적고, 작은 판에서 둔 것은 기록에 남긴다.
-  assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.smallUsed \? 1 : 0\)/);
-  assert.match(code, /frame\.note\('small', \{ on: true, board: copyBoard\(list\[0\]\) \}\)/);
-  assert.match(code, /frame\.note\('small-move', \{ by: who, \.\.\.move \}\)/);
-  assert.match(code, /frame\.say\(T\.play\['small-back'\], 'point'\)/);
+  assert.match(side, /id="smaller"[^>]*hidden>더 작은 판으로</);
+  assert.doesNotMatch(html, /duel-small|작은 판으로 두어 보기/);
+  assert.doesNotMatch(code, /duel-small|practice|smallBoards\(/);
+  // 작은 판도 판 하나다. 먼저 둘지 고르고, 끝나면 틀의 두 단추(원래 판으로 돌아가기, 작은 판 하나 더)가 나온다.
+  const after = part('id="after"', '</section>');
+  assert.match(after, /id="after-back"[^>]*hidden>원래 판으로 돌아가기</);
+  assert.match(after, /id="after-more"[^>]*hidden>작은 판 하나 더</);
+  // 작은 판은 같은 게임의 가장 작은 판들을 작은 것부터 차례로 낸다(src/core/duel.js의 smallBoards).
+  assert.match(code, /smaller: \(round, turn\) => smallerDuel\(\{ mode: round\.mode, board: round\.board \}, turn\)/);
+  // 작은 판을 끝낸 뒤에는 이 형식만의 끝난 뒤 단추(자리를 바꿔서 다시 두기, 방금 판 다시 보기)와 덧붙이는 말을 내지 않는다.
+  assert.match(code, /const done = round\.done && !round\.side;/);
+  assert.match(code, /if \(round\.side\) return parts;/);
+  // 돌아오면 작은 판에서 본 것을 원래 판에 쓸 수 있는지 묻는다. 무엇을 보았어야 하는지는 말하지 않는다. 이 말은 틀의 대본에 있다.
+  assert.equal(C.side.back, '작은 판에서 본 것을 여기에 쓸 수 있나요?');
+  for (const key of ['open', 'more', 'back', 'early']) assert.doesNotMatch(C.side[key], /홀수|짝수|나머지|따라|같게|때문/, key);
+  assert.ok(!Object.keys(T.play).some((key) => key.startsWith('small')), '작은 판의 말은 틀의 대본으로 옮겼다');
+  // 기록: 작은 판을 연 것은 틀이 원래 판의 사건(side)으로 남기고, 작은 판에서 둔 것은 작은 판의 기록(side: true)에 남는다.
+  // 작은 판으로 가 본 판은 예전처럼 힌트 하나를 연 것으로 센다(이제는 틀이 모든 형식에서 그렇게 센다).
+  const frame = read('src/main.js');
+  assert.match(frame, /note\('side', \{ on: true, turn, board: small\.board \}\)/);
+  assert.match(frame, /if \(record\.sideOpened > 0\) record\.hintsOpened \+= 1;/);
+  assert.doesNotMatch(code, /hintsOpened:/);
 });
 
 test('끝난 뒤 고르기에 "자리를 바꿔서 다시 두기"와 "방금 판 다시 보기"가 있다. 진 판 뒤에는 자리 바꾸기가 맨 위에 온다', () => {
@@ -657,7 +664,6 @@ test('index.html: 누가 이길까의 카드, 판, 답하는 칸, 도구가 있�
     'duel-board',
     'duel-count',
     'duel-status',
-    'duel-small',
     'duel-pad',
     'duel-choose',
     'duel-first',
@@ -668,9 +674,6 @@ test('index.html: 누가 이길까의 카드, 판, 답하는 칸, 도구가 있�
     'duel-stones-box',
     'duel-pick-line',
     'duel-take',
-    'duel-small-box',
-    'duel-small-name',
-    'duel-small-over',
     'duel-swap',
     'duel-replay',
     'make-duel',
@@ -683,7 +686,7 @@ test('index.html: 누가 이길까의 카드, 판, 답하는 칸, 도구가 있�
   ]) {
     assert.ok(html.includes(`id="${id}"`), id);
   }
-  for (const label of ['누가 이길까', '누가 먼저 둘까요?', '먼저 둘래요', '나중에 둘래요', '가져가기', '작은 판으로 두어 보기', '초콜릿 쪼개기', '한 더미', '여러 더미', '돌의 수', '한 번에 가져가는 수', '더미의 수', '더미마다 돌의 수']) {
+  for (const label of ['누가 이길까', '누가 먼저 둘까요?', '먼저 둘래요', '나중에 둘래요', '가져가기', '초콜릿 쪼개기', '한 더미', '여러 더미', '돌의 수', '한 번에 가져가는 수', '더미의 수', '더미마다 돌의 수']) {
     assert.ok(screenText.includes(label), label);
   }
   // 카드는 "퍼즐 만들기" 앞, 조각 덮기 뒤에 있고, "만들기" 목록에도 있다.

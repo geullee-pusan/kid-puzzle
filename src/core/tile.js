@@ -388,7 +388,7 @@ export function whyFits(piece, solution) {
 }
 
 /**
- * 그 조각의 "왜 그럴까?"를 열어도 되는가. 그 조각으로 덮는 안 되는 판(만들어 낸 판)을 한 번 끝까지 만난 뒤에 열린다.
+ * 그 조각의 "왜 그럴까?"를 열어도 되는가. 그 조각으로 덮는 안 되는 판(만들어 낸 판)을 한 번 끝까지 만난 뒤에 열린다. 작은 판(곁판)은 세지 않는다.
  * ㄱ자 세 칸에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판).
  */
 export function whyOpen(records, piece) {
@@ -399,6 +399,7 @@ export function whyOpen(records, piece) {
       record.kind === 'round' &&
       record.format === 'tile' &&
       record.custom !== true &&
+      record.side !== true &&
       record.board?.piece === piece &&
       record.solution?.possible === false &&
       (record.outcome === 'solved' || record.outcome === 'solution'),

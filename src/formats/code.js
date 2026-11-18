@@ -1,5 +1,5 @@
 // 숫자 추리: 판 화면에서 이 형식이 맡는 부분(추측과 답의 표, 숫자판, 메모판, 맞혔을 때 하는 말, 풀이와 설명)과 직접 만들기.
-// 판을 시작하고 끝내는 일, 시계, 힌트 단추, 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
+// 판을 시작하고 끝내는 일, 시계, "막혔어요"와 힌트, "더 작은 판으로", 나가기, 끝난 뒤 고르기는 틀(src/main.js)이 맡는다.
 // 화면에 나오는 글은 대본(src/content/code.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 //
 // 판의 종류(mode)는 단계가 정한다.
@@ -11,6 +11,7 @@
 import T from '../content/code.json';
 import { LADDER, MAKE_DIGITS, MAKE_LENGTH, MAKE_LEVEL, MAKE_MAX_ROWS, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/code-ladder.js';
 import { allCodes, checkBoard, checkCode, checkRows, diagnoseReply, diagnoseTable, filterCodes, fitsAll, judge, nextGuess, solveTable, trailOf } from '../core/code.js';
+import { smallerCode } from '../core/smaller.js';
 import { fill } from '../core/text.js';
 import { codeCard, drawMemo, drawMini, drawPicker, drawSlots, drawTable } from '../ui/code-board.js';
 
@@ -338,8 +339,8 @@ export function createCode(frame) {
       parts.push(fill(T.right['referee-trail'], { trail }));
     }
     // 이 형식의 판을 처음으로 끝까지 했으면 "왜 그럴까?"가 생겼다고 알려 준다.
-    const finished = log.allRecords().filter((record) => record.kind === 'round' && record.format === FORMAT && (record.outcome === 'solved' || record.outcome === 'solution'));
-    if (finished.length === 1) parts.push(T.right['why-invite']);
+    const finished = frame.records().filter((record) => record.kind === 'round' && record.format === FORMAT && (record.outcome === 'solved' || record.outcome === 'solution'));
+    if (!round.side && finished.length === 1) parts.push(T.right['why-invite']);
     return parts;
   }
 
@@ -606,8 +607,11 @@ export function createCode(frame) {
     },
     ruleLine: (round) => fill(T.rules[round.mode], rangeOf(round.board)),
     hints: (round) => T.hints[round.mode],
-    hintsShown: (round) => round.hintsOpened,
     touched: (round) => round.rows.length > 0 || round.tries.length > 0 || round.secret !== null || round.memoUsed,
+    /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
+    view: (round) => ({ rows: round.rows.map((row) => ({ guess: row.guess, hit: row.hit, place: row.place })), tries: round.tries.length, pending: round.pending }),
+    /** 이 판보다 작은 판: 숫자 1~4로 만든 두 자리 암호(표, 역할 바꾸기도 두 자리) */
+    smaller: (round, turn) => smallerCode({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const table = round.mode === 'table';
       const counts = table ? solution.trail : round.rows.map((row) => row.left);

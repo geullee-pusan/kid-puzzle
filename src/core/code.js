@@ -6,12 +6,12 @@
 // 표의 한 줄은 { guess, hit, place } 이다.
 import { createRng, randInt, seedFrom } from './rng.js';
 
-/** 암호의 자릿수의 아래 끝과 위 끝 */
-export const MIN_LENGTH = 3;
+/** 암호의 자릿수의 아래 끝과 위 끝. 두 자리는 "더 작은 판"(src/core/smaller.js)에서만 쓴다. 사다리와 직접 만들기는 세 자리부터다 */
+export const MIN_LENGTH = 2;
 export const MAX_LENGTH = 4;
 
 /** 쓸 수 있는 숫자들(예: '123456')이 제대로 된 값인가. 문제가 없으면 null */
-export function checkDigits(digits, length = MIN_LENGTH) {
+export function checkDigits(digits, length = 3) {
   if (typeof digits !== 'string' || !/^[0-9]+$/.test(digits)) return 'digits';
   if (new Set(digits).size !== digits.length) return 'digits';
   if (digits.length < length) return 'digits';

@@ -70,7 +70,7 @@ function shuffle(rng, list) {
  * 격자 위에 점 n개를 놓고 선을 긋는다. 한 덩어리가 되지 않으면 null.
  * 지키는 것: 같은 두 점 사이에 선은 하나, 선이 다른 점 위를 지나지 않는다, 선끼리 엇갈리지 않는다.
  */
-function randomFigure(rng, n, [columns, rows], [fewest, most]) {
+export function randomFigure(rng, n, [columns, rows], [fewest, most]) {
   const cells = [];
   for (let y = 0; y < rows; y++) for (let x = 0; x < columns; x++) cells.push([x, y]);
   // 점 번호는 위에서 아래로, 왼쪽에서 오른쪽으로 붙인다.

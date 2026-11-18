@@ -52,7 +52,7 @@ const pick = (rng, list) => list[randInt(rng, 0, list.length - 1)];
  * 답이 꼭 하나인 표를 만든다. 암호를 하나 정하고, 누가 그 암호를 맞히려고 낸 것 같은 추측들을 모은 다음,
  * 빼도 답이 하나로 남는 줄(군더더기)을 뺀다. 줄 수가 범위를 벗어나면 null.
  */
-function makeTable(rng, length, digits, [fewest, most]) {
+export function makeTable(rng, length, digits, [fewest, most]) {
   const codes = allCodes(length, digits);
   const secret = pick(rng, codes);
   let left = codes;
