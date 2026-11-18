@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -137,6 +137,22 @@ export const TUNING = {
       fastRetries: 2,
       whyAfter: 'best',
     },
+    /**
+     * 참말 섬(모두 임시). 처음 보여 줄 단계는 1단계다(주민 둘, "따라가 보기"가 처음부터 켜져 있어 실패할 수 없다).
+     * 판을 만들어 내는 단계는 1~5단계다. 힌트는 질문 두 개이고, "따라가 보기 켜기"도 힌트 하나로 센다(1단계처럼 처음부터 켜진 판은 세지 않는다).
+     * 첫 답으로(wrongCount가 0), 예상 시간보다 빠르게 맞히면 "한 번에 빠르게"로 본다.
+     * expectedSeconds: 재 본 값이 아니다. 말의 수(1~5개)를 보고 넉넉하게 잡았다.
+     * whyAfter: 'rounds'면 이 형식의 판을 whyRounds판 끝까지 한 뒤에(맞혔거나 풀이를 보았거나) "왜 그럴까?"가 열린다.
+     */
+    logic: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 5,
+      hintCount: 2,
+      expectedSeconds: { 1: 60, 2: 120, 3: 180, 4: 240, 5: 180 },
+      whyAfter: 'rounds',
+      whyRounds: 3,
+    },
   },
 };
 
@@ -249,7 +265,13 @@ export function recommend(records, format = 'coins', allTuning = TUNING) {
  * 작은 판(곁판)은 어느 형식에서도 세지 않는다.
  */
 export function whyUnlocked(records, format = 'coins', allTuning = TUNING) {
-  const after = tuningFor(format, allTuning).whyAfter;
+  const tuning = tuningFor(format, allTuning);
+  const after = tuning.whyAfter;
+  // 참말 섬(whyAfter가 'rounds'): 이 형식의 판을 정해 둔 수만큼 끝까지 한 뒤에 열린다(맞혔거나 풀이를 보았거나).
+  if (after === 'rounds') {
+    const finished = latestById(withoutSide(records)).filter((record) => record.kind === 'round' && record.format === format && (record.outcome === 'solved' || record.outcome === 'solution'));
+    return finished.length >= tuning.whyRounds;
+  }
   const opens = (record) => {
     if (after === 'fewest') return record.fewest === true && record.outcome === 'solved';
     if (after === 'best') return record.reachedBest === true && record.custom !== true && record.outcome === 'solved';

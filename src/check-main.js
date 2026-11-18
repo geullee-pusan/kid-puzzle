@@ -41,6 +41,7 @@ function drawCounts() {
     ['tile', '조각 덮기'],
     ['duel', '누가 이길까'],
     ['tax', '약수 세금'],
+    ['logic', '참말 섬'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

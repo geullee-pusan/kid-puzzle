@@ -12,6 +12,8 @@ import { allCodes, checkBoard as checkCode, solveTable } from './code.js';
 import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
+import { boxBoards, smallFolkBoards } from './logic-ladder.js';
+import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
 import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
@@ -272,4 +274,34 @@ export function smallerTax(origin, turn = 0) {
   return sizes.length > 0 ? { board: { cards: cardsUpTo(sizes[turn % sizes.length]) } } : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax };
+// ---- 참말 섬: 주민 셋은 주민 둘로, 상자 셋은 상자 둘로. 질문 고르기와 주민 둘의 판에는 없다 ----
+
+/** 작은 판의 주민 수와 상자 수 */
+export const LOGIC_SMALL = { people: 2, boxes: 2 };
+
+export function smallerLogic(origin, turn = 0) {
+  const { board } = origin;
+  if (checkLogic(board) !== null || board.kind === 'question') return null;
+  // 원래 판마다 정해 둔 차례로 돈다. 같은 원래 판, 같은 차례에는 늘 같은 판이 나온다.
+  const rng = createRng(seedFrom('logic-smaller', JSON.stringify(board)));
+  if (board.kind === 'box') {
+    if (board.labels.length <= LOGIC_SMALL.boxes) return null;
+    // 원래 판의 글과 같은 꼴의 글로만 된 판을 앞에 둔다. 상자 둘에서는 "참인 글은 둘"이나 "거짓인 글은 둘"이어야 답이 하나로 정해진다.
+    const types = new Set(board.labels.map((label) => label.t));
+    const pool = boxBoards(LOGIC_SMALL.boxes);
+    const alike = (item) => item.labels.every((label) => types.has(label.t));
+    const list = [...shuffled(rng, pool.filter(alike)), ...shuffled(rng, pool.filter((item) => !alike(item)))];
+    const chosen = list[turn % list.length];
+    return { board: { kind: 'box', labels: chosen.labels, rule: chosen.rule, ask: 'box' } };
+  }
+  if (board.people.length <= LOGIC_SMALL.people) return null;
+  const road = board.kind === 'road';
+  const lists = smallFolkBoards(road);
+  // 원래 판이 남는 배정이 없는 판이면, 하나로 정해지는 판부터 남는 배정이 없는 판과 번갈아 낸다. 갈림길 판은 길이 정해지는 판만 낸다.
+  const says = pickByTurn({ yes: shuffled(rng, lists.yes), no: shuffled(rng, lists.no) }, solveLogic(board).possible !== false, turn);
+  if (!says) return null;
+  const people = board.people.slice(0, LOGIC_SMALL.people);
+  return { board: road ? { kind: 'road', people, says, ask: 'road' } : { kind: 'folk', people, says, ask: 'kinds' } };
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic };

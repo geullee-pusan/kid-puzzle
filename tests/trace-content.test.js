@@ -71,7 +71,7 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   for (const mode of MODES) assert.ok(sentenceCount(T.rules[mode]) <= 3, `${mode}: ${T.rules[mode]}`);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 그림을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 7, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
   for (const guide of guides) assert.ok(sentenceCount(guide) <= 3, guide);
   assert.match(guides[1], /점이 여섯 개인데 안 되는 그림도 만들 수 있을까요\?/);
 });
@@ -302,7 +302,7 @@ test('index.html: 한붓그리기의 카드, 답하는 단추, 직접 만들기�
   // 처음 화면의 물음은 대본에 있는 것과 같은 글로 시작한다.
   assert.ok(screenText.includes(T.home.ask.draw));
   // 처음 화면의 카드는 여섯이다: 동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 퍼즐 만들기
-  assert.equal([...html.matchAll(/class="panel door[ "]/g)].length, 8);
+  assert.equal([...html.matchAll(/class="panel door[ "]/g)].length, 9);
 });
 
 test('한붓그리기의 수준 맞추기 값은 임시값이고, 처음 보여 줄 단계는 1단계다', () => {

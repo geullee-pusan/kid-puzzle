@@ -276,15 +276,17 @@ a.btn {
 
 /* 카드들: 형식마다 하나와, 맨 뒤의 퍼즐 만들기. 형식이 늘어도 버티게 작게 그린다.
    한 줄에 서너 장이 놓이고(가로 1280px부터 넉 장, 그보다 좁으면 석 장), 넘치면 다음 줄로 간다.
-   두 줄까지는 한 화면에 들어가고, 줄이 더 많으면 이 칸만 아래로 굴러간다(선생님과 위 띠, 하던 판 띠는 그대로 있다). */
+   두 줄까지는 한 화면에 들어가고, 줄이 더 많으면 이 칸만 아래로 굴러간다(선생님과 위 띠, 하던 판 띠는 그대로 있다).
+   카드가 아홉 장(세 줄)이 된 뒤로는 줄을 조금 낮게 그려서, 가로 1280px·세로 800px에서 하던 판 띠가 있어도 셋째 줄의 윗부분(제목)이 보이게 한다.
+   그래서 아래로 굴리면 카드가 더 있다는 것을 알 수 있다. */
 .doors {
   flex: 1;
   min-height: 0;
   overflow: auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  /* 줄의 높이: 자리가 있으면 250px까지 늘어나고, 모자라면 196px까지 줄어든다. 그보다 모자라면 굴러간다 */
-  grid-auto-rows: minmax(196px, 250px);
+  /* 줄의 높이: 자리가 있으면 250px까지 늘어나고, 모자라면 180px까지 줄어든다. 그보다 모자라면 굴러간다 */
+  grid-auto-rows: minmax(180px, 250px);
   align-content: start;
   gap: 12px;
 }
@@ -293,15 +295,22 @@ a.btn {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   height: auto;
-  padding: 10px 14px;
+  padding: 8px 14px;
   overflow: hidden;
+}
+
+/* 퍼즐 만들기 카드는 넓은 화면에서 두 칸을 쓴다(셋째 줄에 혼자 놓일 때 물음이 한 줄에 들어가고 그림이 보이게) */
+@media (min-width: 981px) {
+  .panel.door.door-make {
+    grid-column: span 2;
+  }
 }
 
 .door h2 {
   font-size: 22px;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .door-picture {
@@ -2814,6 +2823,541 @@ button.tax-card {
 
 .make-result:empty {
   visibility: hidden;
+}
+
+/* ---- 참말 섬: 주민들과 말, 상자와 글, 갈림길과 질문 ----
+   색만으로 알리지 않는다. 참말쟁이라고 친 주민은 굵은 실선, 거짓말쟁이라고 친 주민은 굵은 겹선, 모름은 가는 점선 테두리이고,
+   글자 표시("참말쟁이?")가 함께 붙는다. 말이 참인지 거짓인지는 글자로 적고, 맞지 않는 말은 굵은 점선 테두리와 글 한 줄로 알린다.
+   틀린 답에서 짚은 말은 굵은 바깥 테두리를 두른다. */
+.board-area > .logic-board {
+  align-self: stretch;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.logic-board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logic-notes {
+  margin: 0;
+  padding: 6px 12px;
+  border-left: 5px solid var(--accent);
+  border-radius: 8px;
+  background: #e7f5ff;
+  list-style: none;
+  font-size: 18px;
+  word-break: keep-all;
+}
+
+.logic-people {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logic-person {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: 'face name' 'sign sign' 'press press';
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 2px;
+  min-width: 128px;
+  padding: 4px 8px 6px;
+  border: 2px dotted #868e96;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.logic-person.mark-knight {
+  border: 4px solid var(--good);
+}
+
+.logic-person.mark-liar {
+  border: 6px double #c2255c;
+}
+
+.logic-face {
+  font-size: 40px;
+  line-height: 1.15;
+}
+
+.logic-face.small {
+  font-size: 26px;
+}
+
+.logic-name {
+  grid-area: name;
+  font-size: 20px;
+}
+
+.logic-person > .logic-face {
+  grid-area: face;
+}
+
+.logic-fork {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 4px 10px;
+  border: 2px dotted #868e96;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.logic-fork.mark-left,
+.logic-fork.mark-right {
+  border: 4px solid var(--bar);
+}
+
+.logic-fork .btn.logic-guess {
+  margin-top: 0;
+}
+
+.logic-sign {
+  grid-area: sign;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f1f3f5;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.btn.logic-guess {
+  grid-area: press;
+  margin-top: 4px;
+  padding: 4px 10px;
+  font-size: 18px;
+}
+
+.logic-says {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.logic-say {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.logic-who {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logic-bubble {
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: #f1f3f5;
+  font-size: 20px;
+  word-break: keep-all;
+}
+
+.logic-tag {
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logic-say.is-false .logic-tag,
+.logic-box .logic-tag.is-false {
+  text-decoration: underline wavy;
+  text-underline-offset: 4px;
+}
+
+.logic-say.clash {
+  border: 4px dashed #c92a2a;
+  background: #fff5f5;
+}
+
+.logic-clash {
+  grid-column: 1 / -1;
+  color: #a61e4d;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.logic-say.flagged,
+.logic-box.flagged {
+  outline: 4px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.logic-rule {
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--bar);
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.logic-rule.fits {
+  border: 4px solid var(--good);
+}
+
+.logic-rule.misfit {
+  border: 4px dashed #c92a2a;
+}
+
+.logic-boxes {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 10px;
+}
+
+.logic-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.logic-box.chosen {
+  border: 4px solid var(--bar);
+}
+
+.logic-box .btn.logic-guess {
+  width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.3;
+}
+
+.logic-chest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 84px;
+}
+
+.logic-lid {
+  width: 100%;
+  height: 16px;
+  border: 3px solid #8a5a00;
+  border-radius: 10px 10px 2px 2px;
+  background: #f08c00;
+}
+
+.logic-chest-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 32px;
+  border: 3px solid #8a5a00;
+  border-top: none;
+  background: #fcc419;
+  color: #4a3500;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.logic-label {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px dashed #868e96;
+  border-radius: 8px;
+  background: #fff9db;
+  font-size: 19px;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.logic-roads {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.logic-road {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 74px;
+  height: 46px;
+  border: 2px dotted #868e96;
+  border-bottom: none;
+  border-radius: 30px 30px 0 0;
+  background: #e9ecef;
+}
+
+.logic-road.road-left {
+  transform: skewX(14deg);
+}
+
+.logic-road.road-right {
+  transform: skewX(-14deg);
+}
+
+.logic-road.on {
+  border: 4px solid var(--bar);
+  border-bottom: none;
+  background: #d3f9d8;
+}
+
+.logic-road-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.logic-road.road-left .logic-road-name {
+  transform: skewX(-14deg);
+}
+
+.logic-road.road-right .logic-road-name {
+  transform: skewX(14deg);
+}
+
+.logic-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logic-question {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+div.logic-question {
+  cursor: default;
+}
+
+.logic-question.chosen {
+  border: 4px solid var(--bar);
+  background: #e7f5ff;
+}
+
+.logic-q-no {
+  color: var(--bar);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logic-q-lines {
+  display: flex;
+  flex-direction: column;
+  font-size: 19px;
+  word-break: keep-all;
+}
+
+.logic-question .logic-tag {
+  grid-column: 2;
+}
+
+/* 답하는 칸: 주민마다 한 줄(이름, 참말쟁이, 거짓말쟁이) */
+.logic-kind-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logic-kind-row {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  word-break: keep-all;
+}
+
+.logic-kind-row .btn {
+  min-height: 48px;
+  padding: 4px 6px;
+}
+
+.btn.logic-none {
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.3;
+}
+
+/* 직접 만들기: 말의 틀은 두 줄로 늘어놓는다 */
+.logic-templates .btn {
+  min-height: 52px;
+  padding: 4px 8px;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.logic-preview {
+  min-height: 2.6em;
+  font-size: 19px;
+}
+
+/* 작은 그림(처음 화면, 하던 판, 판 고르기, "만들기" 목록) */
+.logic-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.logic-face.mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border: 2px dotted #868e96;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 32px;
+}
+
+.logic-face.mini.mark-knight {
+  border: 3px solid var(--good);
+}
+
+.logic-face.mini.mark-liar {
+  border: 5px double #c2255c;
+}
+
+.logic-face.mini.blank {
+  border: 3px dashed #868e96;
+  color: var(--muted);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.logic-chest.mini {
+  width: 50px;
+}
+
+.logic-chest.mini .logic-lid {
+  height: 12px;
+}
+
+.logic-chest.mini .logic-chest-body {
+  height: 26px;
+}
+
+.logic-ask-mark {
+  color: var(--bar);
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.logic-roads.mini .logic-road {
+  width: 24px;
+  height: 36px;
+}
+
+.door-picture .logic-face.mini {
+  width: min(54px, 92cqh);
+  height: min(54px, 92cqh);
+  font-size: min(32px, 54cqh);
+}
+
+.door-picture .logic-chest.mini {
+  width: min(50px, 100cqh);
+}
+
+.resume .logic-mini,
+.level .logic-mini {
+  justify-content: flex-start;
+}
+
+/* 판 위에 겹치는 종이: 풀이와 "왜 그럴까?"의 그림 */
+.logic-figure {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.logic-figure.wide {
+  overflow: auto;
+}
+
+.logic-board.small {
+  gap: 8px;
+}
+
+.logic-board.small .logic-person {
+  min-width: 100px;
+}
+
+.logic-board.small .logic-face {
+  font-size: 30px;
+}
+
+.logic-board.small .logic-bubble,
+.logic-board.small .logic-label,
+.logic-board.small .logic-rule {
+  font-size: 18px;
+}
+
+.logic-table {
+  border-collapse: collapse;
+  font-size: 18px;
+}
+
+.logic-table th,
+.logic-table td {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  text-align: center;
+  word-break: keep-all;
+}
+
+.logic-table .logic-table-q {
+  text-align: left;
+}
+
+.logic-table .logic-table-q span {
+  display: block;
+}
+
+.logic-table tr.useful {
+  outline: 3px solid var(--good);
+  background: #ebfbee;
+  font-weight: 700;
 }
 
 /* ---- 낮은 화면(작은 태블릿, 창을 줄인 PC): 답 넣는 칸이 한 화면에 들어가게 조금 줄인다 ---- */

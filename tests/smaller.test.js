@@ -13,7 +13,10 @@ import { checkBoard as checkCoins, headCount, solve as solveCoins } from '../src
 import * as duelLadder from '../src/core/duel-ladder.js';
 import { checkBoard as checkDuel, gameOf, movesOf, smallBoards, solve as solveDuel, startState } from '../src/core/duel.js';
 import * as coinLadder from '../src/core/ladder.js';
-import { COIN_FLOOR, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, smallerCode, smallerCoins, smallerDuel, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import * as logicLadder from '../src/core/logic-ladder.js';
+import { boxBoards } from '../src/core/logic-ladder.js';
+import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } from '../src/core/logic.js';
+import { COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
 import * as swapLadder from '../src/core/swap-ladder.js';
 import { checkBoard as checkSwap, solve as solveSwap } from '../src/core/swap.js';
 import * as taxLadder from '../src/core/tax-ladder.js';
@@ -26,7 +29,7 @@ import { checkFigure, fixesOf, isTidy, solve as solveTrace } from '../src/core/t
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Array.from({ length: 100 }, (_, index) => index + 1);
 const TURNS = [0, 1, 2, 3];
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic'];
 
 /** 사다리의 판마다(단계마다 판 번호 1~100) 일을 시킨다. */
 function eachBoard(ladder, visit) {
@@ -287,6 +290,48 @@ test('약수 세금: 카드가 넷에서 여섯 장인 판. 원래 판보다 작
   assert.equal(smallerTax({ board: { cards: [2, 3, 4, 6, 8, 9, 12] } }), null);
 });
 
+test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글이 붙은 상자 둘로. 질문 고르기와 주민 둘의 판에는 없다', () => {
+  assert.deepEqual(LOGIC_SMALL, { people: 2, boxes: 2 });
+  let none = 0;
+  eachBoard(logicLadder, (board, rung, where) => {
+    const origin = { mode: rung.mode, board };
+    const from = solveLogic(board);
+    for (const turn of TURNS) {
+      const small = smallerLogic(origin, turn);
+      if (board.kind === 'question' || (board.people && board.people.length <= 2)) {
+        assert.equal(small, null, `${where}: 작은 판이 없어야 해요`);
+        none += turn === 0 ? 1 : 0;
+        continue;
+      }
+      assert.ok(small, where);
+      assert.equal(checkLogic(small.board), null, where);
+      assert.equal(small.board.kind, board.kind, where);
+      const solved = solveLogic(small.board);
+      if (board.kind === 'box') {
+        assert.equal(small.board.labels.length, 2, where);
+        assert.equal(solved.possible, true, where);
+        // 원래 판의 글과 같은 꼴의 글로 된 판이 있으면 그것부터 낸다.
+        const types = new Set(board.labels.map((label) => label.t));
+        if (turn === 0 && boxBoards(2).some((item) => item.labels.every((label) => types.has(label.t)))) assert.ok(small.board.labels.every((label) => types.has(label.t)), where);
+      } else {
+        assert.equal(small.board.people.length, 2, where);
+        assert.deepEqual(small.board.people, board.people.slice(0, 2), `${where}: 같은 동물`);
+        assert.equal(isLeanLogic(small.board), true, where);
+        // 되는 판에서는 되는 판만, 남는 배정이 없는 판에서는 되는 판부터 번갈아. 첫 작은 판은 늘 되는 판이다.
+        if (from.possible !== false || turn % 2 === 0) assert.equal(solved.possible, true, `${where} ${turn}번째`);
+        else assert.equal(solved.possible, false, `${where} ${turn}번째`);
+        if (board.kind === 'road') assert.ok(['left', 'right'].includes(solved.answer), where);
+      }
+      assert.deepEqual(smallerLogic(origin, turn), small, `${where}: 같은 판에서는 같은 작은 판`);
+    }
+  });
+  assert.ok(none > 0, `없는 판 ${none}개`);
+  // 이어서 여는 두 판은 다르다.
+  const folk = logicLadder.generateBoard(3, 1).board;
+  assert.notDeepEqual(smallerLogic({ board: folk }, 0), smallerLogic({ board: folk }, 1));
+  assert.equal(smallerLogic({ board: null }), null);
+});
+
 test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은 작은 판에서 이 단추를 내지 않는다)', () => {
   // 숫자 추리의 작은 판은 가장 작은 판이다. 다른 형식도 한두 단이면 바닥에 닿는다.
   const chain = (name, origin) => {
@@ -304,4 +349,5 @@ test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은
   assert.ok(chain('tax', { board: { cards: cardsUpTo(30) } }) <= 3);
   assert.ok(chain('trace', { mode: 'draw', board: traceLadder.generateBoard(2, 1).board }) <= 3);
   assert.ok(chain('duel', { board: { kind: 'piles', piles: [8, 8] } }) <= 3);
+  assert.equal(chain('logic', { board: logicLadder.generateBoard(3, 1).board }), 2);
 });
