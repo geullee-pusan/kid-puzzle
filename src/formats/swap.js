@@ -5,7 +5,7 @@
 // 판의 종류(mode)는 단계가 정한다.
 //   frogs   개구리와 두꺼비의 자리를 맞바꾸면 끝난다. 횟수를 묻지 않는다(1·2단계, 직접 만든 개구리 판)
 //   fewest  개구리 판을 가장 적은 횟수로 맞바꾼다. 더 많이 움직였으면 "더 줄일 수 있을까요?"라고 묻고 판을 그대로 둔다(3단계)
-//   pairs   건너뛰어 짝 짓기. 모두 짝 지으면 끝나고, 안 되는 판은 "불가능해요"로 답한다(4단계, 직접 만든 짝 짓기 판)
+//   pairs   돌 짝 짓기. 모두 짝 지으면 끝나고, 안 되는 판은 "불가능해요"로 답한다(4단계, 직접 만든 짝 짓기 판)
 //
 // 움직인 횟수(count)는 처음 모습에서 지금까지 말을 움직인 수다. 무른 움직임도 들어 있고, 처음으로 되돌리면 0이 된다.
 // 개구리 판은 끝까지 간 길의 길이가 늘 같다(풀이 프로그램으로 확인했다). 그래서 길의 길이로는 "가장 적은 횟수"를 물을 수 없다.
@@ -14,7 +14,7 @@ import T from '../content/swap.json';
 import { smallerSwap } from '../core/smaller.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/swap-ladder.js';
 import { MAX_FROGS, MAX_STONES, MIN_STONES, SKIPS, blockOf, checkBoard, diagnoseImpossible, isDone, isStuck, movesFrom, replay, solve, startCells, stuckKind } from '../core/swap.js';
-import { fill } from '../core/text.js';
+import { fill, ordinal } from '../core/text.js';
 import { countTable, drawRow, rowCard, stepsCard } from '../ui/swap-board.js';
 
 const FORMAT = 'swap';
@@ -23,7 +23,7 @@ const MODES = ['frogs', 'fewest', 'pairs'];
 const BLANK_CELLS = 5;
 /** 기록에 남기는 막힌 모양의 수의 위 끝 */
 const MAX_STUCKS = 40;
-/** 똑같은 모양에서 또 막혔을 때 물러서 보라고 하는 걸음 수(대본의 "두 번 무르고"와 같다) */
+/** 똑같은 모양에서 또 막혔을 때 물러서 보라고 하는 걸음 수(대본의 "두 번 무른 뒤"와 같다) */
 const SAME_BACK = 2;
 const FIRST_DRAFT = { kind: 'frogs', left: 3, right: 3, n: 8, skip: 2 };
 
@@ -42,7 +42,7 @@ export function createSwap(frame) {
   const cellsOf = (round) => replay(round.board, round.trail).cells;
   const singlesOf = (cells) => [...cells].filter((cell) => cell === '1').length;
   const NAMES = { R: T.pieces.frog, L: T.pieces.toad, _: T.pieces.empty, 1: T.pieces.single, 2: T.pieces.pair, 0: T.pieces.gone };
-  const labelOf = (cells) => (index) => fill(T.cellLabel, { no: index + 1, what: NAMES[cells[index]] });
+  const labelOf = (cells) => (index) => fill(T.cellLabel, { no: ordinal(index + 1), what: NAMES[cells[index]] });
 
   // ---- 판 ----
   function draw() {

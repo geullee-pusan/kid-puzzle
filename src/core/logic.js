@@ -7,17 +7,18 @@
 //   road      주민들과 숨은 갈림길. 왼쪽 길과 오른쪽 길 가운데 하나만 마을로 간다. 묻는 것은 마을로 가는 길('road')
 //   box       상자들과 상자마다 붙은 글(labels), 판 위의 조건 한 줄(rule). 보물은 상자 하나에만 있다. 묻는 것은 보물이 든 상자('box')
 //   question  갈림길의 주민 하나(종류 모름)와 질문 후보들(questions). 묻는 것은 한 번 물어 길을 알 수 있는 질문('question')
+//             (지금은 어느 단계에서도 내지 않는다. 아래 "질문" 칸의 설명을 본다)
 //
 // 주민(people)은 동물 번호의 목록이다(이름과 모습은 대본에 있다). 말은 정해 둔 틀(t)에 주민 번호와 수를 끼운 것이다.
 //   { by: 말한 주민, s: 말 }
 //   말 s:  { t: 'me', k }              나는 참말쟁이예요(k가 true) / 나는 거짓말쟁이예요(k가 false)
 //          { t: 'is', who, k }         ○○는 참말쟁이예요 / 거짓말쟁이예요
-//          { t: 'same', a, b }         ○○와 △△는 같은 쪽이에요(둘 가운데 하나가 말한 주민이면 "○○와 나는")
-//          { t: 'diff', a, b }         ○○와 △△는 다른 쪽이에요
+//          { t: 'same', a, b }         ○○와 △△는 같은 종류예요(둘 가운데 하나가 말한 주민이면 "○○와 나는")
+//          { t: 'diff', a, b }         ○○와 △△는 다른 종류예요
 //          { t: 'all', k }             우리는 모두 참말쟁이예요 / 거짓말쟁이예요
-//          { t: 'liars', n }           우리 가운데 거짓말쟁이는 꼭 n명이에요
+//          { t: 'liars', n }           우리 가운데 거짓말쟁이는 딱 n명이에요
 //          { t: 'some' }               우리 가운데 적어도 한 명은 거짓말쟁이예요(한 명이거나 더 많이)
-//          { t: 'or', a, ak, b, bk }   a는 (ak)이거나 b는 (bk)예요(둘 다여도 된다)
+//          { t: 'or', a, ak, b, bk }   a가 (ak)이거나 b가 (bk)예요(둘 다여도 된다). ak와 bk가 같으면 "a와 b 가운데 적어도 한 명은 (ak)예요"로 말한다
 //          { t: 'road', side }         마을로 가는 길은 왼쪽이에요 / 오른쪽이에요
 //   "우리"는 판의 주민 모두다.
 // 상자의 글(labels[i]는 i번째 상자에 붙은 글):
@@ -32,7 +33,7 @@
 //
 // 배정(world): { kinds: [참말쟁이면 true, 거짓말쟁이면 false, ...], road: 'left' | 'right' | null }
 // 풀이 프로그램은 가능한 배정을 모두 따져, 참말쟁이의 말은 참이고 거짓말쟁이의 말은 거짓인 배정만 남긴다.
-// 묻는 것이 남은 배정에서 모두 같으면 판이 선다. 남은 배정이 없으면 "이런 말은 이 섬의 누구도 할 수 없어요" 판이다.
+// 묻는 것이 남은 배정에서 모두 같으면 판이 선다. 남은 배정이 없으면 "이렇게 말할 수는 없어요" 판이다.
 
 export const SIDES = ['left', 'right'];
 /** 판의 주민 수의 아래 끝과 위 끝 */
@@ -95,6 +96,77 @@ export const sayFits = (say, world) => sayTruth(say, world) === world.kinds[say.
 
 /** 길이 말에 들어 있는가 */
 export const usesRoad = (says) => says.some((say) => say.s.t === 'road');
+
+// ---- 말의 틀 고르기: 대본(says, labels, notes)의 열쇠와 끼울 값. 글은 대본에만 있다 ----
+// 열쇠를 고르는 일만 한다. 뜻(sayTruth, labelTruth)은 바꾸지 않는다(테스트가 네 가지 참·거짓 조합마다 문장의 뜻과 견준다).
+
+/**
+ * 말 하나를 대본의 어느 틀로 말할지.
+ * @returns {[string, {a?: number, b?: number, n?: number, ak?: boolean, bk?: boolean}]} 틀의 열쇠, 끼울 값(a, b는 주민 번호)
+ */
+export function sayTemplate(say) {
+  const { s, by } = say;
+  switch (s.t) {
+    case 'me':
+      return [s.k ? 'me-true' : 'me-false', {}];
+    case 'is':
+      return [s.k ? 'is-true' : 'is-false', { a: s.who }];
+    case 'same':
+    case 'diff':
+      if (s.a === by || s.b === by) return [`${s.t}-me`, { a: s.a === by ? s.b : s.a }];
+      return [s.t, { a: s.a, b: s.b }];
+    case 'all':
+      return [s.k ? 'all-true' : 'all-false', {}];
+    case 'liars':
+      return ['liars', { n: s.n }];
+    case 'some':
+      return ['some', {}];
+    case 'or': {
+      // 두 쪽의 종류가 같으면 "a와 b 가운데 적어도 한 명은 (ak)예요", 다르면 "a가 (ak)이거나, b가 (bk)예요".
+      // 말한 주민이 들어 있으면 "나"를 앞에 둔다("이거나"는 앞뒤를 바꿔도 뜻이 같다).
+      const other = s.a === by ? s.b : s.b === by ? s.a : null;
+      if (s.ak === s.bk) {
+        const kind = s.ak ? 'true' : 'false';
+        return other === null ? [`or-${kind}`, { a: s.a, b: s.b }] : [`or-${kind}-me`, { a: other }];
+      }
+      if (other === null) return ['or', { a: s.a, ak: s.ak, b: s.b, bk: s.bk }];
+      const mine = s.a === by ? s.ak : s.bk;
+      return ['or-me', { ak: mine, b: other, bk: s.a === by ? s.bk : s.ak }];
+    }
+    default:
+      return [`road-${s.side}`, {}];
+  }
+}
+
+/**
+ * 상자의 글을 대본의 어느 틀로 적을지. 글이 붙은 상자 자기를 가리키면 "이 상자"로 적는다.
+ * @param {object} label
+ * @param {number} box 글이 붙은 상자
+ * @returns {[string, {a?: number, b?: number}]} 틀의 열쇠, 끼울 상자 번호
+ */
+export function labelTemplate(label, box) {
+  if (label.t === 'in-or') {
+    if (label.a === box || label.b === box) return ['in-or-here', { a: label.a === box ? label.b : label.a }];
+    return ['in-or', { a: label.a, b: label.b }];
+  }
+  if (label.t === 'in' || label.t === 'not-in') return [label.t, { a: label.box }];
+  return [label.t, {}];
+}
+
+/** 판 위에 적는 약속(대본 notes의 열쇠): 그 판의 말에 들어 있는 낱말의 뜻. "우리"는 말하지 않는 주민이 있는 판에서만 적는다. */
+export function noteKeys(board) {
+  if (!board.says) return [];
+  const keys = new Set(board.says.map((say) => sayTemplate(say)[0]));
+  const has = (...names) => names.some((name) => keys.has(name));
+  const silent = board.people.some((_, index) => !board.says.some((say) => say.by === index));
+  return [
+    has('same', 'same-me') && 'same',
+    has('diff', 'diff-me') && 'diff',
+    has('some', 'or-true', 'or-false', 'or-true-me', 'or-false-me') && 'some',
+    has('or', 'or-me') && 'or',
+    silent && has('all-true', 'all-false', 'liars', 'some') && 'we',
+  ].filter(Boolean);
+}
 
 // ---- 배정 모두 ----
 
@@ -160,6 +232,8 @@ export function ruleFits(rule, truths) {
 export const boxAnswers = (board) => board.labels.map((_, at) => at).filter((at) => ruleFits(board.rule, labelTruths(board, at)));
 
 // ---- 질문 ----
+// 5단계는 2026-11 화면 글 점검에서 뺐다. 다시 넣을 때는 '제가 ‘…’라고 물으면, 하마는 ‘예’라고 대답할 건가요?' 한 종류로.
+// (아래 질문의 풀이는 다시 넣기 쉽게 남겨 두었다. 질문 판을 만들어 내는 코드와 화면, 대본은 지웠고, 화면은 질문 판을 받지 않는다.)
 
 /** 질문의 속뜻이 그 배정에서 참인가(대답하는 주민이 어떤 종류인지와 상관없이) */
 function questionFact(question, world) {

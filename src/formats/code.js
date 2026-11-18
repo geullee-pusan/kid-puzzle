@@ -12,7 +12,7 @@ import T from '../content/code.json';
 import { LADDER, MAKE_DIGITS, MAKE_LENGTH, MAKE_LEVEL, MAKE_MAX_ROWS, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/code-ladder.js';
 import { allCodes, checkBoard, checkCode, checkRows, diagnoseReply, diagnoseTable, filterCodes, fitsAll, judge, nextGuess, solveTable, trailOf } from '../core/code.js';
 import { smallerCode } from '../core/smaller.js';
-import { fill } from '../core/text.js';
+import { fill, ordinal } from '../core/text.js';
 import { codeCard, drawMemo, drawMini, drawPicker, drawSlots, drawTable } from '../ui/code-board.js';
 
 const FORMAT = 'code';
@@ -215,7 +215,7 @@ export function createCode(frame) {
     round.flag = { row: result.row, code };
     frame.persist();
     draw();
-    frame.say(fill(T.guess['table-row'], { no: row }));
+    frame.say(fill(T.guess['table-row'], { no: ordinal(row) }));
   }
 
   /** 5단계: 아이가 암호를 정하면 컴퓨터가 첫 추측을 낸다. */
@@ -329,14 +329,14 @@ export function createCode(frame) {
   /** 맞혔을 때 하는 말: 무엇을 했는지 그대로 말한다. */
   function rightLine(round, solution) {
     const parts = [];
-    if (round.mode === 'guess') parts.push(fill(T.right['guess-found'], { n: round.rows.length }));
+    if (round.mode === 'guess') parts.push(fill(T.right['guess-found'], { n: ordinal(round.rows.length) }));
     else if (round.mode === 'table') parts.push(round.tries.length === 1 ? T.right['table-first'] : fill(T.right['table-tries'], { n: round.tries.length }));
     else {
-      parts.push(fill(T.right['referee-found'], { n: round.rows.length }));
+      parts.push(fill(T.right['referee-found'], { n: ordinal(round.rows.length) }));
       // 후보가 하나 남은 뒤에 그 하나를 낸 마지막 추측은 수가 그대로라서 한 번만 말한다.
       const counts = [solution.start, ...round.rows.map((row) => row.left)].filter((count, index, list) => index === 0 || count !== list[index - 1]);
-      const trail = counts.map(countText).join(T.trailJoin);
-      parts.push(fill(T.right['referee-trail'], { trail }));
+      // 처음 후보 수에서 뒤의 수들로 줄었다고 말한다("720개에서 96개, 12개, 1개로").
+      if (counts.length > 1) parts.push(fill(T.right['referee-trail'], { start: countText(counts[0]), trail: counts.slice(1).map(countText).join(T.trailJoin) }));
     }
     // 이 형식의 판을 처음으로 끝까지 했으면 "왜 그럴까?"가 생겼다고 알려 준다.
     const finished = frame.records().filter((record) => record.kind === 'round' && record.format === FORMAT && (record.outcome === 'solved' || record.outcome === 'solution'));
@@ -369,7 +369,8 @@ export function createCode(frame) {
     const counts = round.mode === 'table' ? solution.trail : round.rows.map((row) => row.left);
     const view = { answer: { label: round.mode === 'referee' ? T.secretRow : T.answerRow, code: secret } };
     if (rows.length > 0) view.table = trailTable(rows, solution.start, counts);
-    const say = round.mode === 'guess' && rows.length === 0 ? T.solution['guess-none'] : T.solution[round.mode];
+    // 아직 한 줄도 없으면 표를 그리지 않는다. 그때는 표를 가리키지 않는 말을 한다.
+    const say = rows.length > 0 || round.mode === 'table' ? T.solution[round.mode] : T.solution[round.mode === 'guess' ? 'guess-none' : 'referee-unanswered'];
     return [{ say, nodes: [rowOf([codeCard(view)])] }];
   }
 

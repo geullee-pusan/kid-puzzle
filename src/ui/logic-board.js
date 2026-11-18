@@ -1,8 +1,9 @@
-// 참말 섬의 판을 그린다: 주민들(모습, 이름, 쳐 보기 단추)과 그들이 한 말, 갈림길, 상자와 글, 질문 후보.
+// 참말 섬의 판을 그린다: 주민들(모습, 이름, 쳐 보기 단추)과 그들이 한 말, 갈림길, 상자와 글.
+// (5단계 질문 고르기의 질문 카드와 대답 표는 2026-11 화면 글 점검에서 5단계를 빼면서 지웠다.)
 // 누를 수 있는 판과 보기만 하는 그림(풀이, "왜 그럴까?")을 같은 모양으로 그린다.
 // 색만으로 알리지 않는다.
 //   쳐 본 종류: 참말쟁이라고 친 주민은 굵은 실선 테두리, 거짓말쟁이라고 친 주민은 굵은 겹선 테두리, 모름은 가는 점선 테두리이고, 글자 표시가 함께 붙는다.
-//   말: 참인지 거짓인지를 글자로 적는다. 쳐 본 종류와 맞지 않는 말은 굵은 점선 테두리와 글 한 줄로 눈에 띄게 한다.
+//   말: 참인지 거짓인지를 글자로 적는다. 쳐 본 종류와 어긋나는 말은 굵은 점선 테두리와 글 한 줄로 눈에 띄게 한다.
 //   틀린 답에서 짚은 말은 굵은 바깥 테두리를 두른다.
 // 글자는 모두 형식(src/formats/logic.js)이 대본에서 채워 건넨다. 이 파일에는 글을 적지 않는다.
 
@@ -87,34 +88,16 @@ function box(item, live) {
   return card;
 }
 
-/** 질문 하나: 몇째 질문인지, 질문(한두 줄), 이 가정에서의 대답 */
-function question(item, live) {
-  const card = el(live ? 'button' : 'div', `logic-question${item.chosen ? ' chosen' : ''}${item.mark ? ` ${item.mark}` : ''}`);
-  if (live) {
-    card.type = 'button';
-    card.setAttribute('aria-pressed', String(Boolean(item.chosen)));
-    card.dataset.focus = item.focus;
-    card.addEventListener('click', item.onTap);
-  }
-  card.append(el('span', 'logic-q-no', item.no));
-  const lines = el('span', 'logic-q-lines');
-  for (const line of item.lines) lines.append(el('span', 'logic-q-line', line));
-  card.append(lines);
-  if (item.tag) card.append(el('span', 'logic-tag', item.tag));
-  return card;
-}
-
 /**
  * 판을 그린다.
  * @param {HTMLElement} root 그릴 자리(안의 것을 모두 바꾼다)
  * @param {object} view
  *   notes      판 위에 적는 약속(뜻을 정해 두는 말)들
- *   rule       상자 판의 조건 { text, tag, fits(맞으면 true, 맞지 않으면 false, 모르면 null) }
+ *   rule       상자 판 위의 한 줄 { text, tag, fits(들어맞으면 true, 어긋나면 false, 모르면 null) }
  *   people     주민들 [{ name, face, mark: 'knight'|'liar'|null, sign, button, label, onTap }]
  *   fork       갈림길 { title, names: {left, right}, mark: 'left'|'right'|null, sign, button, label, onTap }
  *   says       말들 [{ name, face, text, truth, tag, clash, clashText, flagged }]
  *   boxes      상자들 [{ name, text, mark, truth, tag, chosen, flagged, button, label, onTap }]
- *   questions  질문들 [{ no, lines, tag, chosen, mark, onTap }]
  *   live       누를 수 있는 판인가
  *   small      작은 그림으로 그린다(풀이, "왜 그럴까?")
  */
@@ -147,11 +130,6 @@ export function drawBoard(root, view) {
     for (const item of view.boxes) row.append(box(item, live));
     nodes.push(row);
   }
-  if (view.questions?.length) {
-    const list = el('div', 'logic-questions');
-    for (const item of view.questions) list.append(question(item, live));
-    nodes.push(list);
-  }
   root.replaceChildren(...nodes);
   if (focused !== undefined) root.querySelector(`[data-focus="${focused}"]`)?.focus?.();
 }
@@ -159,8 +137,8 @@ export function drawBoard(root, view) {
 /**
  * 작은 그림(처음 화면, 하던 판, 판 고르기, "만들기" 목록): 주민들의 모습이나 상자들.
  * @param {HTMLElement} root
- * @param {{faces?: string[], marks?: (string|null)[], boxes?: number, fork?: boolean, ask?: string, blank?: string}} view
- *   faces 주민들의 모습, marks 쳐 본 종류('knight'|'liar'|null), boxes 상자 수, fork 갈림길을 그리는가, ask 질문 판의 물음표 글자, blank 아직 정하지 않은 주민의 글자
+ * @param {{faces?: string[], marks?: (string|null)[], boxes?: number, fork?: boolean, blank?: string}} view
+ *   faces 주민들의 모습, marks 쳐 본 종류('knight'|'liar'|null), boxes 상자 수, fork 갈림길을 그리는가, blank 아직 정하지 않은 주민의 글자
  */
 export function drawMini(root, view) {
   root.className = 'logic-mini';
@@ -177,7 +155,6 @@ export function drawMini(root, view) {
     nodes.push(el('span', `logic-face mini mark-${mark}`, face));
   }
   if (view.blank) for (let at = 0; at < 2; at++) nodes.push(el('span', 'logic-face mini blank', view.blank));
-  if (view.ask) nodes.push(el('span', 'logic-ask-mark', view.ask));
   if (view.fork) {
     const roads = el('span', 'logic-roads mini');
     roads.append(el('span', 'logic-road road-left'), el('span', 'logic-road road-right'));
@@ -194,31 +171,6 @@ export function boardCard(view, note) {
   card.append(picture);
   drawBoard(picture, { ...view, live: false, small: true });
   if (note) card.append(el('p', 'strip-note', note));
-  return card;
-}
-
-/**
- * 질문마다 네 가지 경우의 대답을 늘어놓은 표(질문 고르기의 풀이).
- * @param {{heads: string[], rows: {no: string, lines: string[], cells: string[], mark: string}[]}} view
- */
-export function replyTable(view) {
-  const table = el('table', 'logic-table');
-  const head = el('tr');
-  for (const text of view.heads) head.append(el('th', '', text));
-  const thead = el('thead');
-  thead.append(head);
-  const body = el('tbody');
-  for (const row of view.rows) {
-    const line = el('tr', row.useful ? 'useful' : '');
-    const first = el('th', 'logic-table-q');
-    first.append(el('span', 'logic-q-no', row.no));
-    for (const text of row.lines) first.append(el('span', 'logic-q-line', text));
-    line.append(first, ...row.cells.map((text) => el('td', '', text)), el('td', 'logic-table-mark', row.mark));
-    body.append(line);
-  }
-  table.append(thead, body);
-  const card = el('div', 'logic-figure wide');
-  card.append(table);
   return card;
 }
 

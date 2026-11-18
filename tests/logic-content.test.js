@@ -1,6 +1,6 @@
 // 참말 섬 대본 점검: 화면에 나오는 글이 약속을 지키는지, "왜 그럴까?" 그림 속 판의 답과 주장이 풀이 프로그램과 맞는지 본다.
 // 이 형식에서 새로 지키는 것도 여기서 본다: 거짓말쟁이는 놀이 규칙일 뿐 나쁜 주민이 아니다, 주민은 동물이다,
-// "적어도 한 명"과 "이거나"는 판에서 뜻을 정해 준다, 말의 틀도 대본에 있다.
+// "적어도 한 명"과 "이거나"와 "우리"는 판에서 뜻을 정해 준다, 말의 틀도 대본에 있다, 문장의 뜻은 풀이 프로그램의 뜻과 같다.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -8,8 +8,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
-import { LADDER, QUESTIONS, SAY_TYPES, generateBoard, sayPool } from '../src/core/logic-ladder.js';
-import { ANIMALS, blankGuess, follow, solve } from '../src/core/logic.js';
+import { LADDER, SAY_TYPES, TOP_LEVEL, boxBoards, generateBoard, sayPool } from '../src/core/logic-ladder.js';
+import { ANIMALS, allWorlds, blankGuess, follow, labelTemplate, labelTruth, noteKeys, sayTemplate, sayTruth, solve } from '../src/core/logic.js';
 import { fill, sentenceCount } from '../src/core/text.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,18 +46,44 @@ const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 /** 받침이 없는 낱말인가(뒤에 "는", "와"가 맞게 붙는다) */
 const open = (word) => (word.charCodeAt(word.length - 1) - 0xac00) % 28 === 0;
 
-/** 말 하나의 틀의 열쇠(src/formats/logic.js와 같은 규칙) */
-function sayKey(say) {
-  const { s, by } = say;
-  if (s.t === 'me') return s.k ? 'me-true' : 'me-false';
-  if (s.t === 'is') return s.k ? 'is-true' : 'is-false';
-  if (s.t === 'same' || s.t === 'diff') return s.a === by || s.b === by ? `${s.t}-me` : s.t;
-  if (s.t === 'all') return s.k ? 'all-true' : 'all-false';
-  if (s.t === 'or') return s.a === by ? 'or-me-a' : s.b === by ? 'or-me-b' : 'or';
-  if (s.t === 'road') return `road-${s.side}`;
-  return s.t;
+/** 말 하나의 틀의 열쇠(화면이 쓰는 src/core/logic.js의 sayTemplate) */
+const sayKey = (say) => sayTemplate(say)[0];
+const values = { text: '우리는 모두 거짓말쟁이예요', a: '토끼', b: '다람쥐', n: '두', ak: '참말쟁이', bk: '거짓말쟁이', side: '왼쪽', name: '토끼', k: 3, kind: '참말쟁이', list: '토끼는 참말쟁이', what: '모름' };
+
+/** 화면과 같은 방법으로 말 하나의 글을 만든다(src/formats/logic.js의 sayText와 같다). people은 동물 번호들 */
+function sayText(people, say) {
+  const [key, parts] = sayTemplate(say);
+  const nameOf = (index) => (index === undefined ? '' : T.animals[people[index]].name);
+  const kindOf = (kind) => (kind === undefined ? '' : T.kinds[kind ? 'knight' : 'liar']);
+  return fill(T.says[key], { a: nameOf(parts.a), b: nameOf(parts.b), n: parts.n === undefined ? '' : T.counts[parts.n], ak: kindOf(parts.ak), bk: kindOf(parts.bk) });
 }
-const values = { text: '우리는 모두 거짓말쟁이예요', a: '토끼', b: '다람쥐', n: '두', ak: '참말쟁이', bk: '거짓말쟁이', side: '왼쪽', name: '토끼', reply: '예', k: 3, kind: '참말쟁이', list: '토끼는 참말쟁이', what: '모름', no: '첫째' };
+/** 상자의 글(src/formats/logic.js의 labelText와 같다) */
+function labelText(label, at) {
+  const [key, parts] = labelTemplate(label, at);
+  return fill(T.labels[key], { a: parts.a === undefined ? '' : T.boxes[parts.a], b: parts.b === undefined ? '' : T.boxes[parts.b] });
+}
+
+/**
+ * 문장을 글자 그대로 읽어 뜻을 구한다(풀이 프로그램과 따로 적었다). 배정 하나에서 그 문장이 참인지 돌려주는 함수.
+ * people은 동물 번호들, by는 말한 주민. 읽을 수 없는 문장이면 null.
+ */
+function readSay(text, people, by) {
+  const names = people.map((animal) => T.animals[animal].name);
+  const who = (word) => (word === '나' || word === '내' ? by : names.indexOf(word));
+  const kindOf = (word) => ({ 참말쟁이: true, 거짓말쟁이: false })[word];
+  const countOf = (word) => Number(Object.entries(T.counts).find(([, value]) => value === word)?.[0]);
+  const liars = (kinds) => kinds.filter((kind) => !kind).length;
+  let m;
+  if ((m = text.match(/^(나|\S+)는 (참말쟁이|거짓말쟁이)예요\.$/))) return ({ kinds }) => kinds[who(m[1])] === kindOf(m[2]);
+  if ((m = text.match(/^(\S+)와 (나|\S+)는 (같은|다른) 종류예요\.$/))) return ({ kinds }) => (kinds[who(m[1])] === kinds[who(m[2])]) === (m[3] === '같은');
+  if ((m = text.match(/^우리는 모두 (참말쟁이|거짓말쟁이)예요\.$/))) return ({ kinds }) => kinds.every((kind) => kind === kindOf(m[1]));
+  if ((m = text.match(/^우리 가운데 거짓말쟁이는 딱 (\S+) 명이에요\.$/))) return ({ kinds }) => liars(kinds) === countOf(m[1]);
+  if (text === '우리 가운데 적어도 한 명은 거짓말쟁이예요.') return ({ kinds }) => liars(kinds) >= 1;
+  if ((m = text.match(/^(나|\S+)와 (\S+) 가운데 적어도 한 명은 (참말쟁이|거짓말쟁이)예요\.$/))) return ({ kinds }) => kinds[who(m[1])] === kindOf(m[3]) || kinds[who(m[2])] === kindOf(m[3]);
+  if ((m = text.match(/^(내|\S+)가 (참말쟁이|거짓말쟁이)이거나, (\S+)가 (참말쟁이|거짓말쟁이)예요\.$/))) return ({ kinds }) => kinds[who(m[1])] === kindOf(m[2]) || kinds[who(m[3])] === kindOf(m[4]);
+  if ((m = text.match(/^마을로 가는 길은 (왼쪽|오른쪽)이에요\.$/))) return ({ road }) => road === (m[1] === '왼쪽' ? 'left' : 'right');
+  return null;
+}
 
 test('대본을 읽을 수 있고, 글이 비어 있지 않다. 이름은 "참말 섬"이다', () => {
   assert.ok(strings.length > 100);
@@ -66,9 +92,9 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 이름은 "참�
   assert.match(html, /<h2 id="logic-title">참말 섬<\/h2>/);
 });
 
-test('단계 목록이 사다리와 같고, 표시는 기본·기본·응용·응용·도전·도전이다', () => {
+test('단계 목록이 사다리와 같고, 표시는 기본·기본·응용·도전·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '기본', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '기본', '응용', '도전', '도전']);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.equal(T.levels.at(-1).picture.blank, true);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(T.home.ask[rung.mode], `${rung.level}단계의 물음`);
@@ -93,15 +119,19 @@ test('거짓말쟁이는 놀이 규칙일 뿐이다: 첫 규칙 글에서 풀어
 });
 
 test('규칙 설명은 세 문장을 넘지 않고, 묻는 것으로 끝난다', () => {
-  assert.deepEqual(Object.keys(T.rules).sort(), ['ask', 'box', 'count', 'folk', 'pair', 'road']);
+  assert.deepEqual(Object.keys(T.rules).sort(), ['box', 'count', 'folk', 'pair', 'road']);
   for (const [key, text] of Object.entries(T.rules)) {
     assert.ok(sentenceCount(text) <= 3, `${key}: ${text}`);
     assert.match(text, /까요\?$/, key);
   }
+  for (const key of ['pair', 'folk']) assert.match(T.rules[key], /각각 참말쟁이일까요, 거짓말쟁이일까요\?$/, key);
+  // 상자: 글은 참일 수도 거짓일 수도 있고, 판 위의 한 줄은 늘 참이다.
+  assert.equal(T.rules.box, '보물은 상자 하나에만 있어요. 상자의 글은 참일 수도 거짓일 수도 있지만, 판 위의 한 줄은 늘 참이에요. 보물은 어느 상자에 있을까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[7]) <= 3, guides[7]);
-  assert.match(guides[7], /이 섬의 누구도 할 수 없는 말도 만들어 볼 수 있어요\./);
+  assert.match(guides[7], /누가 참말쟁이이고 누가 거짓말쟁이인지 하나로 정해지는 판을 만들 수 있을까요\?/);
+  assert.match(guides[7], /이 주민들이 모두 할 수는 없는 말도 만들어 볼 수 있어요\./);
 });
 
 test('말의 틀은 대본에 있다: 판에 나올 수 있는 말마다 틀이 있고, 끼울 값만 바꾼다', () => {
@@ -111,41 +141,150 @@ test('말의 틀은 대본에 있다: 판에 나올 수 있는 말마다 틀이 
   for (const key of keys) assert.ok(T.says[key], `틀이 없어요: ${key}`);
   assert.deepEqual([...keys].sort(), Object.keys(T.says).sort());
   assert.equal(fill(T.says['is-false'], values), '토끼는 거짓말쟁이예요.');
-  assert.equal(fill(T.says['same-me'], values), '토끼와 나는 같은 쪽이에요.');
-  assert.equal(fill(T.says.liars, values), '우리 가운데 거짓말쟁이는 꼭 두 명이에요.');
-  assert.equal(fill(T.says.or, values), '토끼는 참말쟁이이거나 다람쥐는 거짓말쟁이예요.');
+  assert.equal(fill(T.says['same-me'], values), '토끼와 나는 같은 종류예요.');
+  assert.equal(fill(T.says.diff, values), '토끼와 다람쥐는 다른 종류예요.');
+  assert.equal(fill(T.says.liars, values), '우리 가운데 거짓말쟁이는 딱 두 명이에요.');
+  // "이거나": 두 쪽의 종류가 같으면 "가운데 적어도 한 명은", 다르면 "~가 …이거나, ~가 …예요"
+  assert.equal(fill(T.says['or-true'], values), '토끼와 다람쥐 가운데 적어도 한 명은 참말쟁이예요.');
+  assert.equal(fill(T.says['or-false-me'], values), '나와 토끼 가운데 적어도 한 명은 거짓말쟁이예요.');
+  assert.equal(fill(T.says.or, values), '토끼가 참말쟁이이거나, 다람쥐가 거짓말쟁이예요.');
+  assert.equal(fill(T.says['or-me'], { ...values, ak: '거짓말쟁이', b: '하마', bk: '참말쟁이' }), '내가 거짓말쟁이이거나, 하마가 참말쟁이예요.');
+  for (const text of Object.values(T.says)) assert.doesNotMatch(text, /라면|나는 거짓말쟁이이거나/, text);
   assert.equal(T.says['me-true'], '나는 참말쟁이예요.');
   assert.equal(T.says['me-false'], '나는 거짓말쟁이예요.');
   assert.deepEqual(T.counts, { 1: '한', 2: '두', 3: '세' });
-  // 상자의 글과 조건, 질문
-  for (const key of ['here', 'not-here', 'in', 'not-in', 'in-or']) assert.ok(T.labels[key], key);
-  assert.equal(fill(T.labels['in-or'], values), '보물은 토끼 상자나 다람쥐 상자에 있어요.'.replace('토끼', '토끼').replace('다람쥐', '다람쥐'));
+  // 상자의 글과 조건
+  for (const key of ['here', 'not-here', 'in', 'not-in', 'in-or', 'in-or-here']) assert.ok(T.labels[key], key);
+  assert.equal(fill(T.labels['in-or'], values), '보물은 토끼 상자나 다람쥐 상자에 있어요.');
+  assert.equal(labelText({ t: 'in-or', a: 0, b: 2 }, 0), '보물은 이 상자나 셋째 상자에 있어요.');
+  assert.equal(labelText({ t: 'in-or', a: 0, b: 2 }, 2), '보물은 이 상자나 첫째 상자에 있어요.');
+  assert.equal(labelText({ t: 'in-or', a: 0, b: 2 }, 1), '보물은 첫째 상자나 셋째 상자에 있어요.');
   assert.deepEqual(Object.keys(T.boxRules).sort(), ['false-1', 'false-2', 'true-1', 'true-2']);
-  for (const question of [...QUESTIONS.useful, ...QUESTIONS.useless, { q: 'fact', yes: false }]) {
-    const key = question.q === 'fact' ? `fact-${question.yes ? 'yes' : 'no'}` : question.q;
-    assert.ok(Array.isArray(T.questions[key]), key);
+});
+
+test('말의 뜻은 풀이 프로그램의 뜻과 같다: 나올 수 있는 말마다, 배정마다 문장을 글자 그대로 읽은 뜻이 sayTruth와 같다', () => {
+  // 주민 둘과 셋, 말한 주민과 가리키는 주민의 모든 조합. "이거나"는 네 가지 참·거짓 조합(ak, bk)이 모두 들어 있다.
+  const types = [...new Set(Object.values(SAY_TYPES).flat()), 'or'];
+  const orKeys = new Set();
+  let checked = 0;
+  for (const n of [2, 3]) {
+    for (const people of [[0, 1, 2].slice(0, n), [6, 7, 8].slice(0, n)]) {
+      const pool = [...sayPool(n, types), ...[true, false].flatMap((k) => Array.from({ length: n }, (_, by) => ({ by, s: { t: 'me', k } })))];
+      for (const say of pool) {
+        const text = sayText(people, say);
+        const meaning = readSay(text, people, say.by);
+        assert.ok(meaning, `읽을 수 없는 문장: ${text}`);
+        if (say.s.t === 'or') orKeys.add(`${say.s.ak}-${say.s.bk}:${sayKey(say)}`);
+        for (const world of allWorlds(n, true)) {
+          assert.equal(meaning(world), sayTruth(say, world), `${text} ${JSON.stringify(say)} ${JSON.stringify(world)}`);
+          checked += 1;
+        }
+      }
+    }
+  }
+  assert.ok(checked > 1000);
+  // "이거나"의 새 열쇠가 모두 쓰였고, 참·참은 "적어도 한 명은 참말쟁이", 거짓·거짓은 "적어도 한 명은 거짓말쟁이", 섞이면 "이거나"다.
+  assert.deepEqual(
+    [...orKeys].sort(),
+    ['false-false:or-false', 'false-false:or-false-me', 'false-true:or', 'false-true:or-me', 'true-false:or', 'true-false:or-me', 'true-true:or-true', 'true-true:or-true-me'],
+  );
+});
+
+test('상자의 글의 뜻은 풀이 프로그램의 뜻과 같고, 상자는 자기를 이름으로 부르지 않는다("이 상자")', () => {
+  for (const n of [2, 3]) {
+    for (const { labels } of boxBoards(n)) {
+      labels.forEach((label, box) => {
+        const text = labelText(label, box);
+        assert.doesNotMatch(text, new RegExp(`${T.boxes[box]} 상자`), text);
+        // 글자 그대로 읽기: "이 상자"는 그 상자, "○째 상자"는 그 상자
+        const named = [...text.matchAll(/(이|첫째|둘째|셋째) 상자/g)].map((match) => (match[1] === '이' ? box : T.boxes.indexOf(match[1])));
+        for (let at = 0; at < n; at++) {
+          const inside = named.includes(at);
+          assert.equal(text.endsWith('없어요.') ? !inside : inside, labelTruth(label, box, at), `${text} 보물 ${at}`);
+        }
+      });
+    }
   }
 });
 
-test('뜻을 약속으로 정한다: "적어도 한 명"은 "한 명이거나 더 많이", "이거나"는 "둘 다여도 돼요"', () => {
-  assert.match(T.notes.some, /‘적어도 한 명’은 한 명이거나 더 많이/);
-  assert.match(T.notes.or, /‘이거나’는 둘 다여도 돼요/);
-  assert.match(T.notes.same, /둘 다 참말쟁이이거나, 둘 다 거짓말쟁이/);
-  // 판에 그 낱말이 나올 때만 판 위에 적는다(화면 코드).
-  assert.match(code, /\['same', 'diff', 'some', 'or'\]\.filter\(\(type\) => types\.has\(type\)\)\.map\(\(type\) => T\.notes\[type\]\)/);
+test('뜻을 약속으로 정한다: "같은 종류", "다른 종류", "적어도 한 명", "이거나", "우리"', () => {
+  assert.equal(T.notes.same, '‘같은 종류’는 둘 다 참말쟁이이거나, 둘 다 거짓말쟁이라는 뜻이에요.');
+  assert.equal(T.notes.diff, '‘다른 종류’는 둘 가운데 하나는 참말쟁이이고, 하나는 거짓말쟁이라는 뜻이에요.');
+  assert.equal(T.notes.some, '‘적어도 한 명’은 한 명일 수도 있고, 그보다 많을 수도 있다는 뜻이에요.');
+  assert.equal(T.notes.or, '‘이거나’는 둘 가운데 하나만 맞아도 되고, 둘 다 맞아도 된다는 뜻이에요.');
+  assert.equal(T.notes.we, '‘우리’는 이 판의 주민 모두예요.');
+  // 화면은 noteKeys로 고른 약속을 적는다.
+  assert.match(code, /const notesOf = \(board\) => noteKeys\(board\)\.map\(\(key\) => T\.notes\[key\]\);/);
+  // 판에 그 낱말이 나올 때만, 나오면 늘 약속을 적는다(단계마다 판 1~40번, 주민 둘의 말 두 개 모두).
+  const boards = [];
+  for (let level = 1; level <= TOP_LEVEL; level++) for (let seed = 1; seed <= 40; seed++) boards.push(generateBoard(level, seed).board);
+  const pairs = sayPool(2, [...SAY_TYPES.small, 'or']);
+  for (let i = 0; i < pairs.length; i++) for (let j = i + 1; j < pairs.length; j++) boards.push({ kind: 'folk', people: [0, 1], says: [pairs[i], pairs[j]], ask: 'kinds' });
+  const seen = new Set();
+  for (const board of boards) {
+    if (!board.says) continue;
+    const texts = board.says.map((say) => sayText(board.people, say)).join(' ');
+    const silent = board.people.some((_, index) => !board.says.some((say) => say.by === index));
+    const want = [
+      /같은 종류/.test(texts) && 'same',
+      /다른 종류/.test(texts) && 'diff',
+      /적어도 한 명/.test(texts) && 'some',
+      /이거나/.test(texts) && 'or',
+      silent && /우리/.test(texts) && 'we',
+    ].filter(Boolean);
+    assert.deepEqual(noteKeys(board), want, texts);
+    for (const key of want) seen.add(key);
+  }
+  assert.deepEqual([...seen].sort(), ['diff', 'or', 'same', 'some', 'we']);
 });
 
-test('질문은 짧게: 길면 두 줄로 나누고, 한 줄은 40자를 넘지 않는다', () => {
-  for (const [key, lines] of Object.entries(T.questions)) {
-    assert.ok(lines.length >= 1 && lines.length <= 2, key);
-    for (const line of lines) assert.ok([...fill(line, { side: '오른쪽' })].length <= 40, `${key}: ${line}`);
+test('질문 고르기(옛 5단계)에 닿을 길이 없다: 사다리, 대본, 화면에 질문 판이 없다. "당신"이라고 부르지 않는다', () => {
+  assert.ok(LADDER.every((rung) => rung.mode !== 'ask'));
+  assert.ok(T.levels.every((entry) => !entry.picture.ask));
+  for (const key of ['questions', 'questionNo', 'reply']) assert.equal(T[key], undefined, key);
+  assert.equal(T.home.ask.ask, undefined);
+  assert.equal(T.rules.ask, undefined);
+  assert.equal(T.hints.ask, undefined);
+  assert.equal(T.solution.ask, undefined);
+  assert.equal(T.guess['question-useless'], undefined);
+  // 화면은 하던 판을 되살릴 때도 질문 판을 받지 않는다.
+  assert.match(code, /const MODES = \['pair', 'box', 'folk', 'road'\];/);
+  assert.match(code, /saved\.board\.kind === 'question'/);
+  assert.doesNotMatch(code, /questions|questionNo|replyTable/);
+  for (const [path, text] of strings) assert.doesNotMatch(text, /당신/, `${path}: ${text}`);
+});
+
+test('판의 말은 "들어맞다/어긋나다", "같은 종류/다른 종류"로 한다("맞다", "같은 쪽"을 쓰지 않는다)', () => {
+  for (const [path, text] of strings) {
+    assert.doesNotMatch(text, /(?<!들어)맞(지 않|아요|는 |았|게 |지)/, `${path}: ${text}`);
+    assert.doesNotMatch(text, /같은 쪽|다른 쪽|꼭 /, `${path}: ${text}`);
+    assert.doesNotMatch(text, /조건/, `${path}: ${text}`);
   }
-  assert.equal(T.questions.kin.length, 2);
-  assert.equal(T.questions.would.length, 2);
+  assert.deepEqual(T.status, { clash: '어긋나는 말이 {n}개 있어요', open: '어긋나는 말은 아직 없어요', fits: '모든 말이 들어맞아요', 'box-fits': '판 위의 한 줄과 들어맞아요', 'box-misfit': '판 위의 한 줄과 어긋나요' });
+  assert.equal(T.make.options.same, '같은 종류');
+  assert.equal(T.make.options.diff, '다른 종류');
+  assert.equal(T.make.templates.liars, '거짓말쟁이는 딱 …');
+  assert.doesNotMatch(T.make.templates.some, /…/);
+});
+
+test('상자: 판 위의 한 줄이 거짓인 글을 세면, 따라가 보기와 짐작 말과 힌트도 거짓인 글을 센다', () => {
+  assert.equal(fill(T.follow['count-false'], { n: 1 }), '지금 거짓인 글은 1개예요.');
+  assert.equal(T.follow['count-false-zero'], '지금 거짓인 글은 하나도 없어요.');
+  assert.equal(fill(T.guess['box-count-false'], { n: 2 }), '보물이 그 상자에 있으면 거짓인 글이 2개가 되는 것 같아요.');
+  assert.match(T.hints['box-false'][0], /거짓인 글은 몇 개/);
+  assert.match(T.hints['box-false'][1], /거짓인 글의 수/);
+  assert.match(code, /const key = board\.rule\.of === 'true' \? 'count' : 'count-false';/);
+  assert.match(code, /round\.mode === 'box' && round\.board\.rule\.of === 'false' \? 'box-false'/);
+  assert.match(code, /const tail = board\.rule\.of === 'true' \? '' : '-false';/);
+  // 판 위의 한 줄이 세는 글의 수(거짓인 글 = 상자 수 - 참인 글)
+  assert.match(code, /board\.rule\.of === 'true' \? trueCount : board\.labels\.length - trueCount/);
+  const board = boxBoards(3).find((item) => item.rule.of === 'false');
+  const truths = follow({ kind: 'box', ...board, ask: 'box' }, { kinds: [], road: null, box: board.answer });
+  assert.equal(board.labels.length - truths.count, board.rule.n, '답인 상자에서 거짓인 글의 수가 판 위의 한 줄과 같다');
 });
 
 test('힌트는 판의 종류마다 두 개이고, 하나하나가 질문 한 문장이다. 까닭을 말해 버리지 않는다', () => {
-  assert.deepEqual(Object.keys(T.hints).sort(), ['ask', 'box', 'count', 'folk', 'pair', 'road']);
+  assert.deepEqual(Object.keys(T.hints).sort(), ['box', 'box-false', 'count', 'folk', 'pair', 'road']);
   for (const [key, hints] of Object.entries(T.hints)) {
     assert.equal(hints.length, tuningFor('logic').hintCount, key);
     assert.equal(new Set(hints).size, 2, key);
@@ -157,16 +296,18 @@ test('힌트는 판의 종류마다 두 개이고, 하나하나가 질문 한 �
   }
   assert.match(T.hints.pair[0], /한 주민을 참말쟁이라고 쳐 보면/);
   assert.match(T.hints.box[0], /보물이 첫째 상자에 있다고 쳐 보면 참인 글은 몇 개/);
+  // 서로 반대되는 말을 한 짝은 판에 드물다. 쳐 봤을 때 어긋나는 말이 생긴 주민을 보게 한다.
+  assert.equal(T.hints.folk[1], '참말쟁이라고 쳐 봤을 때 어긋나는 말이 생긴 주민은 누구였나요?');
 });
 
 test('틀린 답에 하는 말은 짐작이라고 밝힌다("~것 같아요"). 짚은 말을 판에서 따라가 보게 한다', () => {
-  assert.deepEqual(Object.keys(T.guess).sort(), ['box-count', 'box-zero', 'count-clash', 'count-clash-zero', 'kinds-clash', 'none-on-possible', 'question-useless', 'road-clash']);
+  assert.deepEqual(Object.keys(T.guess).sort(), ['box-count', 'box-count-false', 'box-zero', 'box-zero-false', 'count-clash', 'count-clash-zero', 'kinds-clash', 'none-on-possible', 'road-clash']);
   for (const [key, text] of Object.entries(T.guess)) {
     assert.match(text, /것 같아요/, key);
     assert.doesNotMatch(text, /틀렸|틀린|아니에요|땡|잘못/, key);
   }
-  assert.equal(fill(T.guess['kinds-clash'], values), '토끼의 말과 맞지 않는 것 같아요. 그 말을 쳐 보기로 따라가 볼까요?');
-  assert.equal(T.guess['none-on-possible'], '모든 말이 맞는 경우가 남아 있는 것 같아요. 한 주민씩 쳐 볼까요?');
+  assert.equal(fill(T.guess['kinds-clash'], values), '고른 답대로라면 토끼의 말이 어긋나는 것 같아요. 그 말을 따라가 볼까요?');
+  assert.equal(T.guess['none-on-possible'], '모든 말이 들어맞는 경우가 남아 있는 것 같아요. 한 주민씩 쳐 볼까요?');
   assert.equal(fill(T.guess['box-count'], { n: 2 }), '보물이 그 상자에 있으면 참인 글이 2개가 되는 것 같아요.');
   // 화면 코드: 틀린 답은 세지만 보여 주지 않고, 짚은 말을 판에서 눈에 띄게 한다.
   assert.match(code, /round\.flag = result\.say;/);
@@ -181,6 +322,9 @@ test('맞혔을 때 하는 말은 한 일을 그대로 말한다(쳐 보기를 �
   assert.equal(fill(T.right.presses, { n: 5 }), '쳐 보기를 5번 바꿔 보고 알아냈어요.');
   assert.equal(T.right['no-presses'], '쳐 보기 없이 알아냈어요.');
   for (const text of Object.values(T.right)) assert.doesNotMatch(text, /켜|힌트/, text);
+  // 두 번째 답부터 맞혔을 때: 첫 답을 틀렸다고 판정하지 않고, 따라가 보기를 썼다고도 하지 않는다.
+  assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
+  assert.equal(T.right.none, '이 주민들이 이 말들을 모두 할 수는 없어요.');
   assert.equal(fill(T.right.kinds, { list: [fill(T.right.kind, { name: '하마', kind: '거짓말쟁이' }), fill(T.right.kind, { name: '코알라', kind: '참말쟁이' })].join(T.right.join) }), '하마는 거짓말쟁이, 코알라는 참말쟁이예요.');
   assert.doesNotMatch(code, /followShown[^\n]*T\.right/);
 });
@@ -218,7 +362,6 @@ test('화면 글은 "~요"로 끝나는 말투이고, 문장이 너무 길지 �
     T.right.count,
     T.right.road,
     T.right.box,
-    T.right.question,
     T.right.presses,
     T.right['no-presses'],
     T.right['after-retry'],
@@ -228,13 +371,18 @@ test('화면 글은 "~요"로 끝나는 말투이고, 문장이 너무 길지 �
     T.solution.count,
     T.solution.road,
     T.solution.box,
-    T.solution.ask,
     T.play['follow-on'],
+    T.play['follow-on-box'],
+    T.follow.count,
+    T.follow['count-zero'],
+    T.follow['count-false'],
+    T.follow['count-false-zero'],
     T.make.intro,
     T.make.pick,
     T.make.none,
     T.make.one,
     T.make.many,
+    T.make['many-full'],
     ...Object.values(T.says),
     ...Object.values(T.labels),
     ...Object.values(T.boxRules),
@@ -265,7 +413,7 @@ test('"왜 그럴까?"는 그림 서너 장의 이야기다: 믿어 봤다 → �
   }
   assert.match(T.why[0].say, /^선생님도 처음엔 말을 하나씩 믿어 봤어요/);
   assert.match(T.why[0].say, /참말쟁이라고 쳐 보고 따라가 봤어요/);
-  assert.match(T.why[1].say, /^말이 맞지 않았어요\. 그러니 토끼는 거짓말쟁이예요/);
+  assert.match(T.why[1].say, /^말이 들어맞지 않았어요\. 그러니 토끼는 거짓말쟁이예요/);
   assert.match(T.why[2].say, /누구도 ‘나는 거짓말쟁이예요’라고 말할 수 없었어요/);
   assert.match(T.why[2].say, /참말쟁이는 거짓말을 못 하고, 거짓말쟁이는 참말을 못 하니까요/);
   assert.match(T.why[3].say, /^상자도/);
@@ -324,10 +472,10 @@ test('수준 맞추기: 1단계에서 시작한다. "왜 그럴까?"는 이 형�
 });
 
 test('index.html: 참말 섬의 카드, 판, 답하는 칸, 도구, 직접 만들기가 있다', () => {
-  for (const id of ['home-logic-sample', 'home-logic-ask', 'home-logic-play', 'home-logic-pick', 'home-logic-make', 'home-logic-blank', 'logic-board', 'logic-foot', 'logic-status', 'logic-follow', 'logic-pad', 'logic-kinds', 'logic-kind-rows', 'logic-many', 'logic-count-picks', 'logic-roads', 'logic-road-picks', 'logic-boxes', 'logic-box-picks', 'logic-asks', 'logic-ask-picks', 'logic-copy', 'logic-submit', 'logic-none', 'make-logic', 'logic-make-people', 'logic-make-by', 'logic-make-count', 'logic-make-undo', 'logic-make-clear', 'logic-make-board', 'logic-make-solve', 'logic-make-play', 'logic-make-result', 'logic-make-kinds', 'logic-make-who', 'logic-make-opt', 'logic-make-preview', 'logic-make-add']) {
+  for (const id of ['home-logic-sample', 'home-logic-ask', 'home-logic-play', 'home-logic-pick', 'home-logic-make', 'home-logic-blank', 'logic-board', 'logic-foot', 'logic-status', 'logic-follow', 'logic-pad', 'logic-kinds', 'logic-kind-rows', 'logic-many', 'logic-count-picks', 'logic-roads', 'logic-road-picks', 'logic-boxes', 'logic-box-picks', 'logic-copy', 'logic-submit', 'logic-none', 'make-logic', 'logic-make-people', 'logic-make-by', 'logic-make-count', 'logic-make-undo', 'logic-make-clear', 'logic-make-board', 'logic-make-solve', 'logic-make-play', 'logic-make-result', 'logic-make-kinds', 'logic-make-who', 'logic-make-opt', 'logic-make-preview', 'logic-make-add']) {
     assert.ok(html.includes(`id="${id}"`), id);
   }
-  assert.match(html, /id="logic-none"[^>]*>이런 말은 누구도 할 수 없어요</);
+  assert.match(html, /id="logic-none"[^>]*>이렇게 말할 수는 없어요</);
   assert.match(html, /id="logic-copy"[^>]*>쳐 본 대로 고르기</);
   assert.match(html, /id="logic-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(html, /id="logic-make-play"[^>]*>내가 해 볼래요</);
@@ -336,9 +484,12 @@ test('index.html: 참말 섬의 카드, 판, 답하는 칸, 도구, 직접 만�
   assert.ok(html.indexOf('id="logic-title"') < html.indexOf('id="make-title"'));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-logic-make" class="menu-item"/);
   assert.match(html, new RegExp(`id="home-logic-ask"[^>]*>${T.home.ask.pair.replace('?', '\\?')}<`));
-  // 직접 만들기의 판 결과: 없다 / 하나다 / 여럿이다
-  assert.equal(T.make.none, '이런 말은 이 섬의 누구도 할 수 없어요.');
-  assert.equal(fill(T.make.many, { k: 3 }), '누가 누구인지 3가지로 될 수 있어요. 말을 더 붙여 볼까요?');
-  assert.match(code, /const line = worlds\.length === 0 \? T\.make\.none : worlds\.length === 1 \? T\.make\.one : fill\(T\.make\.many, \{ k: worlds\.length \}\);/);
+  // 직접 만들기의 판 결과: 없다 / 하나다 / 여럿이다. 말이 꽉 찼으면(6개) 더 붙여 보자고 하지 않는다.
+  assert.equal(T.make.none, '이 주민들이 이 말들을 모두 할 수는 없어요.');
+  assert.equal(fill(T.make.many, { k: 3 }), '모든 말이 들어맞는 경우가 3가지 남아요. 말을 더 붙여 볼까요?');
+  assert.equal(fill(T.make['many-full'], { k: 3 }), '모든 말이 들어맞는 경우가 3가지 남아요.');
+  assert.ok(T.make.many.startsWith(T.make['many-full']));
+  assert.match(code, /const many = draft\.says\.length >= MAX_SAYS \? T\.make\['many-full'\] : T\.make\.many;/);
+  assert.match(code, /const line = worlds\.length === 0 \? T\.make\.none : worlds\.length === 1 \? T\.make\.one : fill\(many, \{ k: worlds\.length \}\);/);
   assert.match(code, /kind: 'made',/);
 });

@@ -27,7 +27,9 @@ const BLAME = /틀렸|틀린|못|잘못|실수|아직도|또 |벌써|어려워|�
 
 test('"막혔어요"의 세 고르기는 대본에 있다. "~요"로 끝나는 한 문장이고, 탓하거나 달래는 말이 없다', () => {
   assert.deepEqual(Object.keys(C.stuck.choices), ['rule', 'next', 'why']);
-  assert.deepEqual(Object.values(C.stuck.choices), ['무엇을 하라는 건지 모르겠어요', '다음에 무엇을 할지 모르겠어요', '왜 안 되는지 모르겠어요']);
+  // 셋째 고르기는 안 되는 판이 없는 형식에서도 맞는 말이어야 한다("왜 안 되는지"는 안 맞다).
+  assert.deepEqual(Object.values(C.stuck.choices), ['무엇을 하라는 건지 모르겠어요', '다음에 무엇을 할지 모르겠어요', '어디를 봐야 할지 모르겠어요']);
+  assert.doesNotMatch(Object.values(C.stuck.choices).join(' '), /안 되는지/);
   for (const [key, text] of Object.entries(C.stuck.choices)) {
     assert.match(text, /요$/, key);
     assert.equal(sentenceCount(text), 1, key);
@@ -107,8 +109,9 @@ test('힌트: 둘째 고르기는 힌트 1을, 셋째 고르기는 힌트 2를 �
 test('"더 작은 판으로": 작은 판의 글은 대본에 있고, 돌아오면 한 번 묻는다', () => {
   assert.match(side, /id="smaller"[^>]*hidden>더 작은 판으로</);
   assert.equal(C.side.title, '작은 판');
-  assert.equal(C.side.back, '작은 판에서 본 것을 여기에 쓸 수 있나요?');
-  assert.equal(C.side.early, '하던 판으로 돌아왔어요.');
+  // "쓰다"는 적다/사용하다 두 뜻으로 들려서 쓰지 않는다. 돌아온 판은 위 띠의 "원래 판으로"와 같은 이름으로 부른다.
+  assert.equal(C.side.back, '작은 판에서 알아낸 것이 이 판에도 맞을까요?');
+  assert.equal(C.side.early, '원래 판으로 돌아왔어요.');
   for (const key of ['open', 'more', 'back', 'early']) {
     for (const sentence of sentences(C.side[key])) assert.match(sentence, /요[.?]$/, `${key}: ${sentence}`);
     assert.ok(sentenceCount(C.side[key]) <= 2, key);

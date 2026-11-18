@@ -601,7 +601,8 @@ function finish(outcome) {
   if (outcome === 'solved') {
     const parts = F.rightLine(round, solution);
     if (!solution.possible && whyAvailable()) parts.push(F.T.right['why-invite']);
-    if (round.offeredHarder) parts.push(C.after.harder);
+    // 맨 위 단계에서는 "더 어려운 판" 단추가 없으니 직접 만들기를 권한다
+    if (round.offeredHarder) parts.push(round.level >= top ? C.after['harder-make'] : C.after.harder);
     log.saveRecord(toRecord(outcome));
     talkers.play.say(parts.join(' '), 'talk');
   }

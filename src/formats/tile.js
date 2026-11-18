@@ -11,7 +11,7 @@
 // 판에 무늬를 입히는 단추는 도구다. 무엇을 알려 주는지 말하지 않는다. 처음 누를 때 힌트 하나를 연 것으로 적는다.
 import T from '../content/tile.json';
 import { smallerTile } from '../core/smaller.js';
-import { fill } from '../core/text.js';
+import { fill, ordinal } from '../core/text.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/tile-ladder.js';
 import { MAX_SIZE, MIN_SIZE, PATTERNS, PIECES, PIECE_IDS, checkBoard, colorCounts, deadCells, diagnoseImpossible, isStuck, placeProblem, replay, solve, whyFits, whyOpen, xyOf } from '../core/tile.js';
 import { MARKS, boardCard, drawBoard, drawLegend, drawPiece } from '../ui/tile-board.js';
@@ -39,7 +39,7 @@ export function createTile(frame) {
   const labelOf = (board, placed) => (cell) => {
     const [x, y] = xyOf(board, cell);
     const what = board.holes.includes(cell) ? T.cells.hole : placed.some((cells) => cells.includes(cell)) ? T.cells.covered : T.cells.empty;
-    return fill(T.cellLabel, { row: y + 1, col: x + 1, what });
+    return fill(T.cellLabel, { row: ordinal(y + 1), col: ordinal(x + 1), what });
   };
   const legendOf = (pattern, counts) => ({
     pattern,

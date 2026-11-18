@@ -3,32 +3,33 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { ANIMALS, checkBoard, expectedPresses, isLean, judgeQuestion, labelTruths, spareSays, uselessCount, worldsOf } from '../src/core/logic.js';
-import { COUNT_SHARE, LADDER, MAKE_LEVEL, NONE_SHARE, QUESTION_COUNT, TOP_LEVEL, boxBoards, generateBoard, nextSeed, pairBoards, rungOf } from '../src/core/logic-ladder.js';
-import { bruteAnswer, bruteBoxes, bruteUseful } from './helpers/brute-logic.js';
+import { ANIMALS, checkBoard, expectedPresses, isLean, labelTruths, spareSays, uselessCount, worldsOf } from '../src/core/logic.js';
+import { COUNT_SHARE, LADDER, MAKE_LEVEL, NONE_SHARE, TOP_LEVEL, boxBoards, generateBoard, nextSeed, pairBoards, rungOf } from '../src/core/logic-ladder.js';
+import { bruteAnswer, bruteBoxes } from './helpers/brute-logic.js';
 
 const SEEDS = Array.from({ length: 200 }, (_, index) => index + 1);
 const boardsOf = (level) => SEEDS.map((seed) => generateBoard(level, seed));
 const allKnights = (kinds) => kinds.every(Boolean);
 const speakers = (board) => new Set(board.says.map((say) => say.by)).size;
 
-test('사다리: 단계 다섯과 직접 만들기. 표시는 기본·기본·응용·응용·도전·도전이다', () => {
+test('사다리: 단계 넷과 직접 만들기. 표시는 기본·기본·응용·도전·도전이다. 질문 고르기(옛 5단계)는 없다', () => {
   assert.deepEqual(
     LADDER.map((rung) => [rung.level, rung.tag, rung.mode]),
     [
       [1, 'basic', 'pair'],
       [2, 'basic', 'box'],
       [3, 'applied', 'folk'],
-      [4, 'applied', 'road'],
-      [5, 'challenge', 'ask'],
-      [6, 'challenge', 'make'],
+      [4, 'challenge', 'road'],
+      [5, 'challenge', 'make'],
     ],
   );
-  assert.deepEqual([TOP_LEVEL, MAKE_LEVEL], [5, 6]);
+  assert.deepEqual([TOP_LEVEL, MAKE_LEVEL], [4, 5]);
   // 따라가 보기는 1단계에서만 처음부터 켜져 있다.
   assert.deepEqual(LADDER.filter((rung) => rung.follow).map((rung) => rung.level), [1]);
   assert.throws(() => generateBoard(MAKE_LEVEL, 1));
+  assert.throws(() => generateBoard(6, 1));
   assert.throws(() => rungOf(9));
+  assert.ok(LADDER.every((rung) => rung.mode !== 'ask'));
 });
 
 test('같은 판 번호는 늘 같은 판이고, 다음 판 번호는 다른 판을 낸다', () => {
@@ -48,8 +49,8 @@ test('모든 판: 꼴이 맞고, 풀이 프로그램이 따로 적은 풀이와 
       const where = `${level}단계 ${JSON.stringify(board)}`;
       assert.equal(checkBoard(board), null, where);
       if (board.people) assert.ok(board.people.every((animal) => animal >= 0 && animal < ANIMALS), where);
+      assert.notEqual(board.kind, 'question', where);
       if (board.kind === 'box') assert.deepEqual(bruteBoxes(board), [solution.answer], where);
-      else if (board.kind === 'question') assert.deepEqual(board.questions.map((question, at) => (bruteUseful(question) ? at : -1)).filter((at) => at >= 0), solution.answer, where);
       else {
         const brute = bruteAnswer(board);
         assert.equal(solution.possible === false ? null : solution.answer, brute, where);
@@ -94,7 +95,7 @@ test('2단계: 상자 셋. 보물이 든 상자가 하나로 정해지고, 늘 �
   assert.ok(boxBoards(3).length > 100);
 });
 
-test('3단계: 주민 셋. "누구도 할 수 없어요" 판이 다섯에 하나쯤, "몇 명" 판이 섞인다. 모든 판에 군더더기 말이 없다', () => {
+test('3단계: 주민 셋. "이렇게 말할 수는 없어요" 판이 다섯에 하나쯤, "몇 명" 판이 섞인다. 모든 판에 군더더기 말이 없다', () => {
   const tally = { none: 0, count: 0, kinds: 0, useless: 0 };
   for (const { board, solution } of boardsOf(3)) {
     const where = JSON.stringify(board);
@@ -118,7 +119,7 @@ test('3단계: 주민 셋. "누구도 할 수 없어요" 판이 다섯에 하나
     }
     assert.ok(board.says.every((say) => !(say.s.t === 'me' && !say.s.k)), '"나는 거짓말쟁이예요"는 판으로 내지 않는다');
   }
-  assert.ok(Math.abs(tally.none / 200 - NONE_SHARE) < 0.08, `누구도 못 해요 ${tally.none}/200`);
+  assert.ok(Math.abs(tally.none / 200 - NONE_SHARE) < 0.08, `말할 수 없는 판 ${tally.none}/200`);
   assert.ok(Math.abs(tally.count / (200 - tally.none) - COUNT_SHARE) < 0.1, `몇 명 ${tally.count}`);
   assert.ok(tally.useless > 10 && tally.useless < 50, `쓸모없는 말 ${tally.useless}`);
 });
@@ -134,20 +135,6 @@ test('4단계: 주민 셋과 갈림길. 누가 무엇인지는 다 안 정해져
     assert.equal(spareSays(board).length, 0, where);
     assert.ok(uselessCount(board.says) <= 1, where);
   }
-});
-
-test('5단계: 질문 고르기. 질문은 넷이고 쓸모 있는 질문이 하나나 둘 섞여 있다', () => {
-  const useful = { 1: 0, 2: 0 };
-  for (const { board, solution } of boardsOf(5)) {
-    assert.equal(board.people.length, 1);
-    assert.equal(board.questions.length, QUESTION_COUNT);
-    assert.equal(new Set(board.questions.map((question) => JSON.stringify(question))).size, QUESTION_COUNT, '같은 질문이 둘');
-    const count = board.questions.filter((question) => judgeQuestion(question).useful).length;
-    assert.ok(count === 1 || count === 2);
-    assert.equal(solution.answer.length, count);
-    useful[count] += 1;
-  }
-  assert.ok(useful[1] > useful[2] && useful[2] > 30, JSON.stringify(useful));
 });
 
 test('판 하나를 만드는 데 오래 걸리지 않는다(가장 오래 걸린 판도 50ms 안쪽)', () => {

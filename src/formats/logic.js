@@ -5,25 +5,25 @@
 // 이 앱의 첫 "읽고 따지는" 형식이다. 판의 종류(mode)는 단계가 정한다.
 //   pair  주민 둘. 누가 무엇인지 고른다(1단계. "따라가 보기"가 처음부터 켜져 있다)
 //   box   상자 셋과 글, 조건 한 줄. 보물이 든 상자를 고른다(2단계)
-//   folk  주민 셋(또는 직접 만든 판). 누가 무엇인지, 또는 거짓말쟁이가 몇 명인지. "이런 말은 누구도 할 수 없어요"도 답이다(3단계)
+//   folk  주민 셋(또는 직접 만든 판). 누가 무엇인지, 또는 거짓말쟁이가 몇 명인지. "이렇게 말할 수는 없어요"도 답이다(3단계)
 //   road  주민 셋과 갈림길. 마을로 가는 길을 고른다(4단계)
-//   ask   갈림길의 주민 하나와 질문 후보. 한 번 물어 길을 알 수 있는 질문을 고른다(5단계)
+// (5단계 질문 고르기는 2026-11 화면 글 점검에서 뺐다. 이 화면은 질문 판을 받지 않는다. src/core/logic.js의 "질문" 칸을 본다.)
 //
 // 쳐 보기: 주민마다(갈림길 판은 길도, 상자 판은 상자마다) 단추가 있어 "모름 → 참말쟁이 → 거짓말쟁이"를 돌려 가며 고른다.
 //   쳐 보기 단추는 늘 쓸 수 있다(메모 노릇). 답이 아니다.
-// 따라가 보기: 쳐 본 대로 두면, 말마다 그 가정에서 참인지 거짓인지를 적고, 말한 주민의 쳐 본 종류와 맞지 않는 말을 눈에 띄게 한다.
+// 따라가 보기: 쳐 본 대로 두면, 말마다 그 가정에서 참인지 거짓인지를 적고, 말한 주민의 쳐 본 종류와 어긋나는 말을 눈에 띄게 한다.
 //   1단계에서는 처음부터 켜져 있고, 2단계부터는 힌트 칸의 단추로 켠다(처음 켤 때 힌트 하나를 연 것으로 적는다).
-// 틀린 답에는 판정하지 않는다. 그 답에서 맞지 않게 되는 첫 말을 짚어 "~것 같아요"로 말하고, 그 말을 눈에 띄게 한다.
+// 틀린 답에는 판정하지 않는다. 그 답에서 어긋나게 되는 첫 말을 짚어 "~것 같아요"로 말하고, 그 말을 눈에 띄게 한다.
 import T from '../content/logic.json';
 import { tuningFor } from '../core/level.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/logic-ladder.js';
-import { MAX_SAYS, SIDES, blankGuess, checkBoard, diagnose, follow, guessFull, judgeQuestion, questionWorlds, replyOf, solve, worldsOf } from '../core/logic.js';
+import { MAX_SAYS, SIDES, blankGuess, checkBoard, diagnose, follow, guessFull, labelTemplate, noteKeys, sayTemplate, solve, worldsOf } from '../core/logic.js';
 import { smallerLogic } from '../core/smaller.js';
 import { fill } from '../core/text.js';
-import { boardCard, drawBoard, drawChoices, drawMini, replyTable } from '../ui/logic-board.js';
+import { boardCard, drawBoard, drawChoices, drawMini } from '../ui/logic-board.js';
 
 const FORMAT = 'logic';
-const MODES = ['pair', 'box', 'folk', 'road', 'ask'];
+const MODES = ['pair', 'box', 'folk', 'road'];
 /** 직접 만들기: 주민 수, 처음 판 */
 const MAKE_PEOPLE = [2, 3];
 const FIRST_DRAFT = { people: 2, says: [] };
@@ -48,33 +48,9 @@ export function createLogic(frame) {
   const markOf = (kind) => (kind === null || kind === undefined ? null : kind ? 'knight' : 'liar');
   const copy = (value) => JSON.parse(JSON.stringify(value));
 
-  /** 말 하나의 틀의 열쇠와 끼울 값 */
-  function sayParts(say) {
-    const { s, by } = say;
-    switch (s.t) {
-      case 'me':
-        return [s.k ? 'me-true' : 'me-false', {}];
-      case 'is':
-        return [s.k ? 'is-true' : 'is-false', { a: s.who }];
-      case 'same':
-      case 'diff':
-        if (s.a === by || s.b === by) return [`${s.t}-me`, { a: s.a === by ? s.b : s.a }];
-        return [s.t, { a: s.a, b: s.b }];
-      case 'all':
-        return [s.k ? 'all-true' : 'all-false', {}];
-      case 'liars':
-        return ['liars', { n: s.n }];
-      case 'some':
-        return ['some', {}];
-      case 'or':
-        return [s.a === by ? 'or-me-a' : s.b === by ? 'or-me-b' : 'or', { a: s.a, b: s.b, ak: s.ak, bk: s.bk }];
-      default:
-        return [`road-${s.side}`, {}];
-    }
-  }
-
+  /** 말 하나의 글: 틀의 열쇠와 끼울 값(src/core/logic.js의 sayTemplate)으로 대본의 틀을 채운다. */
   function sayText(board, say) {
-    const [key, values] = sayParts(say);
+    const [key, values] = sayTemplate(say);
     return fill(T.says[key], {
       a: values.a === undefined ? '' : nameOf(board, values.a),
       b: values.b === undefined ? '' : nameOf(board, values.b),
@@ -84,27 +60,26 @@ export function createLogic(frame) {
     });
   }
 
-  /** 판 위에 적는 약속: 그 판의 말에 들어 있는 낱말("같은 쪽", "적어도 한 명", "이거나")의 뜻 */
-  function notesOf(board) {
-    if (!board.says) return [];
-    const types = new Set(board.says.map((say) => say.s.t));
-    return ['same', 'diff', 'some', 'or'].filter((type) => types.has(type)).map((type) => T.notes[type]);
-  }
+  /** 판 위에 적는 약속: 그 판의 말에 들어 있는 낱말("같은 종류", "적어도 한 명", "이거나", "우리")의 뜻 */
+  const notesOf = (board) => noteKeys(board).map((key) => T.notes[key]);
 
-  const labelText = (label) => fill(T.labels[label.t], { a: T.boxes[label.box ?? label.a] ?? '', b: T.boxes[label.b] ?? '' });
+  /** 상자의 글(at번째 상자에 붙은 글). 자기 상자를 가리키면 "이 상자"로 적는다. */
+  function labelText(label, at) {
+    const [key, values] = labelTemplate(label, at);
+    return fill(T.labels[key], { a: values.a === undefined ? '' : T.boxes[values.a], b: values.b === undefined ? '' : T.boxes[values.b] });
+  }
   const boxName = (at) => fill(T.boxName, { a: T.boxes[at] });
   const ruleText = (rule) => T.boxRules[`${rule.of}-${rule.n}`];
-  const questionKey = (question) => (question.q === 'fact' ? `fact-${question.yes ? 'yes' : 'no'}` : question.q);
-  const questionLines = (question) => T.questions[questionKey(question)].map((line) => fill(line, { side: question.side ? T.sides[question.side] : '' }));
-  const questionNo = (at) => fill(T.questionNo, { no: T.ordinals[at] });
+  /** 판 위의 한 줄이 세는 글(참인 글이나 거짓인 글)의 수. 따라가 보기는 참인 글의 수를 준다. */
+  const countedOf = (board, trueCount) => (board.rule.of === 'true' ? trueCount : board.labels.length - trueCount);
 
   /**
    * 판의 그림. 누를 수 있는 판에서는 쳐 보기 단추를 붙인다.
    * @param {object} board
    * @param {object} guess 쳐 본 것
-   * @param {{live?: boolean, show?: boolean, flag?: number|null, pick?: number|null, small?: boolean, sure?: boolean}} options show: 따라가 보기를 보여 주는가, sure: 쳐 본 것이 아니라 풀이다(물음표 없이 적는다)
+   * @param {{live?: boolean, show?: boolean, flag?: number|null, small?: boolean, sure?: boolean}} options show: 따라가 보기를 보여 주는가, sure: 쳐 본 것이 아니라 풀이다(물음표 없이 적는다)
    */
-  function viewOf(board, guess, { live = false, show = false, flag = null, pick = null, small = false, sure = false } = {}) {
+  function viewOf(board, guess, { live = false, show = false, flag = null, small = false, sure = false } = {}) {
     const followed = follow(board, guess);
     const view = { live, small, notes: notesOf(board) };
     const personView = (index) => {
@@ -136,14 +111,17 @@ export function createLogic(frame) {
     if (board.kind === 'box') {
       view.rule = { text: ruleText(board.rule), tag: null, fits: null };
       if (show && guess.box !== null) {
-        view.rule.tag = followed.count === 0 ? T.follow['count-zero'] : fill(T.follow.count, { n: followed.count });
+        // 판 위의 한 줄이 거짓인 글을 세면 거짓인 글을, 참인 글을 세면 참인 글을 센다.
+        const key = board.rule.of === 'true' ? 'count' : 'count-false';
+        const counted = countedOf(board, followed.count);
+        view.rule.tag = counted === 0 ? T.follow[`${key}-zero`] : fill(T.follow[key], { n: counted });
         view.rule.fits = followed.fits;
       }
       view.boxes = board.labels.map((label, at) => {
         const truth = show ? followed.truths[at] : null;
         return {
           name: boxName(at),
-          text: labelText(label),
+          text: labelText(label, at),
           mark: guess.box === at ? T.guessUi.boxMark : '',
           chosen: guess.box === at,
           truth,
@@ -158,21 +136,7 @@ export function createLogic(frame) {
       return view;
     }
     view.people = board.people.map((_, index) => personView(index));
-    if (board.kind === 'road' || board.kind === 'question') view.fork = forkView();
-    if (board.kind === 'question') {
-      view.questions = board.questions.map((question, at) => {
-        const reply = show ? followed.replies[at] : null;
-        return {
-          no: questionNo(at),
-          lines: questionLines(question),
-          tag: !show ? null : reply === null ? T.follow.unknown : fill(T.follow.reply, { reply: T.reply[reply ? 'yes' : 'no'] }),
-          chosen: pick === at,
-          focus: `q${at}`,
-          onTap: live ? () => pickAnswer('question', at) : undefined,
-        };
-      });
-      return view;
-    }
+    if (board.kind === 'road') view.fork = forkView();
     view.says = board.says.map((say, index) => {
       const item = followed.says[index];
       const clash = show && item.clash;
@@ -190,10 +154,10 @@ export function createLogic(frame) {
     return view;
   }
 
-  /** 판 아래의 한 줄: 따라가 보기가 켜져 있을 때, 맞지 않는 말이 몇 개인지(상자 판은 조건과 맞는지) */
+  /** 판 아래의 한 줄: 따라가 보기가 켜져 있을 때, 어긋나는 말이 몇 개인지(상자 판은 판 위의 한 줄과 들어맞는지) */
   function statusOf(round) {
     const { board, guess } = round;
-    if (!round.follow || board.kind === 'question') return '';
+    if (!round.follow) return '';
     const followed = follow(board, guess);
     if (board.kind === 'box') return guess.box === null ? '' : T.status[followed.fits ? 'box-fits' : 'box-misfit'];
     const clashes = followed.says.filter((item) => item.clash).length;
@@ -206,7 +170,7 @@ export function createLogic(frame) {
   function draw() {
     const { round } = frame;
     const playing = !round.done;
-    drawBoard($('logic-board'), viewOf(round.board, round.guess, { live: playing, show: round.follow, flag: round.flag, pick: round.pick.question }));
+    drawBoard($('logic-board'), viewOf(round.board, round.guess, { live: playing, show: round.follow, flag: round.flag }));
     $('logic-status').textContent = statusOf(round);
     $('undo').disabled = !playing || round.trail.length === 0;
     $('reset').disabled = !playing || round.trail.length === 0;
@@ -284,11 +248,11 @@ export function createLogic(frame) {
     }
     draw();
     frame.persist();
-    if (round.follow && !round.done) frame.say(T.play['follow-on'], 'point');
+    if (round.follow && !round.done) frame.say(T.play[round.board.kind === 'box' ? 'follow-on-box' : 'follow-on'], 'point');
   }
 
   // ---- 답하는 칸 ----
-  const blankPick = (board) => ({ kinds: board.kind === 'box' || board.kind === 'question' ? [] : board.people.map(() => null), n: null, side: null, box: null, question: null });
+  const blankPick = (board) => ({ kinds: board.kind === 'box' ? [] : board.people.map(() => null), n: null, side: null, box: null });
 
   function rowOf(cards, className = 'figure-row') {
     const row = document.createElement('div');
@@ -306,10 +270,8 @@ export function createLogic(frame) {
     $('logic-many').hidden = ask !== 'count';
     $('logic-roads').hidden = ask !== 'road';
     $('logic-boxes').hidden = ask !== 'box';
-    $('logic-asks').hidden = ask !== 'question';
     $('logic-none').hidden = round.mode !== 'folk';
     $('logic-none').disabled = off;
-    $('logic-copy').hidden = ask === 'question';
     if (ask === 'kinds') {
       const rows = board.people.map((_, index) => {
         const row = document.createElement('div');
@@ -348,14 +310,6 @@ export function createLogic(frame) {
         onPick: (value) => pickAnswer('box', Number(value)),
       });
     }
-    if (ask === 'question') {
-      drawChoices($('logic-ask-picks'), {
-        items: board.questions.map((_, at) => ({ value: String(at), text: questionNo(at) })),
-        value: pick.question === null ? null : String(pick.question),
-        disabled: off,
-        onPick: (value) => pickAnswer('question', Number(value)),
-      });
-    }
     $('logic-copy').disabled = off || !canCopy(round);
     $('logic-submit').disabled = off || answerOf(round) === null;
   }
@@ -367,8 +321,7 @@ export function createLogic(frame) {
     if (kind === 'kind') round.pick.kinds[at] = value;
     else if (kind === 'count') round.pick.n = at;
     else if (kind === 'road') round.pick.side = at;
-    else if (kind === 'box') round.pick.box = at;
-    else round.pick.question = at;
+    else round.pick.box = at;
     draw();
     frame.persist();
   }
@@ -404,8 +357,7 @@ export function createLogic(frame) {
     if (board.ask === 'kinds') return pick.kinds.every((kind) => kind !== null) ? { type: 'kinds', kinds: pick.kinds.slice() } : null;
     if (board.ask === 'count') return pick.n === null ? null : { type: 'count', n: pick.n };
     if (board.ask === 'road') return pick.side === null ? null : { type: 'road', side: pick.side };
-    if (board.ask === 'box') return pick.box === null ? null : { type: 'box', at: pick.box };
-    return pick.question === null ? null : { type: 'question', at: pick.question };
+    return pick.box === null ? null : { type: 'box', at: pick.box };
   }
 
   const answerText = (answer) =>
@@ -425,7 +377,7 @@ export function createLogic(frame) {
       frame.finish('solved');
       return;
     }
-    // 틀린 답: 깎이는 것도, 채점 표시도 없다. 맞지 않게 되는 말을 짚어 판에서 직접 확인하게 한다.
+    // 틀린 답: 깎이는 것도, 채점 표시도 없다. 어긋나게 되는 말을 짚어 판에서 직접 확인하게 한다.
     round.wrongCount += 1;
     round.flag = result.say;
     if (result.say !== null) round.flags.push(result.say);
@@ -438,8 +390,12 @@ export function createLogic(frame) {
     if (result.say !== null) return fill(T.guess['kinds-clash'], { name: nameOf(board, board.says[result.say].by) });
     if (result.guess === 'count-clash') return answer.n === 0 ? T.guess['count-clash-zero'] : fill(T.guess['count-clash'], { n: T.counts[answer.n] });
     if (result.guess === 'road-clash') return fill(T.guess['road-clash'], { side: T.sides[answer.side] });
-    if (result.guess === 'box-count') return result.count === 0 ? T.guess['box-zero'] : fill(T.guess['box-count'], { n: result.count });
-    if (result.guess === 'question-useless') return fill(T.guess['question-useless'], { reply: T.reply[result.reply ? 'yes' : 'no'] });
+    if (result.guess === 'box-count') {
+      // 판 위의 한 줄이 세는 글(참인 글이나 거짓인 글)로 센다.
+      const counted = countedOf(board, result.count);
+      const tail = board.rule.of === 'true' ? '' : '-false';
+      return counted === 0 ? T.guess[`box-zero${tail}`] : fill(T.guess[`box-count${tail}`], { n: counted });
+    }
     return T.guess['none-on-possible'];
   }
 
@@ -453,8 +409,7 @@ export function createLogic(frame) {
       parts.push(fill(T.right.kinds, { list }));
     } else if (board.ask === 'count') parts.push(fill(T.right.count, { n: T.counts[solution.answer] }));
     else if (board.ask === 'road') parts.push(fill(T.right.road, { side: T.sides[solution.answer] }));
-    else if (board.ask === 'box') parts.push(fill(T.right.box, { a: T.boxes[solution.answer] }));
-    else parts.push(T.right.question);
+    else parts.push(fill(T.right.box, { a: T.boxes[solution.answer] }));
     parts.push(round.moveCount > 0 ? fill(T.right.presses, { n: round.moveCount }) : T.right['no-presses']);
     if (round.answers.length > 1) parts.push(T.right['after-retry']);
     // 이 형식의 판을 정해 둔 수만큼 끝까지 했으면 "왜 그럴까?"가 생겼다고 알려 준다(남는 배정이 없는 판에서는 틀이 알린다).
@@ -466,18 +421,9 @@ export function createLogic(frame) {
   // ---- 판 위에 겹쳐 보여 주는 것: 풀이, "왜 그럴까?" ----
   const guessOfWorld = (board, world) => ({ kinds: world.kinds.slice(), road: board.kind === 'road' ? world.road : null, box: null });
 
-  /** 풀이: 모든 말이 맞는 경우(들)를 쳐 본 것처럼 그려서 보여 준다. 질문 고르기는 네 경우의 대답을 표로 보여 준다. */
+  /** 풀이: 모든 말이 들어맞는 경우(들)를 쳐 본 것처럼 그려서 보여 준다. */
   function solutionPages(round, solution) {
     const { board } = round;
-    if (board.kind === 'question') {
-      const worlds = questionWorlds();
-      const heads = [T.solution.head, ...worlds.map((world) => fill(T.solution.case, { kind: kindWord(world.kinds[0]), side: T.sides[world.road] })), ''];
-      const rows = board.questions.map((question, at) => {
-        const useful = judgeQuestion(question).useful;
-        return { no: questionNo(at), lines: questionLines(question), cells: worlds.map((world) => T.reply[replyOf(question, world) ? 'yes' : 'no']), mark: T.solution[useful ? 'useful' : 'useless'], useful };
-      });
-      return [{ say: T.solution.ask, nodes: [replyTable({ heads, rows })] }];
-    }
     if (board.kind === 'box') {
       const guess = { ...blankGuess(board), box: solution.answer };
       return [{ say: fill(T.solution.box, { a: T.boxes[solution.answer] }), nodes: [rowOf([boardCard(viewOf(board, guess, { show: true }), '')])] }];
@@ -615,7 +561,9 @@ export function createLogic(frame) {
     if (draft.says.length === 0) return;
     const board = draftBoard();
     const worlds = worldsOf(board);
-    const line = worlds.length === 0 ? T.make.none : worlds.length === 1 ? T.make.one : fill(T.make.many, { k: worlds.length });
+    // 말이 꽉 찼으면(MAX_SAYS개) 더 붙여 보자고 하지 않는다.
+    const many = draft.says.length >= MAX_SAYS ? T.make['many-full'] : T.make.many;
+    const line = worlds.length === 0 ? T.make.none : worlds.length === 1 ? T.make.one : fill(many, { k: worlds.length });
     draftUnique = worlds.length === 1;
     $('logic-make-result').textContent = line;
     drawMake();
@@ -665,9 +613,8 @@ export function createLogic(frame) {
     return guess.box === null || (board.kind === 'box' && count(guess.box) && guess.box < board.labels.length);
   };
 
-  /** 판의 종류: 상자, 질문, 갈림길은 판이 정하고, 주민 판은 1단계(주민 둘)인지 아닌지로 가른다. */
-  const modeOf = (board, level, custom) =>
-    board.kind === 'box' ? 'box' : board.kind === 'question' ? 'ask' : board.kind === 'road' ? 'road' : !custom && rungOf(level).mode === 'pair' ? 'pair' : 'folk';
+  /** 판의 종류: 상자, 갈림길은 판이 정하고, 주민 판은 1단계(주민 둘)인지 아닌지로 가른다. */
+  const modeOf = (board, level, custom) => (board.kind === 'box' ? 'box' : board.kind === 'road' ? 'road' : !custom && rungOf(level).mode === 'pair' ? 'pair' : 'folk');
 
   return {
     id: FORMAT,
@@ -684,7 +631,7 @@ export function createLogic(frame) {
       const followDefault = mode === 'pair' && rungOf(level).follow === true;
       return {
         mode,
-        board: copy(board), // 판: 주민들과 말, 또는 상자들과 글과 조건, 또는 주민 하나와 질문들
+        board: copy(board), // 판: 주민들과 말, 또는 상자들과 글과 판 위의 한 줄
         guess: blankGuess(board), // 쳐 본 것: 주민마다(참말쟁이 true, 거짓말쟁이 false, 모름 null), 길, 상자
         trail: [], // 처음으로 되돌린 뒤 쳐 보기를 바꾼 차례 { key, from, to }
         moveCount: 0, // 이 판에서 쳐 보기를 바꾼 횟수(무르고 되돌린 것까지 모두)
@@ -706,7 +653,8 @@ export function createLogic(frame) {
     },
     /** 기기에 적어 둔 하던 판이 이 형식의 판으로 쓸 수 있는 값인가 */
     valid(saved) {
-      if (!MODES.includes(saved.mode) || checkBoard(saved.board) !== null || solve(saved.board).possible === null) return false;
+      // 질문 판(뺀 5단계)은 받지 않는다.
+      if (!MODES.includes(saved.mode) || checkBoard(saved.board) !== null || saved.board.kind === 'question' || solve(saved.board).possible === null) return false;
       if (!guessOk(saved.board, saved.guess) || !Array.isArray(saved.trail) || !Array.isArray(saved.flags)) return false;
       if (![saved.moveCount, saved.undoCount, saved.resetCount, saved.copyCount, saved.followCount, saved.wrongCount].every(count)) return false;
       if (typeof saved.follow !== 'boolean' || typeof saved.followDefault !== 'boolean' || typeof saved.followShown !== 'boolean') return false;
@@ -723,11 +671,12 @@ export function createLogic(frame) {
     draw,
     ended() {},
     ruleLine: (round) => T.rules[round.mode === 'folk' && round.board.ask === 'count' ? 'count' : round.mode],
-    hints: (round) => T.hints[round.mode === 'folk' && round.board.ask === 'count' ? 'count' : round.mode],
+    // 상자 판은 판 위의 한 줄이 세는 글(참인 글, 거짓인 글)에 맞춘 힌트를 낸다.
+    hints: (round) => T.hints[round.mode === 'folk' && round.board.ask === 'count' ? 'count' : round.mode === 'box' && round.board.rule.of === 'false' ? 'box-false' : round.mode],
     touched: (round) => round.moveCount > 0 || round.copyCount > 0,
     /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
     view: (round) => ({ guess: copy(round.guess), pick: copy(round.pick), follow: round.follow, wrong: round.wrongCount }),
-    /** 이 판보다 작은 판: 주민 셋은 주민 둘로, 상자 셋은 상자 둘로. 질문 고르기와 주민 둘의 판에는 없다 */
+    /** 이 판보다 작은 판: 주민 셋은 주민 둘로, 상자 셋은 상자 둘로. 주민 둘의 판에는 없다 */
     smaller: (round, turn) => smallerLogic({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       return {
@@ -765,7 +714,7 @@ export function createLogic(frame) {
     /** 다음 판: 주민들의 모습이나 상자들 */
     drawSample(root, board) {
       if (board.kind === 'box') drawMini(root, { boxes: board.labels.length });
-      else drawMini(root, { faces: board.people.map((animal) => T.animals[animal].face), fork: board.kind === 'road', ask: board.kind === 'question' ? T.home['ask-mark'] : undefined });
+      else drawMini(root, { faces: board.people.map((animal) => T.animals[animal].face), fork: board.kind === 'road' });
     },
     drawBlank(root) {
       drawMini(root, { blank: T.home.blank });
@@ -781,7 +730,7 @@ export function createLogic(frame) {
       const picture = entry.picture;
       if (picture.blank) drawMini(root, { blank: T.home.blank });
       else if (picture.boxes) drawMini(root, { boxes: picture.boxes });
-      else drawMini(root, { faces: T.animals.slice(0, picture.faces).map((animal) => animal.face), fork: picture.fork === true, ask: picture.ask ? T.home['ask-mark'] : undefined });
+      else drawMini(root, { faces: T.animals.slice(0, picture.faces).map((animal) => animal.face), fork: picture.fork === true });
     },
     showMake,
   };

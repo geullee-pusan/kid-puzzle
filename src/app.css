@@ -3136,56 +3136,6 @@ button.tax-card {
   transform: skewX(14deg);
 }
 
-.logic-questions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.logic-question {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 2px 12px;
-  width: 100%;
-  min-height: 56px;
-  padding: 8px 12px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-div.logic-question {
-  cursor: default;
-}
-
-.logic-question.chosen {
-  border: 4px solid var(--bar);
-  background: #e7f5ff;
-}
-
-.logic-q-no {
-  color: var(--bar);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.logic-q-lines {
-  display: flex;
-  flex-direction: column;
-  font-size: 19px;
-  word-break: keep-all;
-}
-
-.logic-question .logic-tag {
-  grid-column: 2;
-}
-
 /* 답하는 칸: 주민마다 한 줄(이름, 참말쟁이, 거짓말쟁이) */
 .logic-kind-rows {
   display: flex;
@@ -3273,12 +3223,6 @@ div.logic-question {
   height: 26px;
 }
 
-.logic-ask-mark {
-  color: var(--bar);
-  font-size: 32px;
-  font-weight: 800;
-}
-
 .logic-roads.mini .logic-road {
   width: 24px;
   height: 36px;
@@ -3331,33 +3275,6 @@ div.logic-question {
 .logic-board.small .logic-label,
 .logic-board.small .logic-rule {
   font-size: 18px;
-}
-
-.logic-table {
-  border-collapse: collapse;
-  font-size: 18px;
-}
-
-.logic-table th,
-.logic-table td {
-  padding: 6px 8px;
-  border: 1px solid var(--line);
-  text-align: center;
-  word-break: keep-all;
-}
-
-.logic-table .logic-table-q {
-  text-align: left;
-}
-
-.logic-table .logic-table-q span {
-  display: block;
-}
-
-.logic-table tr.useful {
-  outline: 3px solid var(--good);
-  background: #ebfbee;
-  font-weight: 700;
 }
 
 /* ---- 낮은 화면(작은 태블릿, 창을 줄인 PC): 답 넣는 칸이 한 화면에 들어가게 조금 줄인다 ---- */

@@ -8,38 +8,37 @@
 //   - 첫 가정에서 바로 맞는 판을 내지 않는다: 남는 배정이 "모두 참말쟁이"인 판은 버린다(말을 다 믿으면 끝나는 판).
 //     쳐 보기 단추를 아무렇게나 누를 때 맞는 배정에 닿기까지의 횟수(expectedPresses)도 판마다 구해 둔다.
 //   - 동물과 말의 차례는 판 번호로 섞는다.
-import { ANIMALS, SIDES, blankGuess, boxAnswers, checkBoard, expectedPresses, isLean, judgeQuestion, labelTruths, solve, uselessCount } from './logic.js';
+import { ANIMALS, SIDES, blankGuess, boxAnswers, checkBoard, expectedPresses, isLean, labelTruths, solve, uselessCount } from './logic.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 
 /**
  * 사다리.
  *   tag     'basic'(기본) | 'applied'(응용) | 'challenge'(도전). 난이도를 알려 주는 표시일 뿐이다
- *   mode    'pair'(주민 둘) | 'box'(상자) | 'folk'(주민 셋) | 'road'(주민 셋과 갈림길) | 'ask'(질문 고르기) | 'make'(직접 만들기)
+ *   mode    'pair'(주민 둘) | 'box'(상자) | 'folk'(주민 셋) | 'road'(주민 셋과 갈림길) | 'make'(직접 만들기)
  *   follow  true면 "따라가 보기"가 처음부터 켜져 있다(1단계. 실패할 수 없는 첫 판)
  *
- * 임시로 정한 것: 3단계의 "누구도 할 수 없어요" 판의 비율(다섯에 하나)과 "몇 명" 판의 비율(나머지의 열에 셋),
- * 쓸모없는 말을 넣는 비율(3단계 다섯에 하나, 4단계 여섯에 하나), 말의 수(2~4개), 5단계의 질문 수(넷)와 쓸모 있는 질문의 수(하나, 셋에 하나는 둘).
+ * 5단계(질문 고르기)는 2026-11 화면 글 점검에서 뺐다. 다시 넣을 때는 '제가 ‘…’라고 물으면, 하마는 ‘예’라고 대답할 건가요?' 한 종류로.
+ * (질문의 풀이는 src/core/logic.js에 남아 있다. 질문 판을 만들어 내는 코드와 화면, 대본은 지웠다.)
+ *
+ * 임시로 정한 것: 3단계의 "이렇게 말할 수는 없어요" 판의 비율(다섯에 하나)과 "몇 명" 판의 비율(나머지의 열에 셋),
+ * 쓸모없는 말을 넣는 비율(3단계 다섯에 하나, 4단계 여섯에 하나), 말의 수(2~4개).
  */
 export const LADDER = [
   { level: 1, tag: 'basic', mode: 'pair', people: 2, follow: true },
   { level: 2, tag: 'basic', mode: 'box', boxes: 3 },
   { level: 3, tag: 'applied', mode: 'folk', people: 3 },
-  { level: 4, tag: 'applied', mode: 'road', people: 3 },
-  { level: 5, tag: 'challenge', mode: 'ask' },
-  { level: 6, tag: 'challenge', mode: 'make' },
+  { level: 4, tag: 'challenge', mode: 'road', people: 3 },
+  { level: 5, tag: 'challenge', mode: 'make' },
 ];
 
-export const TOP_LEVEL = 5;
-export const MAKE_LEVEL = 6;
+export const TOP_LEVEL = 4;
+export const MAKE_LEVEL = 5;
 
-/** 3단계에서 "누구도 할 수 없어요" 판과 "몇 명" 판이 나오는 비율(임시) */
+/** 3단계에서 "이렇게 말할 수는 없어요" 판과 "몇 명" 판이 나오는 비율(임시) */
 export const NONE_SHARE = 0.2;
 export const COUNT_SHARE = 0.3;
 /** 쓸모없는 말을 넣는 비율(임시) */
 const USELESS_SHARE = { folk: 0.2, road: 1 / 6 };
-/** 5단계: 질문 후보의 수, 쓸모 있는 질문이 둘인 판의 비율(임시) */
-export const QUESTION_COUNT = 4;
-const TWO_USEFUL_SHARE = 1 / 3;
 /** 판 하나를 고르려고 다시 뽑아 보는 횟수의 위 끝. 실제로는 넘지 않는다(테스트로 확인한다). */
 const MAX_TRIES = 20000;
 
@@ -232,24 +231,6 @@ function withUseless(rng, board) {
   return { ...board, says: [...board.says, { by, s: { t: 'me', k: true } }] };
 }
 
-// ---- 5단계: 질문 고르기 ----
-
-/** 질문 후보: 쓸모 있는 질문과 쓸모없는 질문 */
-export const QUESTIONS = {
-  useful: SIDES.flatMap((side) => [
-    { q: 'kin', side },
-    { q: 'would', side },
-  ]),
-  useless: [{ q: 'road', side: 'left' }, { q: 'road', side: 'right' }, { q: 'me' }, { q: 'fact', yes: true }],
-};
-
-function drawQuestions(rng) {
-  const usefulCount = rng() < TWO_USEFUL_SHARE ? 2 : 1;
-  const useful = shuffled(rng, QUESTIONS.useful).slice(0, usefulCount);
-  const useless = shuffled(rng, QUESTIONS.useless).slice(0, QUESTION_COUNT - usefulCount);
-  return shuffled(rng, [...useful, ...useless]);
-}
-
 // ---- 판 내기 ----
 
 /** 동물을 섞어 주민 n명에게 붙이고, 말의 차례를 섞는다. */
@@ -259,15 +240,12 @@ function dress(rng, board) {
     Array.from({ length: ANIMALS }, (_, index) => index),
   );
   if (board.kind === 'box') return board;
-  const count = board.kind === 'question' ? 1 : board.people.length;
-  const dressed = { ...board, people: animals.slice(0, count) };
-  if (board.says) dressed.says = shuffled(rng, board.says);
-  return dressed;
+  return { ...board, people: animals.slice(0, board.people.length), says: shuffled(rng, board.says) };
 }
 
 /**
  * 판 하나를 만든다.
- * @param {number} level 1~5
+ * @param {number} level 1~4
  * @param {number} seed 판 번호
  * @param {{small?: boolean}} options small: 맨 아래 단계에서 말 하나뿐인 판을 낸다(수준 맞추기에서 쓴다)
  * @returns {{level: number, seed: number, small: boolean, board: object, solution: object}}
@@ -298,12 +276,10 @@ export function generateBoard(level, seed, { small = false } = {}) {
     let made = drawFolk(rng, want);
     if (want !== 'none' && rng() < USELESS_SHARE.folk) made = withUseless(rng, made);
     board = dress(rng, made);
-  } else if (rung.mode === 'road') {
+  } else {
     let made = drawFolk(rng, 'road');
     if (rng() < USELESS_SHARE.road) made = withUseless(rng, made);
     board = dress(rng, made);
-  } else {
-    board = dress(rng, { kind: 'question', people: [0], questions: drawQuestions(rng), ask: 'question' });
   }
   return { level, seed, small, board, solution: solve(board) };
 }
@@ -323,7 +299,6 @@ export function measure(board) {
     presses: expectedPresses(board),
     says: board.says?.length ?? null,
     useless: board.says ? uselessCount(board.says) : 0,
-    useful: board.kind === 'question' ? board.questions.filter((question) => judgeQuestion(question).useful).length : null,
     blank: blankGuess(board),
   };
 }

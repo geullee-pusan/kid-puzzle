@@ -8,12 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { LADDER, MAKE_DIGITS, MAKE_LEVEL, generateBoard, rungOf } from '../src/core/code-ladder.js';
 import { allCodes, checkCode, filterCodes, judge, trailOf } from '../src/core/code.js';
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
-import { fill, sentenceCount } from '../src/core/text.js';
+import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const T = JSON.parse(readFileSync(resolve(ROOT, 'src/content/code.json'), 'utf8'));
 const C = JSON.parse(readFileSync(resolve(ROOT, 'src/content/coins.json'), 'utf8'));
 const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
+const source = readFileSync(resolve(ROOT, 'src/formats/code.js'), 'utf8');
 
 const MODES = ['guess', 'table', 'referee'];
 const GUESS_KEYS = ['table-row', 'referee-reply', 'referee-hit', 'referee-place'];
@@ -71,19 +72,27 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   for (const mode of MODES) {
     const rule = fill(T.rules[mode], range);
     assert.ok(sentenceCount(rule) <= 3, `${mode}: ${rule}`);
-    assert.match(rule, /숫자 0부터 9까지에서 서로 다른 숫자 3개/, mode);
+    assert.match(rule, /숫자 0부터 9까지 가운데 서로 다른 숫자 3개/, mode);
   }
   // 두 수가 무엇인지 말한다. 맞혀야 하는 횟수를 정하지 않는다.
   assert.match(T.rules.guess, /들어 있는 숫자가 몇 개인지/);
   assert.match(T.rules.guess, /자리도 맞는 것이 몇 개인지/);
   assert.match(T.rules.guess, /몇 번이든 내도 돼요/);
   assert.match(T.rules.table, /하나뿐/);
+  // 역할 바꾸기: 세어서 알려 줄 두 수가 무엇인지 말한다.
+  assert.match(T.rules.referee, /들어 있는 숫자와 자리도 맞는 것을 세어서 알려 주세요\.$/);
   // 직접 만들기 화면의 안내 글도 같다. 답이 하나뿐인 표를 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[2]) <= 3, guides[2]);
   assert.match(guides[2], /답이 하나뿐인 표를 만들 수 있을까요\?/);
   assert.match(T.make.intro, /답이 하나뿐인 표를 만들 수 있을까요\?/);
+  // 한 글에서 '답'을 두 뜻으로 쓰지 않는다. 만들기 화면에 "선생님, 풀어 보세요" 단추가 있으므로 안내 끝에 그 말을 한다.
+  assert.match(T.make.intro, /^추측 한 줄과 두 수를 넣어서/);
+  assert.match(T.make.intro, /선생님에게 풀어 보라고 할 수도 있어요\.$/);
+  assert.match(html, /id="code-make-solve"[^>]*>선생님, 풀어 보세요</);
+  // 직접 풀어 보는 단추는 이름에 따옴표를 붙여 가리킨다(선생님이 "내가"라고 말하는 것처럼 들리지 않게).
+  assert.match(T.make.one, /‘내가 해 볼래요’ 단추를 누르면/);
 });
 
 test('성적을 떠올리게 하는 말이 없다: 몇 번 안에 맞히라고 하지 않고, 기회나 횟수의 끝을 두지 않는다', () => {
@@ -137,11 +146,16 @@ test('틀린 답에 하는 말은 경우마다 하나씩 있고, 짐작이라고
     assert.equal(sentenceCount(T.guess[key]), 2, key);
   }
   // 표만 보고 알아내기: 어긋나는 줄을 가리킨다.
-  assert.equal(fill(T.guess['table-row'], { no: 2 }), '2번째 줄의 답과 맞지 않는 것 같아요. 그 줄과 견줘 볼까요?');
-  // 역할 바꾸기: 처음에는 하나씩 견줘 보자고 하고, 또 어긋나면 두 수 가운데 하나만 짚는다. 틀린 횟수는 말하지 않는다.
-  assert.match(T.guess['referee-reply'], /하나씩 견줘 볼까요\?$/);
-  assert.match(T.guess['referee-hit'], /^들어 있는 숫자의 수/);
-  assert.match(T.guess['referee-place'], /^자리도 맞는 것의 수/);
+  assert.equal(fill(T.guess['table-row'], { no: ordinal(2) }), '2번째 줄의 답과 맞지 않는 것 같아요. 그 줄과 나란히 놓고 볼까요?');
+  assert.equal(fill(T.guess['table-row'], { no: ordinal(1) }), '첫 번째 줄의 답과 맞지 않는 것 같아요. 그 줄과 나란히 놓고 볼까요?');
+  assert.match(source, /fill\(T\.guess\['table-row'\], \{ no: ordinal\(row\) \}\)/);
+  // 역할 바꾸기: 처음에는 암호와 추측을 나란히 놓고 하나씩 보자고 하고, 또 어긋나면 두 수 가운데 하나만 짚는다. 틀린 횟수는 말하지 않는다.
+  assert.match(T.guess['referee-reply'], /^알려 준 두 수가 맞지 않는 것 같아요\./);
+  assert.match(T.guess['referee-reply'], /나란히 놓고 숫자를 하나씩 볼까요\?$/);
+  assert.match(T.guess['referee-hit'], /^들어 있는 숫자의 수가 다른 것 같아요\./);
+  assert.match(T.guess['referee-place'], /^자리도 맞는 것의 수가 다른 것 같아요\./);
+  // '견주다'는 3학년에게 어려운 말이라 쓰지 않는다("나란히 놓고 보기").
+  for (const [path, text] of strings) assert.doesNotMatch(text, /견줘|견주/, `${path}: ${text}`);
   for (const key of GUESS_KEYS) assert.doesNotMatch(T.guess[key], /\{(?!no\})/, key);
   assert.ok(T.flag.length > 0);
 });
@@ -161,16 +175,38 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   for (const [path, text] of strings) assert.doesNotMatch(text, praise, `${path}: ${text}`);
   assert.deepEqual(Object.keys(T.right).sort(), [...RIGHT_KEYS].sort());
-  assert.equal(fill(T.right['guess-found'], { n: 4 }), '맞아요. 4번째 추측에서 암호를 알아냈어요.');
+  assert.equal(fill(T.right['guess-found'], { n: ordinal(4) }), '맞아요. 4번째 추측에서 암호를 알아냈어요.');
+  assert.equal(fill(T.right['guess-found'], { n: ordinal(1) }), '맞아요. 첫 번째 추측에서 암호를 알아냈어요.');
   assert.ok(fill(T.right['table-tries'], { n: 3 }).includes('3번 넣어 보고'));
   assert.match(T.right['table-first'], /처음 넣은 암호/);
-  assert.ok(fill(T.right['referee-found'], { n: 5 }).includes('5번째 추측'));
-  const trail = [720, 96, 12, 1].map((n) => fill(T.count, { n })).join(T.trailJoin);
-  assert.equal(fill(T.right['referee-trail'], { trail }), '후보는 720개, 96개, 12개, 1개 차례로 줄었어요.');
+  // "맞아요"와 "맞는"을 되풀이하지 않는다.
+  for (const key of ['table-first', 'table-tries']) assert.match(T.right[key], /^맞아요\. 표의 모든 줄과 어긋나지 않는 암호예요\./, key);
+  assert.ok(fill(T.right['referee-found'], { n: ordinal(5) }).includes('5번째 추측'));
+  assert.equal(fill(T.right['referee-found'], { n: ordinal(1) }), '선생님이 첫 번째 추측에서 암호를 맞혔어요.');
+  // 차례("몇 번째")는 ordinal로 채운다. 1이면 "첫 번째"다.
+  assert.match(source, /fill\(T\.right\['guess-found'\], \{ n: ordinal\(round\.rows\.length\) \}\)/);
+  assert.match(source, /fill\(T\.right\['referee-found'\], \{ n: ordinal\(round\.rows\.length\) \}\)/);
+  const [start, ...rest] = [720, 96, 12, 1].map((n) => fill(T.count, { n }));
+  assert.equal(fill(T.right['referee-trail'], { start, trail: rest.join(T.trailJoin) }), '후보는 720개에서 96개, 12개, 1개로 차례차례 줄었어요.');
+  // 수 뒤에는 늘 "개"가 붙으므로 "로"가 맞다.
+  assert.match(T.count, /개$/);
+});
+
+test('풀이의 말은 그려지는 것과 맞는다: 줄이 없으면 표를 가리키지 않는다', () => {
+  // 역할 바꾸기에서 암호만 정하고 아직 답한 줄이 없으면 표가 그려지지 않는다. 그때는 따로 말한다.
+  assert.equal(T.solution['referee-unanswered'], '내 암호예요. 아직 선생님의 추측에 답하지 않았어요.');
+  assert.equal(T.solution['referee-none'], '아직 암호를 정하지 않았어요. 그래서 선생님도 아직 추측하지 않았어요.');
+  assert.match(T.solution.referee, /이렇게 줄었어요/);
+  assert.match(source, /if \(rows\.length > 0\) view\.table = /);
+  assert.match(source, /rows\.length > 0 \|\| round\.mode === 'table' \? T\.solution\[round\.mode\] : T\.solution\[round\.mode === 'guess' \? 'guess-none' : 'referee-unanswered'\]/);
+  // 표를 가리키는 말("표에", "이렇게")은 줄이 없을 때의 말에 없다.
+  for (const key of ['guess-none', 'referee-unanswered', 'referee-none']) assert.doesNotMatch(T.solution[key], /표에|이렇게/, key);
+  // 역할 바꾸기를 시작할 때: 아이가 정한 것은 "내 암호"다.
+  assert.match(T.play.secretSet, /^내 암호가 정해졌어요\./);
 });
 
 test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {
-  const allowed = new Set(['n', 'no', 'hit', 'place', 'left', 'low', 'high', 'k', 'trail', 'pos', 'digit']);
+  const allowed = new Set(['n', 'no', 'hit', 'place', 'left', 'low', 'high', 'k', 'start', 'trail', 'pos', 'digit']);
   for (const [path, text] of strings) {
     for (const [, name] of text.matchAll(/\{([^{}]*)\}/g)) assert.ok(allowed.has(name), `${path}: {${name}}`);
   }
@@ -239,7 +275,7 @@ test('"왜 그럴까?"는 그림 서너 장이고, 어떻게 알아챘는지의 
   assert.match(T.why[1].say, /지워 봤더니/);
   assert.match(T.why[2].say, /0개/);
   assert.match(T.why[2].say, /통째로/);
-  assert.match(T.why[3].say, /남은 후보 가운데서/);
+  assert.match(T.why[3].say, /남은 후보 가운데서 골라서 냈어요/);
   // 남은 후보에서 고르는 것이 늘 가장 좋은 수는 아니다. "후보가 또 준다"까지만 말한다.
   assert.match(T.why[3].say, /후보가 또 줄어요/);
   assert.doesNotMatch(T.why[3].say, /헛걸음/);

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { LADDER, MAKE_LEVEL, generateBoard, opensFixed, rungOf } from '../src/core/duel-ladder.js';
 import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, gameOf, isOver, isWin, movesOf, moveKey, replay, solve, startState, whyOpen, winningMoves } from '../src/core/duel.js';
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
-import { fill, sentenceCount } from '../src/core/text.js';
+import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 import { bruteLengths, fromState } from './helpers/brute-duel.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -92,7 +92,8 @@ test('규칙 설명은 세 문장을 넘지 않고, 마지막 수를 둔 쪽이 
   }
   assert.match(T.rules.choco, /금을 따라 곧게 둘로 쪼개요/);
   assert.equal(fill(T.rules.one, { k: 3 }), '번갈아 돌을 가져가요. 한 번에 1개부터 3개까지 가져갈 수 있어요. 마지막 돌을 가져간 쪽이 이겨요.');
-  for (const key of ['two', 'three']) assert.match(T.rules[key], /한 더미에서만 원하는 만큼 가져가요/, key);
+  // 여러 더미: 한 개 이상을, 한 더미에서만 가져간다(하나도 안 가져가는 수는 없다).
+  for (const key of ['two', 'three']) assert.match(T.rules[key], /번갈아 한 개 이상, 한 더미에서만 원하는 만큼 가져가요\./, key);
   // 어떻게 두는지는 답하는 칸에 늘 적혀 있다.
   const pad = visibleText(part('id="duel-pad"', 'id="leave-ask"'));
   assert.match(pad, /조각 안의 금을 누르면 그 금을 따라 쪼개져요\./);
@@ -198,6 +199,12 @@ test('선생님이 둔 수는 판 아래의 글과 말로 알린다', () => {
   assert.equal(fill(T.play['teacher-one'], { n: 3 }), '선생님은 3개를 가져갔어요.');
   assert.match(T.play['teacher-choco'], /조각 하나를 둘로 쪼갰어요\.$/);
   assert.deepEqual(T.turn, { kid: '내 차례예요', teacher: '선생님 차례예요' });
+  // 오른쪽 칸의 차례와 판 아래의 차례는 같은 때 함께 보이므로 같은 말이다.
+  assert.equal(T.status['kid-turn'], T.turn.kid);
+  assert.equal(T.status['teacher-turn'], T.turn.teacher);
+  // 쪼개기가 끝났을 때: 마지막으로 쪼갠 쪽을 말한다("마지막 조각"이 어느 조각인지 헷갈리지 않게).
+  assert.equal(T.status['over-kid-choco'], '마지막으로 쪼갠 것은 나예요');
+  assert.equal(T.status['over-teacher-choco'], '마지막으로 쪼갠 것은 선생님이에요');
   // 판 화면: 판 아래에 글자로 알리는 자리가 있고, 읽어 주는 기기에도 알린다.
   assert.match(html, /id="duel-status" class="tile-status" aria-live="polite"/);
   // 화면 코드: 선생님은 잠깐 뜸을 들이고 두며, 둔 뒤에 무엇을 두었는지 말한다. 스스로 되풀이하는 타이머는 없다.
@@ -237,7 +244,8 @@ test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어�
   assert.equal(T.hints.one[0], '끝나기 바로 전에는 어떤 모양이었나요?');
   assert.equal(T.hints.one[1], '돌이 몇 개 남았을 때 차례가 오면 질까요?');
   assert.equal(T.hints.two[0], '자리를 바꿔서 두면 어떻게 될까요?');
-  assert.match(T.hints.two[1], /어느 더미에서 몇 개를 가져갔나요\?$/);
+  // 따라 두기를 말해 버리지 않게, 선생님이 둔 뒤의 모양만 보게 한다.
+  assert.equal(T.hints.two[1], '선생님이 가져간 뒤에 두 더미는 어떤 모양이었나요?');
 });
 
 test('작은 판으로 두어 보는 일은 틀의 "더 작은 판으로"가 맡는다. 같은 일을 하는 단추가 둘 있지 않다. 끝내면 원래 판으로 돌아와 묻는다', () => {
@@ -255,8 +263,8 @@ test('작은 판으로 두어 보는 일은 틀의 "더 작은 판으로"가 맡
   // 작은 판을 끝낸 뒤에는 이 형식만의 끝난 뒤 단추(자리를 바꿔서 다시 두기, 방금 판 다시 보기)와 덧붙이는 말을 내지 않는다.
   assert.match(code, /const done = round\.done && !round\.side;/);
   assert.match(code, /if \(round\.side\) return parts;/);
-  // 돌아오면 작은 판에서 본 것을 원래 판에 쓸 수 있는지 묻는다. 무엇을 보았어야 하는지는 말하지 않는다. 이 말은 틀의 대본에 있다.
-  assert.equal(C.side.back, '작은 판에서 본 것을 여기에 쓸 수 있나요?');
+  // 돌아오면 작은 판에서 알아낸 것이 원래 판에도 맞는지 묻는다. 무엇을 보았어야 하는지는 말하지 않는다. 이 말은 틀의 대본에 있다.
+  assert.equal(C.side.back, '작은 판에서 알아낸 것이 이 판에도 맞을까요?');
   for (const key of ['open', 'more', 'back', 'early']) assert.doesNotMatch(C.side[key], /홀수|짝수|나머지|따라|같게|때문/, key);
   assert.ok(!Object.keys(T.play).some((key) => key.startsWith('small')), '작은 판의 말은 틀의 대본으로 옮겼다');
   // 기록: 작은 판을 연 것은 틀이 원래 판의 사건(side)으로 남기고, 작은 판에서 둔 것은 작은 판의 기록(side: true)에 남는다.
@@ -285,8 +293,14 @@ test('끝난 뒤 고르기에 "자리를 바꿔서 다시 두기"와 "방금 판
   assert.match(T.play['rematch-teacher'], /선생님이 먼저 둘게요\.$/);
   // 다시 보기: 한 수씩 넘겨 보며 누가 무엇을 두었는지를 말한다.
   assert.equal(T.replay.title, '방금 판 다시 보기');
-  assert.equal(fill(T.replay['teacher-piles'], { no: 2, pile: '첫째', n: 3 }), '2번째 수예요. 선생님이 첫째 더미에서 3개를 가져갔어요.');
-  assert.equal(fill(T.replay['kid-one'], { no: 1, n: 2 }), '1번째 수예요. 2개를 가져갔어요.');
+  // 차례는 "첫 번째", "2번째"로 읽는다('1번째'라고 하지 않는다).
+  assert.equal(fill(T.replay['teacher-piles'], { no: ordinal(2), pile: '첫째', n: 3 }), '2번째 수예요. 선생님이 첫째 더미에서 3개를 가져갔어요.');
+  assert.equal(fill(T.replay['kid-one'], { no: ordinal(1), n: 2 }), '첫 번째 수예요. 2개를 가져갔어요.');
+  assert.match(code, /moveText\(T\.replay, who, round\.board, trail\.at\(-1\), \{ no: ordinal\(turns\) \}\)/);
+  // 금을 읽어 주는 글도 같다.
+  assert.equal(fill(T.labels['line-v'], { no: ordinal(1), at: ordinal(2) }), '첫 번째 조각, 왼쪽에서 2번째 세로 금');
+  assert.equal(fill(T.labels['line-h'], { no: ordinal(3), at: ordinal(1) }), '3번째 조각, 위에서 첫 번째 가로 금');
+  assert.match(code, /fill\(T\.labels\[`line-\$\{dir\}`\], \{ no: ordinal\(index \+ 1\), at: ordinal\(at\) \}\)/);
   for (const who of ['kid', 'teacher']) {
     for (const kind of ['choco', 'one', 'piles']) assert.match(T.replay[`${who}-${kind}`], /^\{no\}번째 수예요\./, `${who}-${kind}`);
     assert.ok(T.replay[`start-${who}`], who);
@@ -372,7 +386,7 @@ test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => 
   // 풀이와 직접 만들기에서는 어느 쪽이 이기는지만 알려 주고 까닭은 말하지 않는다.
   for (const key of ['first', 'second']) {
     assert.equal(T.solution[key], T.make[key]);
-    assert.match(T.solution[key], /^이 판은 잘 두면 (먼저|나중에) 두는 쪽이 이겨요\.$/);
+    assert.match(T.solution[key], /^이 판은 둘 다 잘 두면 (먼저|나중에) 두는 쪽이 이겨요\.$/);
   }
 });
 
@@ -393,26 +407,30 @@ test('"왜 그럴까?"는 게임마다 따로 있고, 그림 서너 장이고, �
     assert.match(story[0].say, /^(선생님도|두 더미가 같은 판에서 선생님이)/, game);
     assert.match(story[0].say, /봤어요/, game);
   }
-  // 쪼개기: 이기려고 이리저리 쪼개 봤다 → 그런데 끝나는 횟수가 같았다 → 한 번 쪼개면 조각이 하나 늘어난다
-  //        → 처음엔 한 조각, 끝에는 칸의 수만큼 → 횟수가 홀수면 먼저 두는 쪽이 마지막에 쪼갠다. 두기 전에 이미 정해져 있다
+  // 쪼개기: 이기려고 이리저리 쪼개 봤다 → 그런데 끝날 때까지 쪼갠 횟수가 같았다 → 한 번 쪼개면 조각이 하나 늘어난다
+  //        → 처음엔 한 조각, 끝에는 칸의 수만큼 → 횟수가 홀수면 먼저 두는 쪽이 마지막에 쪼갠다. 두기 전에 판만 보고도 안다
   assert.match(T.why.choco[0].say, /^선생님도 이기려고 이리저리 쪼개 봤어요\./);
-  assert.match(T.why.choco[0].say, /그런데 어떻게 쪼개도 끝나는 횟수가 같았어요\.$/);
+  assert.match(T.why.choco[0].say, /그런데 어떻게 쪼개도 끝날 때까지 쪼갠 횟수가 같았어요\.$/);
   assert.match(T.why.choco[1].say, /한 번 쪼갤 때마다 조각이 꼭 하나씩 늘어났어요/);
   assert.match(T.why.choco[2].say, /처음에는 한 조각이에요\. 끝에는 칸의 수만큼 조각이 돼요\./);
   assert.match(T.why.choco[2].say, /쪼개는 횟수는 늘 칸의 수보다 하나 적어요/);
   assert.match(T.why.choco[3].say, /홀수면 먼저 두는 쪽이 마지막에 쪼개요/);
-  assert.match(T.why.choco[3].say, /두기 전에 이미 정해져 있어요/);
+  assert.match(T.why.choco[3].say, /그래서 누가 이길지는 두기 전에 판만 보고도 알 수 있어요\./);
   // 한 더미: 여러 번 졌다 → 끝에서부터 거꾸로 따져 봤다 → 3개가 남았을 때 차례가 오면 무엇을 가져가도 진다
   //         → 그 수를 상대에게 넘기면 된다 → 넘겨야 하는 수가 줄줄이 있다(표)
   assert.match(T.why.one[0].say, /^선생님도 여러 번 졌어요\./);
   assert.match(T.why.one[0].say, /끝에서부터 따져 봤어요/);
   assert.match(T.why.one[1].say, /^그런데 3개가 남았을 때 차례가 오면 달랐어요\./);
   assert.match(T.why.one[1].say, /1개를 가져가도 2개를 가져가도 상대가 나머지를 다 가져갔어요/);
+  // 이 형식에서 '수'는 둔 수다. 돌의 수를 '지는 수'라고 부르지 않는다.
+  assert.match(T.why.one[1].say, /그러니 3개가 남았을 때 차례가 오면 져요\.$/);
+  for (const slide of T.why.one) assert.doesNotMatch(slide.say, /지는 수|건너뛰/, slide.say);
   assert.match(T.why.one[2].say, /^상대에게 3개를 넘기면 이겨요\./);
   assert.match(T.why.one[2].say, /작은 수부터 표로 적어 봤어요\.$/);
-  assert.match(T.why.one[3].say, /3개씩 건너뛰어요/);
+  assert.match(T.why.one[3].say, /^차례가 오면 지는 돌의 수는 3, 6, 9처럼 3씩 커져요\./);
   // 두 더미: 같은 두 더미에서 상대가 따라 했더니 늘 졌다 → 따라 하면 다시 같아진다
   //         → 다르면 먼저 같게 만들고 따라 한다
+  assert.match(T.why.two[0].say, /^두 더미가 같은 판에서 선생님이 먼저 두어 봤어요\. 몇 개를 가져가도/);
   assert.match(T.why.two[0].say, /상대가 다른 더미에서 똑같이 따라 했어요\. 그랬더니 선생님이 늘 졌어요\.$/);
   assert.match(T.why.two[1].say, /^따라 하면 두 더미가 다시 같아져요\./);
   assert.match(T.why.two[2].say, /^그러면 두 더미가 다른 판은 어떨까요\?/);
@@ -539,7 +557,10 @@ test('"왜 그럴까?"의 주장(한 더미): 3개가 남았을 때 차례가 �
     assert.deepEqual(losing, losing.map((_, index) => (index + 1) * (item.max + 1)));
   }
   assert.match(T.why.one[2].say, /3개를 넘기면 이겨요\. 같은 식으로 따져 보니 6개와 9개를 넘겨도 이겼어요/);
-  assert.match(T.why.one[3].say, /지는 수는 3개씩 건너뛰어요\. 한 번에 3개까지 가져가는 판에서는 4개씩 건너뛰었어요/);
+  // 말로 적은 지는 돌의 수와 커지는 폭은 두 표의 수 그대로다.
+  const [byTwo, byThree] = marks;
+  assert.ok(T.why.one[3].say.includes(`차례가 오면 지는 돌의 수는 ${byTwo.lose.join(', ')}처럼 ${byTwo.max + 1}씩 커져요.`));
+  assert.ok(T.why.one[3].say.includes(`한 번에 ${byThree.max}개까지 가져가는 판에서는 ${byThree.lose.join(', ')}처럼 ${byThree.max + 1}씩 커졌어요.`));
   // "넘기면 이긴다": 그 수를 넘겨받은 쪽은 지는 자리에 선다. 넘길 수 있는 자리에서는 풀이 프로그램도 그 수를 넘긴다.
   for (let n = 4; n <= 11; n++) {
     const board = { kind: 'one', n, max: 2 };
@@ -641,6 +662,8 @@ test('직접 만들기: 게임을 고르고 수를 정하면, 잘 두었을 때 
   assert.equal([...make.matchAll(/data-take="/g)].length, 4);
   assert.equal([...make.matchAll(/data-count="/g)].length, 2);
   assert.match(make, /id="duel-make-solve"[^>]*>선생님, 누가 이길까요\?</);
+  // 선생님은 판을 풀어 주지 않고 누가 이기는지 알려 준다. 그래서 안내의 끝은 "물어볼 수도 있어요"다.
+  assert.match(T.make.intro, /다 정하면 누가 이기는지 선생님에게 물어볼 수도 있어요\.$/);
   assert.match(make, /id="duel-make-play"[^>]*>내가 해 볼래요</);
   assert.equal(fill(T.make.cells, { n: 5 }), '5칸');
   assert.equal(fill(T.make.stones, { n: 25 }), '25개');

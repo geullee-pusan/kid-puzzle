@@ -73,7 +73,28 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
   for (const guide of guides) assert.ok(sentenceCount(guide) <= 3, guide);
-  assert.match(guides[1], /점이 여섯 개인데 안 되는 그림도 만들 수 있을까요\?/);
+  assert.match(guides[1], /점 여섯 개로 안 되는 그림도 만들 수 있을까요\?/);
+  // 선을 없애는 말은 "빠져요" 하나로 쓴다. 만들기 화면에는 "선생님, 풀어 보세요" 단추가 있어서 그렇게 할 수 있다고 알려 준다.
+  assert.match(guides[1], /선을 누르면 빠져요/);
+  assert.match(T.make.intro, /선을 누르면 빠져요/);
+  assert.match(T.make.intro, /선생님에게 풀어 보라고 할 수도 있어요\.$/);
+  assert.doesNotMatch(strings.map(([, text]) => text).join(' '), /지워져요/);
+});
+
+test('직접 만들기의 결과는 사실대로 말한다: 덩어리는 셋 이상일 수 있고, 선이 없는 점에서는 시작할 수 없다', () => {
+  assert.match(T.make.split, /여러 덩어리/);
+  assert.doesNotMatch(T.make.split, /두 덩어리/);
+  assert.match(T.make['possible-any'], /선이 이어진 점이면 어느 점에서 시작해도 돼요\./);
+});
+
+test('안내 글 속 단추 이름은 따옴표로 묶고, 화면에 그 이름의 단추가 있다', () => {
+  const named = strings.flatMap(([path, text]) => [...text.matchAll(/'([^']+)' 단추/g)].map((match) => [path, match[1]]));
+  assert.ok(named.length >= 2);
+  for (const [path, name] of named) assert.ok(screenText.includes(name), `${path}: ${name}`);
+  assert.match(T.pad.startPick, /'이 점에서 시작할래요' 단추를 눌러요\./);
+  assert.match(T.pad.startDraw, /'처음으로 되돌리기' 단추를 눌러요\./);
+  // 2단계에서 먼저 고르는 것이 무엇인지 말한다.
+  for (const text of [T.rules.judge, T.play.judgeFirst]) assert.match(text, /'돼요'나 '안 돼요'를 먼저 골라 보세요\./);
 });
 
 test('힌트는 판의 종류마다 두 개이고, 하나하나가 질문 한 문장이다', () => {
@@ -126,13 +147,22 @@ test('까닭은 "왜 그럴까?"에서만 말한다: 다른 글에는 홀수, �
 test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 않는다', () => {
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   for (const [path, text] of strings) assert.doesNotMatch(text, praise, `${path}: ${text}`);
-  const keys = ['traced-clean', 'traced-back', 'impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'no-stroke', 'check-invite', 'start-right', 'fix-add', 'fix-remove', 'fix-traced', 'after-retry', 'why-invite'];
+  const keys = ['traced-clean', 'traced-back', 'impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'no-stroke', 'check-invite', 'start-right', 'fix-add', 'fix-remove', 'fix-add-traced', 'fix-remove-traced', 'after-retry', 'why-invite'];
   assert.deepEqual(Object.keys(T.right).sort(), [...keys].sort());
   assert.ok(fill(T.right['traced-back'], { u: 3, m: 7 }).includes('3번'));
   assert.ok(fill(T.right['traced-back'], { u: 3, m: 7 }).includes('7개'));
+  // 한 수 거두기는 "무르기", 처음부터는 "되돌리기". 둘을 합쳐 센 횟수라서 둘 다 말한다.
+  assert.ok(fill(T.right['traced-back'], { u: 3, m: 7 }).includes('3번 무르거나 되돌리고 다시 해서'));
   assert.ok(fill(T.right['traced-clean'], { m: 7 }).includes('무르지 않고'));
   assert.ok(fill(T.right['impossible-tried'], { s: 4 }).includes('4번 막혀'));
   assert.match(T.right['no-stroke'], /긋지 않고/);
+  assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
+  // "맞아요."는 답 단추를 눌러 맞혔을 때만 한다. 끝까지 그어서 끝난 말에는 붙이지 않는다.
+  const byButton = ['impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'start-right', 'fix-add', 'fix-remove'];
+  const byTracing = ['traced-clean', 'traced-back', 'fix-add-traced', 'fix-remove-traced'];
+  for (const key of byButton) assert.match(T.right[key], /^맞아요\. /, key);
+  for (const key of byTracing) assert.doesNotMatch(T.right[key], /맞아요/, key);
+  for (const key of keys.filter((item) => !byButton.includes(item))) assert.doesNotMatch(T.right[key], /맞아요/, key);
 });
 
 test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {

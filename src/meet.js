@@ -2,7 +2,7 @@
 // 화면에 나오는 글은 대본(src/content/coins.json)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 import T from './content/coins.json';
 import { RULES, applyMove, headCount } from './core/coins.js';
-import { fill } from './core/text.js';
+import { fill, ordinal } from './core/text.js';
 import { drawCoins } from './ui/coin-board.js';
 
 const FORMAT = 'coins';
@@ -17,7 +17,7 @@ export function createMeet(frame) {
   const talker = frame.talkers.meet;
   let meet = null; // 처음 만남에서 하는 중인 것
 
-  const coinLabel = (index, heads) => fill(T.coinLabel, { no: index + 1, face: heads ? T.faces.heads : T.faces.tails });
+  const coinLabel = (index, heads) => fill(T.coinLabel, { no: ordinal(index + 1), face: heads ? T.faces.heads : T.faces.tails });
   const meetPlaying = () => meet.step === 'first' || meet.step === 'second';
   const meetStamp = () => Math.round((performance.now() - meet.since) / 100) / 10;
 

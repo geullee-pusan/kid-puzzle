@@ -5,12 +5,17 @@ import T from '../content/coins.json';
 import { MAX_COINS, RULES, applyMove, checkBoard, diagnose, headCount, isMove, selectable, solve } from '../core/coins.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/ladder.js';
 import { smallerCoins } from '../core/smaller.js';
-import { fill } from '../core/text.js';
+import { fill, ordinal } from '../core/text.js';
 import { drawCoins, drawStrip } from '../ui/coin-board.js';
 
 const FORMAT = 'coins';
 const MIN_MAKE_COINS = 3;
 const MAX_ANSWER_DIGITS = 2;
+/**
+ * "왜 그럴까?"가 안 되는 판의 까닭까지 말해 주는 규칙. 아무 세 개는 뒤집는 횟수의 홀짝만 말하고,
+ * 왜 안 되는지(동전 3개에서 앞뒤가 섞인 판만 안 된다)는 말하지 않는다. 그런 판에서는 설명을 열지 않는다.
+ */
+const WHY_TELLS_IMPOSSIBLE = { any2: true, any3: false, 'adj3-line': true, 'adj3-ring': true };
 
 /**
  * @param {object} frame 틀이 건네주는 것. 지금 하는 판(frame.round)과 풀이(frame.solution), 기록하고 말하는 함수들
@@ -22,7 +27,12 @@ export function createCoins(frame) {
   let draft = null; // 직접 만들기에서 만들던 판
 
   const ruleKey = (board) => (board.rule === 'adj3' ? `adj3-${board.shape}` : board.rule);
-  const coinLabel = (index, heads) => fill(T.coinLabel, { no: index + 1, face: heads ? T.faces.heads : T.faces.tails });
+  const coinLabel = (index, heads) => fill(T.coinLabel, { no: ordinal(index + 1), face: heads ? T.faces.heads : T.faces.tails });
+  /**
+   * 답으로 0을 낼 수 있는가. 0은 처음부터 모두 뒷면인 판(직접 만들기에서만 나온다)의 답일 때만 낼 수 있다.
+   * 다른 판에서 0을 내면 "0번 만에 되는지 해 볼까요?" 같은 말이 되어 버린다. 10은 1 다음에 0을 눌러 낸다.
+   */
+  const zeroAllowed = (round) => headCount(round.board.coins) === 0;
   const toCoins = (text) => [...text].map((ch) => (ch === '1' ? 1 : 0));
   const blankFaces = { heads: T.blank, tails: T.blank };
 
@@ -90,14 +100,20 @@ export function createCoins(frame) {
   }
 
   // ---- 답 넣기 ----
+  /** 맨 앞에 0을 놓을 수 없는 판에서는 아무것도 넣지 않았을 때 0 단추를 끈다. */
+  const zeroBlocked = () => typed === '' && !(frame.round && zeroAllowed(frame.round));
+
   function drawPad() {
     $('answer-box').textContent = typed;
     $('submit').disabled = typed === '';
+    const zero = $('keys').querySelector('[data-key="0"]');
+    if (zero) zero.disabled = zeroBlocked();
   }
 
   function pressKey(key) {
     if (frame.round.done || $('pad').hidden) return;
     if (key === 'erase') typed = typed.slice(0, -1);
+    else if (key === '0' && zeroBlocked()) return;
     else if (typed.length < MAX_ANSWER_DIGITS) typed = typed === '0' ? key : typed + key;
     drawPad();
   }
@@ -118,7 +134,9 @@ export function createCoins(frame) {
     // 틀린 답: 무엇을 놓쳤을지 짐작해서 말한다. 깎이는 것도, 채점 표시도 없다. 다시 해 볼 수 있다.
     frame.persist();
     drawBoard();
-    frame.say(fill(T.guess[result.guess], { k: entry.answer }));
+    // 한 번도 뒤집지 않고 "불가능해요"라고 했으면 "처음 뒤집은 동전"이 없다. 뒤집어 보기부터 권한다.
+    const said = result.guess === 'impossible-on-possible' && round.flipCount === 0 ? 'impossible-no-try' : result.guess;
+    frame.say(fill(T.guess[said], { k: entry.answer }));
   }
 
   /** 맞혔을 때 하는 말: 무엇을 했는지 그대로 말한다. */
@@ -126,8 +144,11 @@ export function createCoins(frame) {
     const parts = [];
     if (!solution.possible) {
       parts.push(round.flipCount > 0 ? fill(T.right['impossible-tried'], { f: round.flipCount }) : T.right['impossible-untried']);
+    } else if (solution.min === 0) {
+      // 처음부터 모두 뒷면인 판(직접 만들기에서만 나온다): 0번이 답이다.
+      parts.push(T.right['min-zero']);
     } else {
-      const played = solution.min > 0 && headCount(round.coins) === 0 && round.trail.length === solution.min;
+      const played = headCount(round.coins) === 0 && round.trail.length === solution.min;
       parts.push(fill(T.right[played ? 'min-played' : 'min-known'], { k: solution.min }));
     }
     if (round.answers.length > 1) parts.push(T.right['after-retry']);
@@ -136,8 +157,11 @@ export function createCoins(frame) {
 
   // ---- 판 위에 겹쳐 보여 주는 것: 풀이, "왜 그럴까?" ----
   function whyPages(round) {
-    const slides = T.why[ruleKey(round.board)];
+    const key = ruleKey(round.board);
+    const slides = T.why[key];
     if (!slides) return null;
+    // 설명이 이 판이 왜 안 되는지를 말하지 않으면 열지 않는다(단추도, 맞힌 뒤의 권유도 나오지 않는다).
+    if (!WHY_TELLS_IMPOSSIBLE[key] && !solve(round.board).possible) return null;
     return slides.map((slide) => ({
       say: slide.say,
       nodes: slide.strips.map((strip) => drawStrip({ ...strip, steps: strip.steps.map(toCoins) }, T.faces)),

@@ -15,7 +15,7 @@ const T = JSON.parse(readFileSync(resolve(ROOT, 'src/content/coins.json'), 'utf8
 const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
 
 const RULE_KEYS = ['any2', 'any3', 'adj3-line', 'adj3-ring'];
-const GUESS_KEYS = ['number-on-impossible', 'impossible-on-possible', 'too-many', 'too-few'];
+const GUESS_KEYS = ['number-on-impossible', 'impossible-on-possible', 'impossible-no-try', 'too-many', 'too-few'];
 const toCoins = (text) => [...text].map((ch) => Number(ch));
 
 /** 대본의 모든 글(값)을 길과 함께 모은다. 화면에 나오지 않는 것(그림의 동전 글자, 그림의 모양, 설명)은 뺀다. */
@@ -97,9 +97,47 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   for (const [path, text] of strings) assert.doesNotMatch(text, praise, `${path}: ${text}`);
   assert.doesNotMatch(screenText, praise);
-  for (const key of ['impossible-tried', 'impossible-untried', 'min-played', 'min-known', 'after-retry', 'why-invite']) assert.ok(T.right[key], key);
+  for (const key of ['impossible-tried', 'impossible-untried', 'min-played', 'min-known', 'min-zero', 'after-retry', 'why-invite']) assert.ok(T.right[key], key);
   assert.ok(fill(T.right['min-played'], { k: 3 }).includes('3번'));
   assert.ok(fill(T.right['impossible-tried'], { f: 7 }).includes('7번'));
+  // 처음부터 모두 뒷면인 판은 "0번보다 적게는 할 수 없어요"라고 하지 않는다. 빈칸 없이 사실만 말한다.
+  assert.equal(T.right['min-zero'], '맞아요. 이 판은 벌써 모두 뒷면이라서 뒤집을 것이 없어요.');
+  // 답을 바꿨다는 사실만 말한다. 처음 답을 틀렸다고 판정하거나 "다시 해 보고"라고 지어내지 않는다.
+  assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
+});
+
+test('동전의 0번 답: 처음부터 모두 뒷면인 판에서만 0을 낼 수 있다', () => {
+  // 다른 판에서 0을 내면 "0번 만에 되는지 해 볼까요?" 같은 말이 된다. 숫자판의 0은 그런 판에서 맨 앞에 놓이지 않는다.
+  const code = readFileSync(resolve(ROOT, 'src/formats/coins.js'), 'utf8');
+  assert.match(code, /const zeroAllowed = \(round\) => headCount\(round\.board\.coins\) === 0;/);
+  assert.match(code, /else if \(key === '0' && zeroBlocked\(\)\) return;/);
+  assert.match(code, /const zeroBlocked = \(\) => typed === '' && !\(frame\.round && zeroAllowed\(frame\.round\)\);/);
+  // 0으로 끝나는 10은 낼 수 있다(동전 10개 고리 하나는 가장 적게 10번이다).
+  assert.equal(solve({ n: 10, shape: 'ring', rule: 'adj3', coins: Array(10).fill(1) }).min, 10);
+  assert.equal(solve({ n: 4, shape: 'line', rule: 'any2', coins: [0, 0, 0, 0] }).min, 0);
+});
+
+test('"왜 그럴까?": 설명이 안 되는 까닭을 말하지 않는 판(동전 3개, 아무 세 개, 앞뒤가 섞인 판)에서는 열지 않는다', () => {
+  // 아무 세 개에서 안 되는 판은 동전 3개짜리의 섞인 판뿐이다. 설명은 뒤집는 횟수의 홀짝만 말한다.
+  for (let n = 3; n <= 7; n++) {
+    for (let mask = 0; mask < 1 << n; mask++) {
+      const coins = Array.from({ length: n }, (_, index) => (mask >> index) & 1);
+      const impossible = !solve({ n, shape: 'line', rule: 'any3', coins }).possible;
+      assert.equal(impossible, n === 3 && mask !== 0 && mask !== 7, `${n}개 ${coins.join('')}`);
+    }
+  }
+  const code = readFileSync(resolve(ROOT, 'src/formats/coins.js'), 'utf8');
+  assert.match(code, /const WHY_TELLS_IMPOSSIBLE = \{ any2: true, any3: false, 'adj3-line': true, 'adj3-ring': true \};/);
+  assert.match(code, /if \(!WHY_TELLS_IMPOSSIBLE\[key\] && !solve\(round\.board\)\.possible\) return null;/);
+  // 고리 설명은 가·나·다가 딱 맞는 고리(3, 6, 9개)를 모두 말한다.
+  assert.match(T.why['adj3-ring'][2].say, /3개나 9개인 고리/);
+  assert.match(T.why['adj3-ring'][3].say, /동전 수가 3, 6, 9가 아닌 고리/);
+  for (const n of [4, 5, 7, 8, 10]) {
+    for (let mask = 0; mask < 1 << n; mask++) {
+      const coins = Array.from({ length: n }, (_, index) => (mask >> index) & 1);
+      assert.ok(solve({ n, shape: 'ring', rule: 'adj3', coins }).possible, `${n}개 고리 ${coins.join('')}`);
+    }
+  }
 });
 
 test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {
@@ -132,6 +170,7 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
     T.solution.impossible,
     T.solution.zero,
     T.after.harder,
+    T.after['harder-make'],
     T.make.intro,
     T.make.possible,
     T.make.impossible,
@@ -140,6 +179,27 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
   ];
   for (const text of spoken) {
     for (const sentence of text.split(/(?<=[.?!])\s+/)) assert.match(sentence, /요[.?!]$/, sentence);
+  }
+});
+
+test('사실과 다른 말이 없다: 처음 만남의 다섯 개, 두 개씩 뒤집을 때 앞면 수, 같은 규칙의 한 이름', () => {
+  // "동전 하나 더 놓기"를 누르면 다섯 개를 모두 앞면으로 새로 놓는다.
+  assert.match(T.meet.five, /모두 앞면으로 다시 놓았어요\./);
+  // 두 개를 뒤집으면 앞면 수가 그대로일 때도 있다(바로 앞 장).
+  assert.doesNotMatch(T.why.any2[1].say, /2개씩만/);
+  assert.match(T.why.any2[1].say, /2개 늘거나, 2개 줄거나, 그대로예요/);
+  assert.match(T.why.any2[0].strips[2].note, /그대로/);
+  // 같은 규칙은 "나란히 붙은 세 개" 하나로 부른다.
+  for (const [path, text] of strings) assert.doesNotMatch(text, /이웃한/, `${path}: ${text}`);
+  // 목소리로 "다가", "다 다음"이 '모두'로 들리지 않게 자리를 붙여 말한다.
+  for (const key of ['adj3-line', 'adj3-ring']) for (const slide of T.why[key]) assert.doesNotMatch(slide.say, /다가 |다 다음/, slide.say);
+  // 만들기 화면에는 "선생님, 풀어 보세요" 단추가 있다.
+  assert.match(html, /id="make-solve"[^>]*>선생님, 풀어 보세요</);
+  assert.match(T.make.intro, /선생님에게 풀어 보라고 할 수도 있어요\.$/);
+  // 읽어 주는 동전 이름: 첫째 동전은 "첫 번째"
+  assert.equal(T.coinLabel, '{no}번째 동전, {face}면');
+  for (const path of ['src/formats/coins.js', 'src/meet.js']) {
+    assert.match(readFileSync(resolve(ROOT, path), 'utf8'), /fill\(T\.coinLabel, \{ no: ordinal\(index \+ 1\)/, path);
   }
 });
 

@@ -80,12 +80,16 @@ test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·�
 test('규칙 설명은 세 문장을 넘지 않고, "약수"라는 말을 보기 하나로 풀어 준다', () => {
   assert.deepEqual(Object.keys(T.rules), ['play']);
   assert.equal(sentenceCount(T.rules.play), 3, T.rules.play);
-  assert.match(T.rules.play, /판에 남은 그 수의 약수는 모두 세금으로 나가요/);
+  // 가진 카드는 세금으로 나가지 않는다: 나가는 것은 그 수의 "다른" 약수다.
+  assert.match(T.rules.play, /판에 남은 그 수의 다른 약수가 모두 세금으로 나가요/);
   assert.match(T.rules.play, /가진 수의 합을 가장 크게/);
-  // 보기로 든 약수는 정말 그 수의 약수 모두다.
-  const [, number, list] = T.rules.play.match(/(\d+)의 약수는 ([\d, ]+)이에요/);
-  assert.deepEqual(list.split(', ').map(Number), [...properDivisors(Number(number)), Number(number)]);
+  // 보기로 든 카드를 가지면 나가는 카드는 정말 그 수의 (자기 자신을 뺀) 약수 모두다. 가진 수 자신은 들어 있지 않다.
+  const [, number, list] = T.rules.play.match(/(\d+)을 가지면 ([\d, ]+)이 나가요/);
+  assert.deepEqual(list.split(', ').map(Number), properDivisors(Number(number)));
+  assert.ok(!list.split(', ').map(Number).includes(Number(number)));
   assert.equal(Number(number), 6);
+  // 처음 판(1부터 6까지)에서 정말 그렇게 나간다.
+  assert.deepEqual(replay(board(6), [6]).paid[0], list.split(', ').map(Number));
   // 직접 만들기 화면의 안내 글도 세 문장 안쪽이다. 가질 수 있는 카드가 없는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
@@ -119,16 +123,18 @@ test('틀린 답이 없다: 덜 가진 판에서는 사실을 말하고 "더 많
   for (const [path, text] of strings) assert.doesNotMatch(text, wrong, `${path}: ${text}`);
   assert.doesNotMatch(own, wrong);
   // 다시 해도 되고 여기까지 해도 된다. "여기까지 할래요"로 끝낸 판도 끝까지 한 판이다.
-  assert.match(html, /id="tax-again"[^>]*>이 판 다시 해 보기</);
+  assert.match(html, /id="tax-again"[^>]*>처음부터 다시 해 볼래요</);
   assert.match(html, /id="tax-stop"[^>]*>여기까지 할래요</);
   assert.match(code, /function stop\(\) \{[\s\S]*?round\.stopped = true;[\s\S]*?frame\.finish\('solved'\);/);
   // 가장 큰 합에 닿으면 그렇다고 말하고 판이 끝난다.
   assert.equal(fill(T.right.best, facts(15, 6)), '가진 수의 합은 15예요. 세금은 6이에요. 이보다 많이 가질 수는 없어요.');
   assert.match(code, /const reached = solution\.exact && state\.sum === solution\.best;/);
   // 풀이 프로그램이 끝까지 못 따진 판에서는 가장 큰 합이라고 말하지 않고, 못 따졌다고 사실대로 말한다.
-  assert.match(T.play.unknown, /선생님도 끝까지 못 따졌어요\.$/);
-  assert.match(T.make.unknown, /^선생님도 끝까지 못 따졌어요\./);
-  assert.match(T.solution.unknown, /^선생님도 끝까지 못 따졌어요\./);
+  // 이 말은 형식 사이에 같은 꼴("끝까지 따져 보지 못했어요")이다.
+  assert.match(T.play.unknown, /선생님도 끝까지 따져 보지 못했어요\.$/);
+  assert.match(T.make.unknown, /^선생님도 끝까지 따져 보지 못했어요\./);
+  assert.match(T.solution.unknown, /^선생님도 끝까지 따져 보지 못했어요\./);
+  for (const [path, text] of strings) assert.doesNotMatch(text, /못 따졌/, `${path}: ${text}`);
 });
 
 test('수 뒤에 붙는 말은 수를 읽은 소리에 맞춘다', () => {
@@ -172,7 +178,7 @@ test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어�
   }
   assert.match(T.hints.start[0], /맨 처음 카드를 다른 것으로/);
   assert.match(T.hints.start[1], /세금을 한 장만 내고/);
-  assert.match(T.hints.more[0], /더 적은 카드라면/);
+  assert.match(T.hints.more[0], /^카드가 더 적은 판이라면/);
   assert.match(T.hints.more[1], /끝났을 때 판에 남아 있던 카드/);
 });
 
@@ -192,10 +198,15 @@ test('끝났을 때 하는 말은 한 일을 그대로 말하고, 칭찬 낱말�
   assert.doesNotMatch(own, praise);
   assert.deepEqual(Object.keys(T.right).sort(), [...RIGHT_KEYS].sort());
   // 가진 수의 합, 세금, 몇 번 다시 해 봤는지
-  assert.equal(T.right['first-try'], '다시 해 보지 않고 찾았어요.');
-  assert.equal(fill(T.right.after, { r: 3 }), '3번 다시 해 보고 찾았어요.');
+  assert.equal(T.right['first-try'], '다시 해 보지 않고 찾아냈어요.');
+  assert.equal(fill(T.right.after, { r: 3 }), '3번 다시 해서 찾아냈어요.');
   assert.equal(fill(T.right.stopped, facts(27, 28)), '이 판에서 가장 많이 가진 합은 27이에요. 그때 세금은 28이에요. 여기까지 했어요.');
   assert.equal(fill(T.right['stopped-tries'], { r: 2 }), '2번 다시 해 봤어요.');
+  // "여기까지 했어요"가 맨 끝에 온다: 몇 번 다시 해 봤는지를 먼저 말한다.
+  assert.match(code, /if \(retries > 0\) parts\.push\(fill\(T\.right\['stopped-tries'\], \{ r: retries \}\)\);\s*parts\.push\(fill\(T\.right\.stopped, /);
+  assert.match(T.right.stopped, /여기까지 했어요\.$/);
+  // "왜 그럴까?"를 권하는 말의 주어는 "선생님이"다.
+  assert.equal(T.right['why-invite'], '선생님이 어떻게 찾았는지 궁금하면 왜 그럴까 단추를 눌러 보세요.');
   // "왜 그럴까?"를 권하는 말은 까닭을 미리 말하지 않는다.
   assert.match(T.right['why-invite'], /왜 그럴까 단추/);
   assert.doesNotMatch(T.right['why-invite'], /큰 카드|세금|\d/);
@@ -291,7 +302,8 @@ test('"왜 그럴까?"는 그림 서너 장이고, 설명이 아니라 어떻게
   assert.match(T.why[1].say, /1은 어느 카드를 가져도 맨 처음에 세금으로 나가요/);
   assert.match(T.why[1].say, /1만 내고 가질 수 있는 가장 큰 카드/);
   assert.match(T.why[2].say, /세금을 조금만 내고 가질 수 있는 큰 카드/);
-  assert.match(T.why[3].say, /^큰 카드부터 갖는 것이 늘 가장 좋지는 않았어요/);
+  assert.match(T.why[3].say, /^큰 카드부터 가지는 것이 늘 가장 좋지는 않았어요/);
+  for (const [path, text] of strings) assert.doesNotMatch(text, /갖는|갖고|갖지/, `${path}: ${text}`);
   // 이야기의 말투: 겪은 일로 말한다.
   for (const slide of T.why) assert.match(slide.say, /봤어요|았어요|었어요/, slide.say);
   // "왜 그럴까?"가 열리는 때: 이 형식의 판을 가장 큰 합으로 한 번 끝낸 뒤
@@ -363,8 +375,12 @@ test('판 고르기의 그림: 단계마다 그 단계의 첫 판이다', () => 
   assert.equal(T.home.ask, '얼마나 많이 가질 수 있을까요?');
 });
 
-test('풀이와 직접 만들기의 글: 가장 많이 가질 수 있는 합과 한 가지 차례를 알려 준다', () => {
-  assert.equal(fill(T.solution.say, { k: 40, be: be(40) }), '가장 많이 가질 수 있는 합은 40이에요. 한 가지 차례를 보여 줄게요.');
+test('풀이와 직접 만들기의 글: 가장 많이 가질 수 있는 합과 한 가지 방법을 알려 준다', () => {
+  assert.equal(fill(T.solution.say, { k: 40, be: be(40) }), '가장 많이 가질 수 있는 합은 40이에요. 한 가지 방법을 보여 줄게요.');
+  assert.match(T.solution.unknown, /그 방법을 보여 줄게요\.$/);
+  // 만들기 안내의 끝은 형식 사이에 같은 꼴이다("선생님, 풀어 보세요" 단추가 있다).
+  assert.match(T.make.intro, /다 정하면 선생님에게 풀어 보라고 할 수도 있어요\.$/);
+  assert.match(html, /id="tax-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.equal(fill(T.solution.stepLabel, { no: 3 }), '3번');
   assert.equal(fill(T.make.best, { k: 15, be: be(15), order: '5, 4, 6' }), '가장 많이 가질 수 있는 합은 15예요. 5, 4, 6 차례로 가지면 돼요.');
   assert.equal(T.make.none, '이 판에는 가질 수 있는 카드가 없어요.');
@@ -411,7 +427,7 @@ test('index.html: 약수 세금의 카드, 판, 답하는 칸, 도구, 직접 �
   assert.match(html, /id="tax-take"[^>]*disabled>가질래요</);
   assert.match(html, /id="tax-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(html, /id="tax-make-play"[^>]*>내가 해 볼래요</);
-  for (const label of ['약수 세금', '카드를 가져요', '가질래요', '이 판 다시 해 보기', '여기까지 할래요', '카드마다 낼 세금 보기', '뺀 카드 모두 다시 놓기']) assert.ok(screenText.includes(label), label);
+  for (const label of ['약수 세금', '카드를 가져요', '가질래요', '처음부터 다시 해 볼래요', '여기까지 할래요', '카드마다 낼 세금 보기', '뺀 카드 모두 다시 놓기']) assert.ok(screenText.includes(label), label);
   // 처음 화면의 물음은 대본에 있는 것과 같다.
   assert.match(html, new RegExp(`id="home-tax-ask"[^>]*>${T.home.ask.replace('?', '\\?')}<`));
   // 카드는 "퍼즐 만들기" 앞, 누가 이길까 뒤에 있고, "만들기" 목록에도 있다.

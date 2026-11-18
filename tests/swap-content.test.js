@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { LADDER, MAKE_LEVEL, generateBoard, rungOf } from '../src/core/swap-ladder.js';
 import { MAX_FROGS, SKIPS, allWays, checkBoard, deadEnds, isDone, isStuck, movesOf, replay, solve, stuckKind } from '../src/core/swap.js';
-import { fill, sentenceCount } from '../src/core/text.js';
+import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(resolve(ROOT, path), 'utf8');
@@ -78,25 +78,38 @@ test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·�
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.match(T.levels[2].name, /무르지 않고/);
-  assert.match(T.levels[3].name, /짝 짓기/);
+  // 짝 짓기 판의 이름은 하나다: 만들기 화면의 단추와 같은 "돌 짝 짓기"
+  assert.equal(T.levels[3].name, '돌 짝 짓기');
+  assert.match(html, /data-kind="pairs">돌 짝 짓기</);
+  for (const [path, text] of strings) assert.doesNotMatch(text, /건너뛰어 짝/, path);
 });
 
 test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는다', () => {
   assert.deepEqual(Object.keys(T.rules).sort(), [...MODES].sort());
   for (const mode of MODES) assert.ok(sentenceCount(fill(T.rules[mode], { k: 2 })) <= 3, `${mode}: ${T.rules[mode]}`);
-  // 개구리: 보는 쪽으로만, 한 칸 또는 다른 무리 하나를 뛰어넘기, 통째로 맞바꾸기
+  // 개구리: 보는 쪽으로만, 한 칸 또는 다른 쪽 동물 한 마리를 뛰어넘어 빈칸으로, 통째로 맞바꾸기
   assert.match(T.rules.frogs, /보는 쪽으로만/);
-  assert.match(T.rules.frogs, /다른 무리 하나는 뛰어넘을 수 있어요/);
+  assert.match(T.rules.frogs, /바로 앞의 다른 쪽 동물 한 마리는 뛰어넘어 빈칸으로 갈 수 있어요/);
   assert.match(T.rules.frogs, /통째로 맞바꿔/);
-  // 짝 짓기: 건너뛰는 수, 짝은 두 개로 센다, 짝은 더 움직이지 못한다
+  // 짝 짓기: 건너뛰는 수, 짝은 건너뛸 때 두 개로 센다, 짝은 더 움직이지 못한다
   assert.match(fill(T.rules.pairs, { k: 2 }), /돌 2개를 건너뛰고, 혼자 있는 돌 위에 얹어요/);
-  assert.match(T.rules.pairs, /두 개로 세고/);
+  assert.match(T.rules.pairs, /짝이 된 돌은 건너뛸 때 두 개로 세고/);
   assert.match(T.rules.pairs, /더 움직이지 못해요/);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[3]) <= 3, guides[3]);
   assert.match(guides[3], /안 되는 판도 만들 수 있을까요\?/);
+  // 선생님의 만들기 안내: 만들기 화면에 "선생님, 풀어 보세요" 단추가 있으므로 그 말로 끝난다.
+  assert.equal(T.make.intro, '판의 종류를 고르고 수를 정해요. 다 정하면 선생님에게 풀어 보라고 할 수도 있어요.');
+  assert.match(html, /id="swap-make-solve"[^>]*>선생님, 풀어 보세요</);
+});
+
+test('놀이 말의 이름: "말"과 "무리"를 쓰지 않고, 개구리나 두꺼비(같은 쪽 동물, 다른 쪽 동물)와 돌이라고 한다', () => {
+  for (const [path, text] of strings) assert.doesNotMatch(text, /(?<![가-힣])말([이을들은도]|부터)|(?<!아)무리|마릿수/, `${path}: ${text}`);
+  for (const key of ['plain', 'pair-again', 'same']) assert.match(T.stuck[key], /다른 개구리나 두꺼비를 움직여 볼 수 있어요\.$/, key);
+  assert.match(T.stuck['same-start'], /다른 개구리나 두꺼비부터 움직여 볼 수 있어요\.$/);
+  assert.equal(T.status.stuck, '더 갈 수 있는 동물이 없어요');
 });
 
 test('형식의 첫 단계는 횟수를 묻지 않는다: "가장 적게"는 3단계에서만 건다', () => {
@@ -110,9 +123,11 @@ test('형식의 첫 단계는 횟수를 묻지 않는다: "가장 적게"는 3�
   assert.match(html, /id="swap-count"[^>]*>움직인 횟수 <strong id="swap-moves">0<\/strong>번</);
   // 3단계: 가장 적은 횟수로. 무른 움직임도 센다고 미리 말한다.
   // 끝까지 가는 길은 어느 것이나 횟수가 같다. 그래서 이 단계는 "무르지 않고"가 곧 "가장 적은 횟수"다.
+  // 그것은 "왜 그럴까?" 첫 장에서 알아채는 것이라 규칙에서 미리 말하지 않는다. 몇 번에 되는지만 묻는다.
   assert.match(T.rules.fewest, /한 번도 무르지 않고/);
-  assert.match(T.rules.fewest, /가장 적은 횟수/);
+  assert.doesNotMatch(T.rules.fewest, /가장 적은 횟수|가장 적게|그러면/);
   assert.match(T.rules.fewest, /물렀던 움직임도 횟수에 들어가요/);
+  assert.match(T.rules.fewest, /몇 번에 맞바꿀 수 있을까요\?$/);
   assert.match(T.home.ask.fewest, /한 번도 무르지 않고/);
   assert.deepEqual(LADDER.filter((rung) => rung.mode === 'fewest').map((rung) => rung.level), [3]);
   assert.deepEqual(LADDER.slice(0, 2).map((rung) => rung.mode), ['frogs', 'frogs']);
@@ -147,16 +162,16 @@ test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어�
   for (const mode of MODES) {
     const [first, second] = T.hints[mode];
     // 첫째: 어느 판에서나 쓸 수 있는 일반 질문이다. 이 형식의 사물 이름이 들어 있지 않다.
-    assert.doesNotMatch(first, /개구리|두꺼비|돌|말|무리/, first);
-    // 둘째: 볼 곳(말, 움직임, 돌)을 가리킨다.
-    assert.match(second, /말들|움직임|돌/, second);
+    assert.doesNotMatch(first, /개구리|두꺼비|동물|돌|말|무리/, first);
+    // 둘째: 볼 곳(동물들, 움직임, 돌)을 가리킨다.
+    assert.match(second, /동물들|움직임|돌/, second);
     // 답을 말해 버리지 않는다: 본 것, 까닭, 요령이 들어 있지 않다.
     for (const hint of [first, second]) {
       assert.doesNotMatch(hint, /같은 무리|같은 쪽|번갈아|곱하기|더하기|뛰어넘기는|때문이에요|해야 해요|하면 돼요/, hint);
     }
   }
   assert.match(T.hints.frogs[0], /막히기 바로 전/);
-  assert.match(T.hints.fewest[0], /더 적은/);
+  assert.match(T.hints.fewest[0], /더 작은 판/);
   assert.match(T.hints.pairs[0], /끝나기 바로 전/);
 });
 
@@ -171,10 +186,13 @@ test('막혔을 때 하는 말은 본 것 하나와 할 수 있는 일 하나다
     assert.doesNotMatch(line, /왜냐|때문|그래서|니까|해야|틀렸|안 돼요/, key);
   }
   // 같은 꼴로 거듭 막히면 그 사실을 알려 준다. 본 것만 말한다.
-  assert.match(T.stuck['pair-again'], /^이번에도 같은 무리 둘이 붙은 뒤에 막혔어요\./);
+  assert.match(T.stuck['pair-again'], /^이번에도 같은 쪽 동물 둘이 붙은 뒤에 막혔어요\./);
   for (const key of ['same', 'same-start', 'pairs-same', 'pairs-same-start']) assert.match(T.stuck[key], /^아까와 똑같은 모양에서 막혔어요\./, key);
+  // 더 멀리 물러서 보라는 말: "두 번 무른 뒤"(형식 코드의 SAME_BACK과 같은 수)
+  for (const key of ['same', 'pairs-same']) assert.match(T.stuck[key], /두 번 무른 뒤 다른 /, key);
+  assert.match(read('src/formats/swap.js'), /const SAME_BACK = 2;/);
   assert.equal(fill(T.stuck.pairs, { s: 4 }).split('.')[0], '혼자 있는 돌이 4개 남았는데 얹을 자리가 없어요');
-  // "같은 무리 둘이 붙은 뒤에"는 본 것이다: 막힌 모습은 어느 것이나 그렇다(풀이 프로그램으로 확인).
+  // "같은 쪽 동물 둘이 붙은 뒤에"는 본 것이다: 막힌 모습은 어느 것이나 그렇다(풀이 프로그램으로 확인).
   for (let left = 1; left <= MAX_FROGS; left++) {
     for (let right = 1; right <= MAX_FROGS; right++) {
       for (const cells of deadEnds(frogs(left, right))) assert.equal(stuckKind(cells), 'pair', cells);
@@ -206,7 +224,14 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   // 몇 번 움직였는지, 몇 번 물렀는지를 그대로 말한다.
   assert.equal(fill(T.right['swapped-clean'], { m: 8 }), '자리를 맞바꿨어요. 한 번도 무르지 않고 8번 움직였어요.');
   assert.equal(fill(T.right['swapped-back'], { m: 14, u: 3 }), '자리를 맞바꿨어요. 모두 14번 움직이고 3번 물렀어요.');
-  assert.ok(fill(T.right.resets, { r: 2 }).includes('2번'));
+  assert.equal(fill(T.right.resets, { r: 2 }), '처음으로 2번 되돌렸어요.');
+  // 무르기와 처음으로 되돌리기를 합쳐 센 횟수(짝 짓기)는 "무르거나 되돌리고"라고 말한다.
+  assert.equal(fill(T.right['paired-back'], { n: 8, u: 3 }), '3번 무르거나 되돌리고 다시 해서 돌 8개를 모두 짝 지었어요.');
+  assert.match(read('src/formats/swap.js'), /const back = round\.undoCount \+ round\.resetCount;/);
+  // 처음 고른 답("불가능해요")을 바꿔서 찾았을 때: 형식마다 같은 말
+  assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
+  // "맞아요"는 답 단추("불가능해요")를 눌러 맞혔을 때만 한다.
+  for (const key of RIGHT_KEYS) assert.equal(/^맞아요/.test(T.right[key]), key.startsWith('impossible-'), key);
   assert.ok(fill(T.right['fewest-after'], { first: 11 }).includes('11번'));
   assert.ok(fill(T.right['paired-clean'], { n: 8, m: 4 }).includes('돌 8개') && fill(T.right['paired-clean'], { n: 8, m: 4 }).includes('4번 얹었어요'));
   assert.ok(fill(T.right['impossible-tried'], { s: 3 }).includes('3번 막혀 보고'));
@@ -259,7 +284,7 @@ test('한 문장에 한 가지 뜻: 문장이 너무 길지 않다(60자 이하)
 
 test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => {
   const name = /나눠 세기/;
-  const reason = /곱하기|곱한|더하기|더한 수|지나치려면|두 칸을 가요/;
+  const reason = /곱하기|곱한|더하기|더한 수|더한 것|지나치|두 칸을 가요/;
   for (const [path, text] of strings) {
     if (path.startsWith('why')) continue;
     assert.doesNotMatch(text, name, `${path}: ${text}`);
@@ -286,10 +311,13 @@ test('"왜 그럴까?"는 그림 서너 장이고, 설명이 아니라 어떻게
   assert.match(T.why[0].say, /^선생님도 여러 번 막혔어요/);
   assert.match(T.why[0].say, /되돌려 보며 움직인 횟수를 세어 봤어요/);
   assert.match(T.why[0].say, /늘 같았어요/);
-  assert.match(T.why[1].say, /서로 지나치려면 한 번은 뛰어넘어야 해요/);
+  // 짝마다 "꼭 한 번" 지나치고 그때 한 번 뛰어넘는다(뒤로 못 가므로). 그래서 뛰어넘기는 곱만큼이다.
+  assert.match(T.why[1].say, /개구리 한 마리와 두꺼비 한 마리는 꼭 한 번 서로 지나치고, 그때 한 번 뛰어넘어요/);
+  assert.doesNotMatch(T.why[1].say, /한 번은/);
   assert.match(T.why[1].say, /개구리 수 곱하기 두꺼비 수/);
   assert.match(T.why[2].say, /가야 하는 칸을 더해 봤어요/);
   assert.match(T.why[2].say, /개구리 수 더하기 두꺼비 수/);
+  assert.match(T.why[3].say, /횟수는 뛰어넘기 수와 한 칸 가기 수를 더한 것이에요/);
   assert.match(T.why[3].say, /이보다 적게는 안 돼요/);
   // 이야기 속 선생님이 먼저 "여기서 막혔어요"를 보인다: 첫 장의 첫 그림이 막힌 판이다.
   assert.match(T.why[0].figures[0].note, /^여기서 막혔어요/);
@@ -375,7 +403,7 @@ test('"왜 그럴까?"의 주장: 1~5마리의 모든 짝에서 가장 적은 �
   }
 });
 
-test('건너뛰어 짝 짓기에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판)', () => {
+test('돌 짝 짓기에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판)', () => {
   assert.match(T._설명, /일부러 까닭을 남겨 둔 판/);
   // 설명의 그림은 모두 개구리 판이다. 돌이나 짝을 말하는 장이 없다.
   for (const slide of T.why) {
@@ -383,7 +411,10 @@ test('건너뛰어 짝 짓기에는 "왜 그럴까?"를 붙이지 않는다(일�
     assert.doesNotMatch(slide.say, /돌을|돌이|돌 |짝/);
   }
   // 짝 짓기를 맞혔을 때는 "왜 그럴까?"를 권하지 않는다. 권하는 말은 가장 적은 횟수의 것 하나뿐이다.
-  assert.match(T.right['why-invite'], /왜 이보다 적게는 안 되는지/);
+  // 바로 앞의 말("이보다 적게는 할 수 없어요")과 "이보다"가 겹치지 않게 한다.
+  assert.match(T.right['why-invite'], /왜 더 적게는 안 되는지/);
+  assert.match(T.right.fewest, /이보다 적게는 할 수 없어요\.$/);
+  assert.doesNotMatch(T.right['why-invite'], /이보다/);
   for (const key of RIGHT_KEYS.filter((item) => item !== 'why-invite')) assert.doesNotMatch(T.right[key], /왜 그럴까/, key);
 });
 
@@ -402,13 +433,15 @@ test('판 고르기의 그림: 단계마다 그 단계의 판이고, 그림 속�
     assert.ok(made.includes(JSON.stringify(board)), `${rung.level}단계`);
   }
   // 칸과 말의 이름(읽어 주는 글)
-  assert.equal(fill(T.cellLabel, { no: 2, what: T.pieces.toad }), '2번째 칸, 두꺼비');
+  assert.equal(fill(T.cellLabel, { no: ordinal(2), what: T.pieces.toad }), '2번째 칸, 두꺼비');
+  assert.equal(fill(T.cellLabel, { no: ordinal(1), what: T.pieces.frog }), '첫 번째 칸, 개구리');
+  assert.match(read('src/formats/swap.js'), /fill\(T\.cellLabel, \{ no: ordinal\(index \+ 1\), what: /);
   assert.deepEqual(Object.keys(T.pieces), ['frog', 'toad', 'empty', 'single', 'pair', 'gone']);
 });
 
 test('풀이와 직접 만들기의 글: 가장 적은 횟수와 되는지를 알려 준다', () => {
-  assert.equal(fill(T.solution.frogs, { k: 15 }), '가장 적게 15번이에요. 한 가지 차례를 보여 줄게요.');
-  assert.ok(fill(T.solution.pairs, { k: 4 }).startsWith('4번 얹으면 모두 짝이 돼요.'));
+  assert.equal(fill(T.solution.frogs, { k: 15 }), '가장 적게 15번이에요. 한 가지 방법을 보여 줄게요.');
+  assert.equal(fill(T.solution.pairs, { k: 4 }), '4번 얹으면 모두 짝이 돼요. 한 가지 방법을 보여 줄게요.');
   assert.equal(fill(T.solution.stepLabel, { no: 3 }), '3번');
   assert.equal(fill(T.make.frogs, { k: 35 }), '이 판은 자리를 맞바꿀 수 있어요. 가장 적게 35번이에요.');
   assert.equal(fill(T.make.pairs, { k: 6 }), '이 판은 모두 짝 지을 수 있어요. 6번 얹으면 돼요.');

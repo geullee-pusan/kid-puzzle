@@ -279,9 +279,10 @@ export function createTrace(frame) {
     const last = round.answers.at(-1);
     const back = round.undoCount + round.resetCount;
     const traced = () => (back === 0 ? fill(T.right['traced-clean'], { m: figureNow(round).edges.length }) : fill(T.right['traced-back'], { u: back, m: figureNow(round).edges.length }));
+    // "맞아요."는 답 단추를 눌러 맞혔을 때만 한다. 끝까지 그어서 끝난 판에서는 그은 것을 말한다.
     if (round.mode === 'fix') {
-      parts.push(T.right[round.edit.type === 'add' ? 'fix-add' : 'fix-remove']);
-      if (last.answer === 'traced') parts.push(T.right['fix-traced']);
+      const kind = round.edit.type === 'add' ? 'fix-add' : 'fix-remove';
+      parts.push(T.right[last.answer === 'traced' ? `${kind}-traced` : kind]);
     } else if (last.answer === 'traced') parts.push(traced());
     else if (last.answer === 'impossible') {
       if (round.stuckCount > 0) parts.push(fill(T.right['impossible-tried'], { s: round.stuckCount }));
@@ -550,7 +551,7 @@ export function createTrace(frame) {
     touched: (round) => round.strokeCount > 0 || round.editCount > 0 || round.path.length > 0,
     /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
     view: (round) => ({ path: round.path.slice(), edit: round.edit ? editText(round.edit) : null, chosen: round.chosen }),
-    /** 이 판보다 작은 판: 점이 넷이나 다섯인 그림. 판의 종류(긋기, 가리기, 시작점 고르기, 고치기)는 그대로다 */
+    /** 이 판보다 작은 판: 점이 넷이나 다섯인 그림. 판의 종류(긋기, 긋기 전에 알아맞히기, 시작점 고르기, 고치기)는 그대로다 */
     smaller: (round, turn) => smallerTrace({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
       const answer = { possible: solution.possible, starts: solution.starts, path: solution.path };

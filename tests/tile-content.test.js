@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
-import { fill, sentenceCount } from '../src/core/text.js';
+import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 import { LADDER, MAKE_LEVEL, generateBoard, possibleHoles, rungOf } from '../src/core/tile-ladder.js';
 import { MAX_SIZE, MIN_SIZE, PATTERNS, PIECE_IDS, checkBoard, colorCounts, colorOf, deadCells, isStuck, placementsOf, replay, shapeOf, solve, whyOpen, xyOf } from '../src/core/tile.js';
 import { loopOf } from './helpers/brute-tile.js';
@@ -83,7 +83,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 조각이 어떤 칸을 덮�
   // 조각은 얼마든지 쓸 수 있고 돌려 놓아도 된다는 것, 놓고 들어내는 방법은 답하는 칸에 늘 적혀 있다.
   const pad = visibleText(part('id="tile-pad"', 'id="code-pad"'));
   assert.match(pad, /조각은 얼마든지 쓸 수 있고, 돌려 놓아도 돼요\./);
-  assert.match(pad, /칸을 따라 그으면 조각이 놓여요\. 칸을 하나씩 눌러도 돼요\. 놓인 조각을 누르면 들어내요\./);
+  assert.match(pad, /칸을 따라 그으면 조각이 놓여요\. 칸을 하나씩 눌러도 돼요\. 놓인 조각을 누르면 빠져요\./);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
   assert.equal(guides.length, 8, '직접 만들기 안내 글은 형식마다 하나');
@@ -99,7 +99,7 @@ test('형식의 첫 단계는 덮기만 하면 된다: 늘 되는 판이고, "�
   // 1단계의 답하는 칸에는 단추가 없다. "불가능해요"는 되는 판과 안 되는 판이 섞이는 단계에만 있다.
   assert.doesNotMatch(part('id="tile-cover"', 'id="tile-either"'), /<button/);
   assert.match(part('id="tile-either"', 'id="code-pad"'), /id="tile-impossible"[^>]*>불가능해요</);
-  for (const key of ['domino', 'bar', 'ell']) assert.match(T.rules[key], /안 되는 판 같으면 불가능해요를 눌러요\.$/, key);
+  for (const key of ['domino', 'bar', 'ell']) assert.match(T.rules[key], /안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요\.$/, key);
   // 판 아래에는 남은 빈칸의 수를 사실로만 적는다.
   assert.match(html, /남은 빈칸 <strong id="tile-left">0<\/strong>칸/);
   for (let seed = 1; seed <= 40; seed++) assert.equal(generateBoard(1, seed).solution.possible, true);
@@ -141,11 +141,14 @@ test('판에 무늬 입히기는 힌트 칸에 있는 도구다. 무엇을 알�
   const side = part('<section class="side" aria-label="힌트">', '</section>');
   assert.match(side, /id="tile-pattern"[^>]*>판에 무늬 입히기</);
   assert.match(side, /id="tile-colors"/);
-  // 누를 때마다 무늬 없음 → 바둑판 무늬 → 대각 줄무늬로 바뀐다.
+  // 누를 때마다 무늬 없음 → 바둑판 무늬 → 비스듬한 줄무늬로 바뀐다.
   assert.deepEqual(Object.keys(T.pattern.button), PATTERNS);
   assert.equal(T.pattern.button.none, '판에 무늬 입히기');
   assert.match(T.pattern.button.checker, /바둑판 무늬/);
-  assert.match(T.pattern.button.stripe, /대각 줄무늬/);
+  assert.match(T.pattern.button.stripe, /비스듬한 줄무늬/);
+  // '대각'은 3학년이 모르는 말이라 쓰지 않는다.
+  for (const [path, text] of strings) assert.doesNotMatch(text, /대각/, `${path}: ${text}`);
+  assert.doesNotMatch(screenText, /대각/);
   // 색마다 모양이 따로 있다(색만으로 가리지 않는다).
   assert.deepEqual(Object.values(T.pattern.marks), ['동그라미', '세모', '네모']);
   assert.equal(fill(T.pattern.count, { n: 7 }), '7칸');
@@ -170,8 +173,10 @@ test('막혔을 때 하는 말은 본 것 하나와 할 수 있는 일 하나다
     assert.match(next, /볼 수 있어요\.$/, `${key}: ${next}`);
     assert.doesNotMatch(line, /왜냐|때문|그래서|니까|해야|틀렸|안 돼요|무늬|색/, key);
   }
-  assert.equal(fill(T.stuck.plain, { n: 2 }), '조각이 들어갈 수 없는 빈칸이 2칸 남았어요. 그 옆의 조각 하나를 들어내고 다르게 놓아 볼 수 있어요.');
+  assert.equal(fill(T.stuck.plain, { n: 2 }), '조각이 들어갈 수 없는 빈칸이 2칸 남았어요. 남은 빈칸 옆의 조각 하나를 빼고 다르게 놓아 볼 수 있어요.');
   for (const key of ['same', 'same-start']) assert.match(T.stuck[key], /^아까와 똑같이 놓고 막혔어요\./, key);
+  // 놓인 조각을 거두는 일은 '빼기'로 부른다('들어내기'라고 하지 않는다).
+  for (const [path, text] of strings) assert.doesNotMatch(text, /들어내|들어냈/, `${path}: ${text}`);
   // 판 아래에 적는 짧은 글
   assert.deepEqual(Object.keys(T.status).sort(), [...STATUS_KEYS].sort());
   for (const key of STATUS_KEYS) {
@@ -207,11 +212,17 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   for (const [path, text] of strings) assert.doesNotMatch(text, praise, `${path}: ${text}`);
   assert.deepEqual(Object.keys(T.right).sort(), [...RIGHT_KEYS].sort());
-  // 조각 몇 개로 덮었는지, 몇 번 들어냈는지, 몇 번 막혀 보고 알아냈는지를 그대로 말한다.
-  assert.equal(fill(T.right['covered-clean'], { n: 7 }), '조각 7개로 빈틈없이 덮었어요. 한 번도 들어내지 않았어요.');
-  assert.equal(fill(T.right['covered-back'], { n: 7, u: 3 }), '조각 7개로 빈틈없이 덮었어요. 3번 들어내고 다시 놓았어요.');
-  assert.ok(fill(T.right['covered-stuck'], { s: 2 }).includes('2번 막혔다가'));
-  assert.ok(fill(T.right['impossible-tried'], { s: 4 }).includes('4번 막혀 보고 알아냈어요'));
+  // 조각 몇 개로 덮었는지, 놓았던 조각을 몇 번 뺐는지, 몇 번 막힌 끝에 알아냈는지를 그대로 말한다.
+  assert.equal(fill(T.right['covered-clean'], { n: 7 }), '조각 7개로 빈틈없이 덮었어요. 놓았던 조각을 한 번도 빼지 않았어요.');
+  assert.equal(fill(T.right['covered-back'], { n: 7, u: 3 }), '조각 7개로 빈틈없이 덮었어요. 놓았던 조각을 3번 빼고 다시 놓았어요.');
+  // 막힌 횟수는 덧붙이는 말이라 "덮었어요"를 되풀이하지 않는다.
+  assert.equal(fill(T.right['covered-stuck'], { s: 2 }), '중간에 2번 막혔어요.');
+  assert.ok(fill(T.right['impossible-tried'], { s: 4 }).includes('4번 막힌 끝에 알아냈어요'));
+  // "맞아요"는 답 단추("불가능해요")를 눌러 맞혔을 때만 쓴다. 다 덮어서 끝난 말에는 없다.
+  for (const key of ['impossible-tried', 'impossible-some', 'impossible-untried']) assert.match(T.right[key], /^맞아요\. /, key);
+  for (const key of RIGHT_KEYS.filter((item) => !item.startsWith('impossible-'))) assert.doesNotMatch(T.right[key], /맞아요/, key);
+  // 답을 바꿔서 맞힌 판의 말은 형식 사이에 같은 한 문장이다.
+  assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
   assert.match(T.right['impossible-untried'], /한 번도 놓지 않고 알아냈어요/);
 });
 
@@ -220,7 +231,10 @@ test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {
   for (const [path, text] of strings) {
     for (const [, name] of text.matchAll(/\{([^{}]*)\}/g)) assert.ok(allowed.has(name), `${path}: {${name}}`);
   }
-  assert.equal(fill(T.cellLabel, { row: 2, col: 3, what: T.cells.hole }), '2째 줄 3째 칸, 빠진 칸');
+  // 차례는 "첫 번째", "2번째"로 읽는다('1째'라고 하지 않는다).
+  assert.equal(fill(T.cellLabel, { row: ordinal(2), col: ordinal(3), what: T.cells.hole }), '2번째 줄 3번째 칸, 빠진 칸');
+  assert.equal(fill(T.cellLabel, { row: ordinal(1), col: ordinal(1), what: T.cells.empty }), '첫 번째 줄 첫 번째 칸, 빈칸');
+  assert.match(read('src/formats/tile.js'), /fill\(T\.cellLabel, \{ row: ordinal\(y \+ 1\), col: ordinal\(x \+ 1\), what \}\)/);
   assert.deepEqual(Object.keys(T.cells), ['empty', 'hole', 'covered']);
 });
 
@@ -292,30 +306,32 @@ test('"왜 그럴까?"는 그림 서너 장이고, 설명이 아니라 어떻게
       for (const item of slide.figures) assert.equal(item.piece, piece);
     }
     // 이야기 속 선생님이 먼저 "여기서 막혔어요"를 보인다: 첫 장의 첫 그림이 막힌 판이다.
-    assert.match(story[0].say, /선생님도 여러 번 막혔어요|선생님도 이 판에서 여러 번 막혔어요/);
+    // 그림 속 판은 지금 판이 아니라서 "이 판에서"라고 하지 않는다.
+    assert.match(story[0].say, /선생님도 여러 번 막혔어요|선생님도 이런 판에서 여러 번 막혔어요/);
+    assert.doesNotMatch(story[0].say, /이 판에서/);
     assert.match(story[0].figures[0].note, /^여기서 막혔어요/);
     assert.equal(story[0].figures[0].stuck, true);
     // 이야기의 말투: 겪은 일로 말한다("~봤어요").
     for (const slide of story) assert.match(slide.say, /봤어요/, slide.say);
   }
   // 도미노: 여러 번 막혔다 → 바둑판 무늬를 입혀 봤다 → 도미노 하나는 색이 다른 두 칸을 덮는다
-  //        → 빠진 두 칸이 같은 색이면 안 된다 → 색이 다른 두 칸을 빼면 늘 된다(한 바퀴 도는 한 줄 길)
+  //        → 빠진 두 칸이 같은 색이면 안 된다 → 색이 다른 두 칸을 빼면 늘 된다(판을 한 바퀴 도는 길)
   assert.match(T.why.domino[0].say, /그래도 늘 빈칸이 남았어요/);
   assert.match(T.why.domino[1].say, /^그래서 판에 바둑판 무늬를 입혀 봤어요/);
   assert.match(T.why.domino[1].say, /어디에 놓아도 색이 다른 두 칸을 덮었어요/);
   assert.match(T.why.domino[2].say, /빠진 두 칸이 같은 색이면 한 색이 두 칸 더 많아서 다 덮을 수 없어요/);
   assert.match(T.why.domino[3].say, /색이 다른 두 칸을 빼면 어떨까요\?/);
-  assert.match(T.why.domino[3].say, /한 바퀴 도는 한 줄 길/);
+  assert.match(T.why.domino[3].say, /판을 한 바퀴 도는 길을 그리고/);
   assert.match(T.why.domino[3].say, /두 도막이 모두 짝수 칸이라서 길을 따라 놓으면 늘 덮여요/);
-  // 일자 세 칸: 바둑판 무늬로는 안 갈렸다 → 세 색 대각 줄무늬 → 일자 조각은 세 색을 하나씩 덮는다
-  //            → 빠진 칸이 한 칸 많은 색이어야 한다 → 반대쪽 대각으로 한 번 더 입히면 더 줄어든다
+  // 일자 세 칸: 바둑판 무늬로는 안 갈렸다 → 세 색 비스듬한 줄무늬 → 일자 조각은 세 색을 하나씩 덮는다
+  //            → 빠진 칸이 한 칸 많은 색이어야 한다 → 반대쪽으로 비스듬히 한 번 더 입히면 더 줄어든다
   assert.match(T.why.bar[0].say, /바둑판 무늬를 입혀 봤어요\. 그런데 이번에는 까닭이 보이지 않았어요/);
-  assert.match(T.why.bar[1].say, /^그래서 세 가지 색으로 대각 줄무늬를 입혀 봤어요/);
+  assert.match(T.why.bar[1].say, /^그래서 세 가지 색으로 비스듬한 줄무늬를 입혀 봤어요/);
   assert.match(T.why.bar[1].say, /눕혀도 세워도 세 색을 하나씩 덮었어요/);
   assert.match(T.why.bar[2].say, /한 색만 한 칸 더 많았어요/);
   assert.match(T.why.bar[2].say, /빠진 칸이 그 색이어야/);
-  assert.match(T.why.bar[3].say, /반대쪽 대각으로 한 번 더 입혀 봤어요/);
-  assert.match(T.why.bar[3].say, /네 구석뿐이었어요/);
+  assert.match(T.why.bar[3].say, /반대쪽으로 비스듬히 한 번 더 입혀 봤어요/);
+  assert.match(T.why.bar[3].say, /두 무늬에서 모두 한 칸 많은 색이었던 칸은 네 구석뿐이었어요/);
 });
 
 test('"왜 그럴까?" 그림 속의 판, 조각, 수는 풀이 프로그램이 따진 것과 같다', () => {
@@ -347,7 +363,7 @@ test('"왜 그럴까?" 그림 속의 판, 조각, 수는 풀이 프로그램이 
     if (item.counts) {
       assert.deepEqual(colorCounts(item, item.pattern, placed), item.counts, where);
       // 글에 적은 칸의 수는 그림 아래에 적히는 수 가운데 하나다.
-      for (const [, count] of item.note.matchAll(/(d+)칸/g)) assert.ok(item.counts.includes(Number(count)), `${where}: ${count}칸`);
+      for (const [, count] of item.note.matchAll(/(\d+)칸/g)) assert.ok(item.counts.includes(Number(count)), `${where}: ${count}칸`);
     }
     // 한 바퀴 도는 한 줄 길: 모든 칸을 한 번씩 지나 처음으로 돌아오고, 빠진 두 칸에서 끊으면 적어 둔 길이의 두 도막이 된다.
     if (item.loop) {
@@ -380,18 +396,19 @@ test('"왜 그럴까?" 그림 속의 판, 조각, 수는 풀이 프로그램이 
   assert.match(counted.note, /남은 칸은 6칸과 8칸이에요$/);
   assert.equal(solve(counted).possible, false);
 
-  // 일자 1장의 둘째 그림: 바둑판 무늬에서는 조각마다 덮는 색의 수가 다르다(그래서 까닭이 보이지 않는다).
+  // 일자 1장의 둘째 그림: 바둑판 무늬에서는 조각마다 두 색을 덮는 칸 수가 다르다(그래서 까닭이 보이지 않는다).
   const plain = T.why.bar[0].figures[1];
   assert.equal(plain.pattern, 'checker');
   const mixes = new Set(plain.placed.map((cells) => cells.filter((cell) => colorOf('checker', ...xyOf(plain, cell)) === 0).length));
   assert.equal(mixes.size, 2);
+  assert.equal(plain.note, '조각마다 두 색을 덮는 칸 수가 달라요');
 
-  // 일자 3장: 고리를 친 칸은 대각 줄무늬에서 한 칸 많은 색의 칸 모두다.
+  // 일자 3장: 둥글게 표시한 칸은 비스듬한 줄무늬에서 한 칸 많은 색의 칸 모두다.
   const striped = T.why.bar[2].figures[0];
   const cells = [...Array(striped.w * striped.h).keys()];
   const most = (pattern) => striped.counts.indexOf(Math.max(...colorCounts(striped, pattern)));
   assert.deepEqual(striped.rings, cells.filter((cell) => colorOf('stripe', ...xyOf(striped, cell)) === most('stripe')));
-  assert.match(striped.note, /^칸은 6칸, 5칸, 5칸이에요/);
+  assert.match(striped.note, /^칸은 6칸, 5칸, 5칸이에요\. 한 칸 많은 색의 칸들을 둥글게 표시했어요$/);
   // 일자 4장: 두 무늬에서 모두 한 칸 많은 색인 칸은 네 구석이고, 풀이 프로그램이 모든 자리를 따져 구한 되는 자리와 꼭 같다.
   const both = T.why.bar[3].figures[0];
   assert.equal(both.pattern, 'back');
@@ -424,7 +441,9 @@ test('ㄱ자 세 칸에는 "왜 그럴까?"를 붙이지 않는다(일부러 까
   assert.equal(T.why.ell, undefined);
   for (const item of figures) assert.notEqual(item.piece, 'ell');
   for (const slide of slides) assert.doesNotMatch(slide.say, /ㄱ자/);
-  assert.equal(T.right['ell-no-reason'], '이 판은 무늬를 입혀도 까닭이 보이지 않아요. 선생님도 모든 경우를 따져서 알았어요.');
+  // 무늬가 까닭을 보여 주는 도구라는 것을 드러내지 않고, 선생님이 어떻게 알았는지만 말한다.
+  assert.equal(T.right['ell-no-reason'], '이 판은 선생님도 모든 경우를 하나하나 따져서 알았어요.');
+  assert.doesNotMatch(T.right['ell-no-reason'], /무늬|까닭/);
   // 그 말은 사실이다: 3단계의 안 되는 판은 풀이 프로그램이 빠른 걸러내기가 아니라 모든 경우를 따져서 가린다.
   let seen = 0;
   for (let seed = 1; seed <= 120; seed++) {
@@ -466,6 +485,9 @@ test('풀이와 직접 만들기의 글: 되는지와 조각의 수를 알려 �
   assert.equal(fill(T.make.possible, { k: 21 }), '이 판은 다 덮을 수 있어요. 조각 21개가 들어가요.');
   assert.match(T.make.impossible, /아무리 해도/);
   assert.equal(fill(T.make.size, { n: 8 }), '8칸');
+  // 만들기 안내의 끝은 형식 사이에 같은 꼴이다("선생님, 풀어 보세요" 단추가 있다).
+  assert.match(T.make.intro, /다 만들면 선생님에게 풀어 보라고 할 수도 있어요\.$/);
+  assert.match(html, /id="tile-make-solve"[^>]*>선생님, 풀어 보세요</);
 });
 
 test('index.html: 조각 덮기의 카드, 판, 답하는 칸, 직접 만들기가 있다', () => {

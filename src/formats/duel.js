@@ -15,7 +15,7 @@ import T from '../content/duel.json';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../core/duel-ladder.js';
 import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, copyBoard, finishedCount, gameOf, isOver, isWin, lostStreak, movesOf, otherOf, replay, slipsOf, solve, startState, teacherMove, turnOf, whyOpen } from '../core/duel.js';
 import { smallerDuel } from '../core/smaller.js';
-import { fill } from '../core/text.js';
+import { fill, ordinal } from '../core/text.js';
 import { drawGame, gameCard, marksCard, tableCard } from '../ui/duel-board.js';
 
 const FORMAT = 'duel';
@@ -58,7 +58,7 @@ export function createDuel(frame) {
   }
 
   const labelsOf = (board) => ({
-    line: (index, dir, at) => fill(T.labels[`line-${dir}`], { no: index + 1, at }),
+    line: (index, dir, at) => fill(T.labels[`line-${dir}`], { no: ordinal(index + 1), at: ordinal(at) }),
     stone: (pile, take) => (board.kind === 'one' ? fill(T.labels['stone-one'], { n: take }) : fill(T.labels['stone-piles'], { pile: T.piles[pile], n: take })),
     pile: (pile) => (board.kind === 'one' ? '' : fill(T.labels.pile, { pile: T.piles[pile] })),
     count: (n) => fill(T.labels.count, { n }),
@@ -241,7 +241,7 @@ export function createDuel(frame) {
     return Array.from({ length: total + 1 }, (_, turns) => {
       const trail = round.trail.slice(0, turns);
       const who = turns === 0 ? null : turnOf(round.first, turns - 1);
-      const parts = [turns === 0 ? T.replay[`start-${round.first}`] : moveText(T.replay, who, round.board, trail.at(-1), { no: turns })];
+      const parts = [turns === 0 ? T.replay[`start-${round.first}`] : moveText(T.replay, who, round.board, trail.at(-1), { no: ordinal(turns) })];
       if (turns === total && round.winner !== null) parts.push(T.replay.last);
       const note = turns === 0 ? T.replay['note-start'] : T.replay[`note-${who}`];
       return {

@@ -220,8 +220,10 @@ export function createTax(frame) {
   function rightLine(round, solution) {
     const retries = Math.max(0, round.completions.length - 1);
     if (round.stopped) {
-      const parts = [fill(T.right.stopped, facts(round.best, solution.total - round.best))];
+      // 한 일의 차례대로: 몇 번 다시 해 봤는지 먼저, 가장 많이 가진 합과 "여기까지 했어요"는 맨 끝에.
+      const parts = [];
       if (retries > 0) parts.push(fill(T.right['stopped-tries'], { r: retries }));
+      parts.push(fill(T.right.stopped, facts(round.best, solution.total - round.best)));
       return parts;
     }
     const parts = [fill(T.right.best, facts(solution.best, solution.total - solution.best))];
