@@ -89,8 +89,17 @@ function boardOf(root) {
   boards.set(root, board);
 
   const letGo = () => {
-    board.press?.node?.removeAttribute('transform');
-    board.press?.node?.classList.remove('dragging');
+    const press = board.press;
+    if (press?.node) {
+      press.node.setAttribute('transform', press.base);
+      press.node.classList.remove('dragging');
+    }
+    // 끄는 동안 맨 위로 올렸던 칸 묶음을 제자리로 돌려놓는다(글자판으로 옮겨 다니는 차례가 바뀌지 않게).
+    if (press?.raised) {
+      const { group, next } = press.raised;
+      if (next && next.parentNode === svg) svg.insertBefore(group, next);
+      else svg.append(group);
+    }
     board.press = null;
   };
 
@@ -121,6 +130,13 @@ function boardOf(root) {
     press.moved = true;
     // 말만 끌린다. 빈칸을 누른 채 움직인 것은 아무 일도 아니다.
     if (press.node && board.view?.onDrop) {
+      // 그림은 나중에 그린 것이 위에 온다. 칸마다 네모와 말을 한 묶음으로 왼쪽부터 그리므로,
+      // 끄는 말이 오른쪽 칸의 네모 밑으로 들어가 보이지 않게 된다. 끄는 동안 그 칸 묶음을 맨 위로 올린다.
+      const group = press.node.closest('[data-cell]');
+      if (group && !press.raised) {
+        press.raised = { group, next: group.nextSibling };
+        svg.append(group);
+      }
       press.node.classList.add('dragging');
       press.node.setAttribute('transform', `translate(${dx} ${Math.max(-40, Math.min(10, dy)) - 8}) ${press.base}`);
     }
