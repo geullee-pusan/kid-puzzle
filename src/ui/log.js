@@ -129,6 +129,19 @@ export function loadDraft(format = 'coins') {
   return draft && typeof draft === 'object' ? draft : null;
 }
 
+// ---- 내 공책. 쪽마다 판 그림을 그릴 값이 들어 있다. 다듬는 일은 src/core/notebook.js가 한다. ----
+
+const NOTEBOOK = 'notebook';
+
+export function loadNotebook() {
+  const book = load(NOTEBOOK, []);
+  return Array.isArray(book) ? book : [];
+}
+
+export function saveNotebook(book) {
+  return save(NOTEBOOK, book);
+}
+
 // ---- 설정(선생님 목소리, 처음 만남을 보았는지, 연구소에 와 본 적이 있는지) ----
 
 export function loadPrefs() {

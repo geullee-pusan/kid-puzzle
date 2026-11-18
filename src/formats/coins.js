@@ -251,8 +251,11 @@ export function createCoins(frame) {
     frame.talkers.make.say(line);
   }
 
+  /** 다 만든 판(공책에 남기거나 풀어 볼 판). 동전 판은 늘 풀 수 있다. */
+  const madeBoard = () => ({ n: draft.n, shape: draft.shape, rule: draft.rule, coins: draft.coins.slice() });
+
   function playDraft() {
-    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board: draft });
+    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board: madeBoard() });
   }
 
   // ---- 단추 잇기 ----
@@ -377,5 +380,7 @@ export function createCoins(frame) {
       });
     },
     showMake,
+    /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */
+    madeBoard,
   };
 }

@@ -379,8 +379,11 @@ export function createTile(frame) {
     frame.talkers.make.say(line);
   }
 
+  /** 다 만든 판(공책에 남기거나 풀어 볼 판) */
+  const madeBoard = () => draftBoard();
+
   function playDraft() {
-    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board: draftBoard() });
+    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board: madeBoard() });
   }
 
   // ---- 단추 잇기 ----
@@ -515,5 +518,7 @@ export function createTile(frame) {
       else drawBoard(root, { w: picture.w, h: picture.h, holes: picture.holes, placed: picture.placed ?? [], small: true });
     },
     showMake,
+    /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */
+    madeBoard,
   };
 }

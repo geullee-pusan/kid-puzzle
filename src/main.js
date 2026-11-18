@@ -1,6 +1,6 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
 // 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js, 누가 이길까 duel.js, 약수 세금 tax.js, 참말 섬 logic.js).
-// 처음 만남은 src/meet.js 에 있다.
+// 처음 만남은 src/meet.js 에, 내 공책은 src/notebook.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, "막혔어요"의 세 고르기, 작은 판의 말, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
 // 지키는 것: 보상과 성적 표시를 두지 않는다. 시간은 기록만 하고 보여 주지 않는다. 아이가 누를 때까지 기다린다.
@@ -28,6 +28,7 @@ import { createTax } from './formats/tax.js';
 import { createTile } from './formats/tile.js';
 import { createTrace } from './formats/trace.js';
 import { createMeet } from './meet.js';
+import { createNotebook } from './notebook.js';
 import * as log from './ui/log.js';
 import { reloadIfWaiting, setupOffline } from './ui/offline.js';
 import { setMuted, stopSpeaking, voicesReady } from './ui/speech.js';
@@ -64,12 +65,14 @@ let asking = false; // 원래 판으로 돌아와 선생님이 한 번 묻는 �
 const smallerMemo = new Map(); // 이미 구해 둔 작은 판(판 번호와 차례마다)
 const flashing = new Map(); // 눈에 띄게 해 둔 것들과, 다시 가라앉힐 타이머
 const homeNext = {}; // 처음 화면에 그려 둔 판(형식마다 하나). "해 보기"를 누르면 이 판이 열린다
+let makeFormat = null; // 직접 만들기 화면에서 만드는 형식
+let madeId = null; // 직접 만들기에서 방금 공책에 남긴 쪽(이름 칸이 이 쪽의 이름을 고친다)
 
 function setScreen(name) {
   screen = name;
   stopSpeaking();
   for (const talker of Object.values(talkers)) talker.hush();
-  for (const id of ['meet', 'home', 'play', 'make']) $(id).hidden = id !== name;
+  for (const id of ['meet', 'home', 'notebook', 'play', 'make']) $(id).hidden = id !== name;
 }
 
 function clearRound() {
@@ -137,6 +140,9 @@ function toRecord(outcome, r = round) {
     feeling: r.feeling,
     offeredHarder: r.offeredHarder,
     resumes: r.resumes,
+    // 공책에서 "다시 해 보기"로 연 판이면 'notebook'과 그 쪽의 번호
+    from: r.from ?? null,
+    fromPage: r.fromPage ?? null,
     // 형식마다 남기는 것: 판의 처음 모습, 풀이 프로그램의 결과, 누른 횟수들
     ...format.record(r, mine ? solution : format.solve(r)),
   };
@@ -316,13 +322,17 @@ function newRound(formatId, { level, seed, small, custom, board }, more = {}) {
     feeling: null,
     offeredHarder: false,
     resumes: 0,
+    from: null, // 공책에서 연 판이면 'notebook'
+    fromPage: null, // 그렇다면 그 쪽의 번호
     ...more,
   };
 }
 
-function startRound(formatId, start) {
+/** 새 판을 연다. 하던 판이 막혔던 판이면 공책에 묵혀 둔다(새 판이 하던 판 자리를 차지하기 때문이다). */
+function startRound(formatId, start, more = {}) {
+  notebook.keepShelved(readCurrent());
   origin = null;
-  round = newRound(formatId, start);
+  round = newRound(formatId, start, more);
   solution = F.solve(round);
   persist();
   showPlay(F.ruleLine(round));
@@ -342,6 +352,16 @@ function resumeRound() {
   showPlay(C.play.resume);
   note('resume');
   persist();
+}
+
+/** 공책의 묵혀 둔 판을 이어서 한다. 그 판이 지금 하던 판이면 하던 판을 그대로 잇는다(그쪽이 더 나중 모습이다). */
+function resumeSaved(saved) {
+  const current = readCurrent();
+  if (!current || current.id !== saved.id) {
+    notebook.keepShelved(current);
+    log.saveCurrent(saved);
+  }
+  resumeRound();
 }
 
 // ---- 판 화면 ----
@@ -575,7 +595,12 @@ function finish(outcome) {
     parent.sideDone = (parent.sideDone ?? 0) + 1;
     parent.sideNext = round.sideTurn + 1;
     log.saveCurrent(parent);
-  } else log.clearCurrent();
+  } else {
+    log.clearCurrent();
+    // 끝까지 한 판은 묵혀 둔 판이 아니다. 더 좋은 답을 찾는 형식이면 가장 좋은 기록을 공책에 남긴다(저절로, 말하지 않는다).
+    notebook.dropShelved(round.id);
+    notebook.keepBest(round);
+  }
 
   // 끝난 뒤 고를 것. 느낌 표시는 안 눌러도 된다.
   // 작은 판을 끝낸 뒤에는 "원래 판으로 돌아가기"와 "작은 판 하나 더"만 낸다.
@@ -664,6 +689,9 @@ function leaveQuietly() {
   note('leave');
   stopClock();
   persist();
+  // "막혔어요"를 누른 판이면 공책에 묵혀 둔다. 한 번이라도 끝까지 간 기록이 있으면 가장 좋은 기록도 남긴다.
+  notebook.keepShelved(round);
+  notebook.keepBest(round);
   log.saveRecord({ ...toRecord('left'), endedAt: new Date().toISOString() });
   log.flush();
   showHome();
@@ -731,12 +759,40 @@ function openSolution() {
   openSheet({ title: C.solution.title, pages: F.solutionPages(round, solution) });
 }
 
+// ---- "알았다!": 그 순간의 판을 공책에 남긴다. 무엇을 알았는지는 묻지 않는다. ----
+function pressFound() {
+  if (!round) return;
+  note('found', { view: F.view(round) });
+  const result = notebook.keepFound(round);
+  keep();
+  talkers.play.say(result.existed ? C.notebook['found-again'] : C.notebook.found);
+}
+
 // ---- 직접 만들기 화면: 형식마다 만드는 칸이 따로 있다. ----
 function openMake(formatId) {
   setScreen('make');
   clearRound();
+  makeFormat = formatId;
+  madeId = null;
+  $('make-name').hidden = true;
+  $('make-name-input').value = '';
   for (const format of Object.values(formats)) $(format.makeId).hidden = format.id !== formatId;
   $('make-format').textContent = formats[formatId].T.title;
+}
+
+/** "공책에 남기기": 다 만든 판을 공책에 넣고 이름 칸을 보인다. 아직 풀 수 있는 판이 아니면 그렇다고 말한다. */
+function keepMade() {
+  const format = formats[makeFormat];
+  const board = format?.madeBoard();
+  if (!board) {
+    talkers.make.say(format?.T.make?.['keep-not-yet'] ?? C.notebook['not-yet']);
+    return;
+  }
+  const result = notebook.keepMade(makeFormat, board);
+  madeId = result.page.id;
+  $('make-name').hidden = false;
+  $('make-name-input').value = result.page.name;
+  talkers.make.say(result.existed ? C.notebook['made-again'] : C.notebook.made);
 }
 
 // ---- 형식들과 처음 만남. 틀이 건네주는 것은 아래가 전부다. ----
@@ -774,6 +830,7 @@ const frame = {
 // 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
 const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame), duel: createDuel(frame), tax: createTax(frame), logic: createLogic(frame) };
 const meet = createMeet(frame);
+const notebook = createNotebook({ $, log, formats: () => formats, setScreen, startRound, resumeSaved });
 
 // ---- 단추 잇기 ----
 $('meet-again').addEventListener('click', () => meet.show(true));
@@ -792,6 +849,14 @@ $('make-menu').addEventListener('click', (event) => {
   if (event.target === $('make-menu')) showMakeMenu(false);
 });
 $('continue').addEventListener('click', resumeRound);
+$('notebook-open').addEventListener('click', () => notebook.show());
+$('notebook-leave').addEventListener('click', showHome);
+$('found').addEventListener('click', pressFound);
+$('make-keep').addEventListener('click', keepMade);
+// 이름은 다 쓰고 나면(칸을 떠나거나 글자판의 들이기를 누르면) 고친다.
+$('make-name-input').addEventListener('change', () => {
+  if (madeId) notebook.rename(madeId, $('make-name-input').value);
+});
 $('leave').addEventListener('click', askLeave);
 $('side-back').addEventListener('click', backToOrigin);
 $('undo').addEventListener('click', () => F.undo());

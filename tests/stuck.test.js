@@ -157,7 +157,7 @@ test('하던 판은 그대로 간직한다: 작은 판은 기기에 적어 두�
   assert.match(frame, /\{ side: true, sideOf: parent\.id, sideTurn: turn \}/);
   assert.match(frame, /side: r\.side === true,\s*sideOf: r\.sideOf \?\? null,\s*sideTurn: r\.sideTurn \?\? null,/);
   // 작은 판을 끝내도 하던 판(원래 판)을 지우지 않는다.
-  assert.match(frame, /if \(side\) \{[\s\S]*?log\.saveCurrent\(parent\);\s*\} else log\.clearCurrent\(\);/);
+  assert.match(frame, /if \(side\) \{[\s\S]*?log\.saveCurrent\(parent\);\s*\} else \{\s*log\.clearCurrent\(\);/);
   // 수준 맞추기와 "왜 그럴까?"와 다음 판 번호는 작은 판의 기록을 빼고 본다.
   assert.match(frame, /const records = \(\) => withoutSide\(log\.allRecords\(\)\);/);
   assert.equal([...frame.matchAll(/log\.allRecords\(\)/g)].length, 1);

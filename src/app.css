@@ -447,6 +447,119 @@ a.btn {
   flex-direction: row;
 }
 
+/* ---- 내 공책 ---- */
+/* 위 띠의 "내 공책" 단추: 오른쪽 무리(선생님 목소리, 부모용)의 맨 앞에 둔다 */
+.top .notebook-open {
+  margin-left: auto;
+}
+
+.top .notebook-open + .sound {
+  margin-left: 0;
+}
+
+.top .make-keep {
+  margin-left: auto;
+}
+
+/* 직접 만들기에서 공책에 남긴 뒤에 보이는 이름 칸 */
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.name-row label {
+  font-weight: 700;
+}
+
+.name-row input {
+  flex: 0 1 360px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.notebook-empty {
+  height: auto;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 쪽들: 최근 것이 위. 몇 쪽인지는 적지 않는다 */
+.notebook-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-content: start;
+  gap: 12px;
+}
+
+.panel.note-page {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.note-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.note-kind {
+  font-weight: 700;
+}
+
+.note-format {
+  color: var(--muted);
+}
+
+.note-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+}
+
+.note-picture > div {
+  display: flex;
+  justify-content: center;
+}
+
+/* 하던 판 띠의 작은 그림은 왼쪽에 붙는다. 공책에서는 가운데에 둔다 */
+.resume.note-picture .coins.small.line,
+.resume.note-picture .tile-board.small,
+.resume.note-picture .code-mini,
+.resume.note-picture .code-mini-row,
+.resume.note-picture .duel-game.small,
+.resume.note-picture .tax-mini,
+.resume.note-picture .logic-mini {
+  justify-content: center;
+}
+
+.resume.note-picture .coins.small.ring {
+  margin: 0 auto;
+}
+
+.note-name {
+  margin: 0;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.note-page .btn {
+  align-self: center;
+}
+
 /* "만들기" 목록: 처음 화면 위에 뜨는 작은 목록. 형식마다 빈 판 하나와 이름 */
 .menu {
   position: fixed;

@@ -356,10 +356,15 @@ export function createTax(frame) {
     frame.talkers.make.say(line);
   }
 
-  function playDraft() {
+  /** 다 만든 판(공책에 남기거나 풀어 볼 판). 가질 수 있는 카드가 없으면 null */
+  function madeBoard() {
     const board = draftBoard();
-    if (takeable(board.cards).length === 0) return;
-    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
+    return takeable(board.cards).length === 0 ? null : board;
+  }
+
+  function playDraft() {
+    const board = madeBoard();
+    if (board) frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
   }
 
   // ---- 단추 잇기 ----
@@ -504,5 +509,9 @@ export function createTax(frame) {
       else drawMini(root, { cards: cardsUpTo(picture.n) });
     },
     showMake,
+    /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */
+    madeBoard,
+    /** 가장 좋은 기록(공책에 저절로 남는다). 이 판에서 한 번도 끝까지 가지 않았으면 null */
+    bestOf: (round) => (round.best === null ? null : { value: round.best, name: fill(T.notebook.best, { k: round.best }) }),
   };
 }

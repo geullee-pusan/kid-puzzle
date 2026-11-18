@@ -483,10 +483,12 @@ export function createCode(frame) {
   }
 
   /** 답이 하나뿐인 표는 4단계처럼 직접 풀어 볼 수 있다. */
+  /** 다 만든 판(공책에 남기거나 풀어 볼 판). 풀이 프로그램이 답이 하나뿐이라고 알려 준 뒤에만 있다 */
+  const madeBoard = () => (draftUnique ? { mode: 'table', length: MAKE_LENGTH, digits: draft.digits, rows: copyRows(draft.rows) } : null);
+
   function playDraft() {
-    if (!draftUnique) return;
-    const board = { mode: 'table', length: MAKE_LENGTH, digits: draft.digits, rows: copyRows(draft.rows) };
-    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
+    const board = madeBoard();
+    if (board) frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
   }
 
   // ---- 단추 잇기 ----
@@ -700,5 +702,7 @@ export function createCode(frame) {
       else drawMini(root, { rows: [{ chars: slotsOf('', picture.hidden, T.hidden) }] });
     },
     showMake,
+    /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */
+    madeBoard,
   };
 }

@@ -65,6 +65,7 @@ function findBanned(text) {
 const SCREEN_CODE = [
   'src/main.js',
   'src/meet.js',
+  'src/notebook.js',
   'src/formats/coins.js',
   'src/formats/trace.js',
   'src/formats/code.js',

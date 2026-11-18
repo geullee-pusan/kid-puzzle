@@ -584,9 +584,12 @@ export function createLogic(frame) {
   }
 
   /** 누가 누구인지 하나로 정해지는 판은 직접 풀어 볼 수 있다. */
+  /** 다 만든 판(공책에 남기거나 풀어 볼 판). 풀이 프로그램이 답이 하나로 정해진다고 알려 준 뒤에만 있다 */
+  const madeBoard = () => (draftUnique ? draftBoard() : null);
+
   function playDraft() {
-    if (!draftUnique) return;
-    frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board: draftBoard() });
+    const board = madeBoard();
+    if (board) frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
   }
 
   // ---- 단추 잇기 ----
@@ -733,5 +736,7 @@ export function createLogic(frame) {
       else drawMini(root, { faces: T.animals.slice(0, picture.faces).map((animal) => animal.face), fork: picture.fork === true });
     },
     showMake,
+    /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */
+    madeBoard,
   };
 }
