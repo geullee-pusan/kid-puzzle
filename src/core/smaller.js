@@ -28,6 +28,8 @@ import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
 import { MIN_SIZE, checkBoard as checkTile, deadCells, solve as solveTile, xyOf } from './tile.js';
 import { randomFigure, tooPlain } from './trace-ladder.js';
 import { checkFigure, fixesOf, solve as solveTrace } from './trace.js';
+import { smallBoards as smallUntangleBoards } from './untangle-ladder.js';
+import { checkBoard as checkUntangle, isPlanar } from './untangle.js';
 
 /** 한 판을 고르려고 다시 뽑아 보는 횟수의 위 끝. 실제로는 넘지 않는다(테스트로 확인한다). */
 const MAX_TRIES = 3000;
@@ -477,4 +479,20 @@ export function smallerRulehunt(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt };
+// ---- 엉킨 그림 풀기: 점이 더 적은 같은 종류의 그림 ----
+
+/**
+ * 풀 수 있는 그림은 점이 하나에서 셋 적은 풀 수 있는 그림을 낸다(점이 넷이면 더 줄이지 않는다).
+ * 풀 수 없는 그림은 뼈대(점 다섯을 모두 잇는 그림이나 집 셋과 우물 셋)에서 선 하나를 뺀 그림(되는 판)부터, 뼈대(안 되는 판)와 번갈아 낸다.
+ * 원래 판이 이미 뼈대 그대로면 하나 작은 꼴(점 넷을 모두 잇는 그림, 집 둘과 우물 셋)을 낸다.
+ * 이야기 판은 같은 옷의 더 작은 판을, 가장 적게 빼기 판은 둘 이상 빼야 하는 그림이면 그 뼈대를 낸다. 그런 판이 없으면 null이다.
+ */
+export function smallerUntangle(origin, turn = 0) {
+  if (!origin.board || checkUntangle(origin.board) !== null) return null;
+  const lists = smallUntangleBoards(origin);
+  const { board } = origin;
+  const possible = origin.mode === 'record' || (board.bridges ?? 0) > 0 || isPlanar(board.points.length, board.edges);
+  return wrap(pickByTurn(lists, possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle };

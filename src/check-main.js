@@ -48,6 +48,7 @@ function drawCounts() {
     ['dandelion', '민들레와 바람'],
     ['maze', '주사위 미로와 길 세기'],
     ['rulehunt', '숨은 규칙 찾기'],
+    ['untangle', '엉킨 그림 풀기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

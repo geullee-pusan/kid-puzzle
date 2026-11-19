@@ -209,6 +209,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="untangle-title">
+            <h2 id="untangle-title">엉킨 그림 풀기</h2>
+            <div class="door-picture"><div id="home-untangle-sample"></div></div>
+            <p id="home-untangle-ask" class="door-ask">선이 서로 겹치지 않게 풀 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-untangle-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-untangle-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -270,6 +280,9 @@
               <li>
                 <button id="home-rulehunt-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-rulehunt-blank"></span></span><span class="menu-name">숨은 규칙 찾기</span></button>
               </li>
+              <li>
+                <button id="home-untangle-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-untangle-blank"></span></span><span class="menu-name">엉킨 그림 풀기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -327,6 +340,8 @@
           <button id="found" class="btn wide" type="button">알았다!</button>
           <div id="hints" class="hints"></div>
           <button id="trace-degrees" class="btn wide" type="button" aria-pressed="false" hidden>점마다 선의 수 보기</button>
+          <!-- 엉킨 그림 풀기: 가장 긴 고리 하나를 굵게 그리는 도구. 무엇을 알려 주는지는 말하지 않는다 -->
+          <button id="untangle-loop" class="btn wide" type="button" aria-pressed="false" hidden>고리 하나 보기</button>
           <button id="code-left" class="btn wide" type="button" aria-pressed="false" hidden>남은 후보 수 보기</button>
           <button id="code-memo-open" class="btn wide" type="button" aria-pressed="false" hidden>메모판 쓰기</button>
           <!-- 조각 덮기: 판에 무늬를 입혔다 벗기는 도구. 무엇을 알려 주는지는 말하지 않는다. 무늬를 입히면 색마다 남은 빈칸의 수를 적는다 -->
@@ -359,6 +374,8 @@
             <div id="board"></div>
             <div id="trace-board" hidden></div>
             <strong id="trace-status" class="trace-status" aria-live="polite" hidden></strong>
+            <!-- 엉킨 그림 풀기: 점과 선(또는 집과 우물, 마을과 길). 점은 끌어 옮긴다. 겹친 곳에는 동그라미가 생긴다 -->
+            <div id="untangle-board" hidden></div>
             <!-- 자리 바꾸기: 한 줄로 이어진 칸과 말, 또는 한 줄로 놓인 돌. 막혔는지와 왜 못 가는지를 판 아래에 글로 알린다 -->
             <div id="swap-board" hidden></div>
             <strong id="swap-status" class="trace-status" aria-live="polite" hidden></strong>
@@ -425,6 +442,15 @@
               <span id="cups-meets-line" hidden>만난 횟수 <strong id="cups-meets">0</strong>번</span>
             </span>
             <span id="trace-count" class="count" hidden>남은 선 <strong id="trace-left">0</strong>개</span>
+            <!-- 엉킨 그림 풀기: 윗줄에 다 풀렸는지(또는 점이 선 위에 놓였는지), 그 아래에 겹친 곳의 수. 가장 적게 빼기 판에는 뺀 선의 수와 이 판에서 가장 적게 뺀 수 -->
+            <span id="untangle-count" class="count tile-count block-count" hidden>
+              <span id="untangle-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>겹친 곳 <strong id="untangle-left">0</strong>군데</span>
+                <span id="untangle-off-line" hidden>뺀 선 <strong id="untangle-off">0</strong>개</span>
+                <span id="untangle-best-line" hidden>이 판에서 가장 적게 뺀 것: <strong id="untangle-best"></strong>개</span>
+              </span>
+            </span>
             <span id="swap-count" class="count" hidden>움직인 횟수 <strong id="swap-moves">0</strong>번</span>
             <span id="swap-left-count" class="count" hidden>혼자 있는 돌 <strong id="swap-left">0</strong>개</span>
             <!-- 조각 덮기: 조각이 왜 안 놓였는지, 막혔는지를 판 아래에 글로 알리고, 그 아래에 남은 빈칸의 수를 적는다 -->
@@ -730,6 +756,23 @@
               <p id="trace-fix-note" class="pad-note"></p>
               <button id="trace-fix-submit" class="btn good huge" type="button" disabled>다 고쳤어요</button>
               <button id="trace-unfix" class="btn huge" type="button" disabled>고친 것 되돌리기</button>
+            </div>
+          </div>
+
+          <!-- 엉킨 그림 풀기: 점을 끌어 옮긴다. 풀 수 없는 그림이 섞이는 판에는 "불가능해요" 단추가, 가장 적게 빼기 판에는 다시 해 볼지 여기까지 할지 고르는 단추가 있다 -->
+          <div id="untangle-pad" class="pad" hidden>
+            <h2>선이 겹치지 않게</h2>
+            <p class="pad-note">점을 손가락으로 끌어 옮겨요. 놓으면 가까운 자리에 붙어요.</p>
+            <p class="pad-note">겹친 곳에는 동그라미가 생겨요. 점이 다른 선 위에 놓여도 겹친 곳으로 쳐요.</p>
+            <p id="untangle-bridge-note" class="pad-note best-line" hidden>다리를 하나 놓을 수 있어요. 겹친 곳이 하나만 남으면 그곳이 다리가 돼요.</p>
+            <div id="untangle-maybe" class="choices" hidden>
+              <p class="pad-note">아무리 옮겨도 안 풀릴 것 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="untangle-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <div id="untangle-record" class="choices" hidden>
+              <p class="pad-note">선을 누르면 빠져서 점선이 되고, 다시 누르면 돌아와요.</p>
+              <button id="untangle-again" class="btn huge" type="button" hidden>처음부터 다시 해 볼래요</button>
+              <button id="untangle-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
             </div>
           </div>
 
@@ -1530,6 +1573,33 @@
             <p class="pad-note">동그라미를 친 수가 내 규칙으로 돼요인 수예요.</p>
             <button id="rulehunt-make-solve" class="btn primary huge" type="button">선생님, 찾아 보세요</button>
             <p id="rulehunt-make-result" class="make-result" aria-live="polite"></p>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-untangle" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="그림 정하기">
+          <h2>점과 선</h2>
+          <strong id="untangle-make-count" class="make-count"></strong>
+          <div id="untangle-make-tools" class="segment">
+            <button class="btn" type="button" data-tool="draw">놓고 잇기</button>
+            <button class="btn" type="button" data-tool="erase">점 빼기</button>
+          </div>
+          <p class="pad-note">점은 끌어 옮길 수 있어요. 선을 누르면 빠져요.</p>
+          <button id="untangle-make-clear" class="btn wide" type="button">모두 지우기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 그림">
+          <p class="rule">빈 곳을 누르면 점이 생기고, 점 두 개를 차례로 누르면 선이 생겨요. 점은 끌어 옮길 수 있어요. 아무리 옮겨도 안 풀리는 그림도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="untangle-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="untangle-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="untangle-make-result" class="make-result" aria-live="polite"></p>
+            <div id="untangle-make-picture" class="untangle-make-picture"></div>
+            <button id="untangle-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

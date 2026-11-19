@@ -110,7 +110,7 @@ test('규칙 설명은 세 문장 안이고, 묻는 법과 "알 것 같아요"�
   // 형식이 단계(직접 만든 판은 목록)로 규칙 글과 힌트를 고른다.
   assert.match(code, /const hintKey = \(round\) => \(round\.custom \? \(round\.board\.lib === 'two' \? 'both' : 'one'\) : rungOf\(round\.level\)\.hint\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 14);
+  assert.equal(guides.length, 15);
   assert.ok(sentenceCount(guides[13]) <= 3, guides[13]);
   assert.match(guides[13], /선생님이 오래 물어야 찾는 규칙도 만들 수 있을까요\?$/);
 });
@@ -341,10 +341,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.match(part('id="rulehunt-check"', 'id="dandelion-pad"'), /id="rulehunt-check-done"[^>]*>다 골랐어요</);
   // 세 수의 수 단추는 1부터 20까지(세 수 판의 범위)
   assert.equal([...part('id="rulehunt-keys"', 'id="rulehunt-erase"').matchAll(/data-n="(\d+)"/g)].map((match) => Number(match[1])).join(), Array.from({ length: 20 }, (_, index) => index + 1).join());
-  // 틀이 형식을 안다(형식 목록의 맨 뒤).
-  assert.match(read('src/main.js'), /maze: createMaze\(frame\), rulehunt: createRulehunt\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 주사위 미로 다음).
+  assert.match(read('src/main.js'), /maze: createMaze\(frame\), rulehunt: createRulehunt\(frame\), /);
   assert.match(read('src/check-main.js'), /\['rulehunt', '숨은 규칙 찾기'\]/);
-  // 형식 목록의 맨 뒤라서 켜질 때 무르기와 되돌리기를 감춘다.
+  // 앞의 형식이 보이게 해 둔 무르기와 되돌리기를 켜질 때 감춘다.
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = true;\s*\$\('reset'\)\.hidden = true;/);
   // 지난 기록은 틀이 건네주는 것(작은 판을 뺀 기록)으로 본다.
   assert.doesNotMatch(code, /log\.allRecords\(\)/);

@@ -646,7 +646,7 @@ export function createRulehunt(frame) {
       $('rulehunt-board').hidden = !on;
       $('rulehunt-count').hidden = !on;
       if (on) {
-        // 이 형식은 틀의 형식 목록에서 맨 뒤라, 앞의 형식이 정해 둔 무르기와 되돌리기를 여기서 다시 감춘다.
+        // 앞의 형식이 정해 둔 무르기와 되돌리기를 여기서 다시 감춘다(뒤의 엉킨 그림 풀기는 꺼질 때 이 둘에 손대지 않는다).
         $('undo').hidden = true;
         $('reset').hidden = true;
       }
