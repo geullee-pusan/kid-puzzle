@@ -1,5 +1,5 @@
-// 참말 섬의 판을 그린다: 주민들(모습, 이름, 쳐 보기 단추)과 그들이 한 말, 갈림길, 상자와 글.
-// (5단계 질문 고르기의 질문 카드와 대답 표는 2026-11 화면 글 점검에서 5단계를 빼면서 지웠다.)
+// 참말 섬의 판을 그린다: 주민들(모습, 이름, 쳐 보기 단추)과 그들이 한 말, 갈림길, 상자와 글,
+// 요일 섬의 한 주(주민마다 거짓말하는 요일, 요일마다 "오늘이라고 쳐 보기"), 질문 고르기의 질문 카드와 대답 표.
 // 누를 수 있는 판과 보기만 하는 그림(풀이, "왜 그럴까?")을 같은 모양으로 그린다.
 // 색만으로 알리지 않는다.
 //   쳐 본 종류: 참말쟁이라고 친 주민은 굵은 실선 테두리, 거짓말쟁이라고 친 주민은 굵은 겹선 테두리, 모름은 가는 점선 테두리이고, 글자 표시가 함께 붙는다.
@@ -57,6 +57,51 @@ function fork(item, live) {
   return card;
 }
 
+/**
+ * 요일 섬의 한 주: 제목 한 줄, 요일의 줄(누르면 그 요일을 오늘이라고 쳐 본다), 그 아래로 주민마다 거짓말하는 요일.
+ * 오늘이라고 친 요일의 칸은 굵은 테두리와 글자("오늘?")로 보인다. 거짓말하는 요일의 칸은 빗금과 글자("거짓")로 보인다.
+ * 주민의 칸은 오늘이라고 친 요일에 그 주민이 참말하는 날이면 굵은 실선, 거짓말하는 날이면 굵은 겹선 테두리다(주민 카드와 같다).
+ */
+function week(item, live) {
+  const table = el('div', 'logic-week');
+  table.style.setProperty('--n', String(item.heads.length));
+  table.append(el('span', 'logic-week-title', item.title), el('span', 'logic-week-corner'));
+  for (const head of item.heads) {
+    const cell = el('div', `logic-week-head${head.chosen ? ' chosen' : ''}`);
+    if (live && head.onTap) {
+      const press = button('logic-day', head.text, head.onTap, head.label);
+      press.setAttribute('aria-pressed', String(Boolean(head.chosen)));
+      press.dataset.focus = head.focus;
+      cell.append(press);
+    } else cell.append(el('strong', 'logic-day', head.text));
+    cell.append(el('span', 'logic-week-sign', head.sign ?? ''));
+    table.append(cell);
+  }
+  for (const row of item.rows) {
+    const who = el('span', `logic-week-who mark-${row.mark ?? 'none'}`);
+    const face = el('span', 'logic-face small', row.face);
+    face.setAttribute('aria-hidden', 'true');
+    who.append(face, el('span', 'logic-who-name', row.name));
+    table.append(who);
+    row.cells.forEach((text, at) => table.append(el('span', `logic-week-cell${text ? ' lie' : ''}${item.heads[at].chosen ? ' chosen' : ''}`, text)));
+  }
+  return table;
+}
+
+/** 질문 하나: 몇째 질문인지, 질문, 이 가정에서의 대답. 누를 수 있는 판에서는 눌러서 답으로 고른다. */
+function question(item, live) {
+  const card = el(live ? 'button' : 'div', `logic-question${item.chosen ? ' chosen' : ''}`);
+  if (live) {
+    card.type = 'button';
+    card.setAttribute('aria-pressed', String(Boolean(item.chosen)));
+    card.dataset.focus = item.focus;
+    card.addEventListener('click', item.onTap);
+  }
+  card.append(el('span', 'logic-q-no', item.no), el('span', 'logic-q-lines', item.text));
+  if (item.tag) card.append(el('span', 'logic-tag', item.tag));
+  return card;
+}
+
 /** 말 하나: 말한 주민, 말, 이 가정에서 참인지, 맞지 않으면 그 사실 */
 function sayRow(item) {
   const row = el('li', `logic-say${item.clash ? ' clash' : ''}${item.flagged ? ' flagged' : ''}${item.truth === null || item.truth === undefined ? '' : item.truth ? ' is-true' : ' is-false'}`);
@@ -98,6 +143,8 @@ function box(item, live) {
  *   fork       갈림길 { title, names: {left, right}, mark: 'left'|'right'|null, sign, button, label, onTap }
  *   says       말들 [{ name, face, text, truth, tag, clash, clashText, flagged }]
  *   boxes      상자들 [{ name, text, mark, truth, tag, chosen, flagged, button, label, onTap }]
+ *   week       요일 섬의 한 주 { title, heads: [{ text, sign, chosen, label, focus, onTap }], rows: [{ name, face, mark: 'knight'|'liar'|null, cells: [글자|''] }] }
+ *   questions  질문들 [{ no, text, tag, chosen, focus, onTap }]
  *   live       누를 수 있는 판인가
  *   small      작은 그림으로 그린다(풀이, "왜 그럴까?")
  */
@@ -113,11 +160,20 @@ export function drawBoard(root, view) {
   }
   if (view.rule) nodes.push(el('p', `logic-rule${view.rule.fits === false ? ' misfit' : view.rule.fits ? ' fits' : ''}`, view.rule.tag ? `${view.rule.text} ${view.rule.tag}` : view.rule.text));
   // 갈림길은 주민들 위에 낮은 띠 하나로 그린다(주민 셋과 한 줄에 놓으면 넘쳐서 말이 아래로 밀린다).
-  if (view.fork) nodes.push(fork(view.fork, live));
+  // 질문 판은 주민이 하나뿐이어서 갈림길과 주민을 한 줄에 놓는다(질문 카드가 판 아래로 밀리지 않게).
+  const together = Boolean(view.fork && view.questions?.length);
+  if (view.fork && !together) nodes.push(fork(view.fork, live));
   if (view.people?.length) {
     const row = el('div', 'logic-people');
+    if (together) row.append(fork(view.fork, live));
     for (const item of view.people) row.append(person(item, live));
     nodes.push(row);
+  }
+  if (view.week) nodes.push(week(view.week, live));
+  if (view.questions?.length) {
+    const list = el('div', 'logic-questions');
+    for (const item of view.questions) list.append(question(item, live));
+    nodes.push(list);
   }
   if (view.says?.length) {
     const list = el('ol', 'logic-says');
@@ -137,11 +193,12 @@ export function drawBoard(root, view) {
 /**
  * 작은 그림(처음 화면, 하던 판, 판 고르기, "만들기" 목록): 주민들의 모습이나 상자들.
  * @param {HTMLElement} root
- * @param {{faces?: string[], marks?: (string|null)[], boxes?: number, fork?: boolean, blank?: string}} view
- *   faces 주민들의 모습, marks 쳐 본 종류('knight'|'liar'|null), boxes 상자 수, fork 갈림길을 그리는가, blank 아직 정하지 않은 주민의 글자
+ * @param {{faces?: string[], marks?: (string|null)[], boxes?: number, fork?: boolean, blank?: string, week?: number, lies?: number[][], ask?: string}} view
+ *   faces 주민들의 모습, marks 쳐 본 종류('knight'|'liar'|null), boxes 상자 수, fork 갈림길을 그리는가, blank 아직 정하지 않은 주민의 글자,
+ *   week 한 주의 요일 수(요일 섬의 한 주를 작게 그린다), lies 주민마다 거짓말하는 요일(칠한다), ask 질문 판의 물음표 글자
  */
 export function drawMini(root, view) {
-  root.className = 'logic-mini';
+  root.className = `logic-mini${view.week ? ' with-week' : ''}`;
   const nodes = [];
   if (view.boxes) {
     for (let at = 0; at < view.boxes; at++) {
@@ -155,10 +212,18 @@ export function drawMini(root, view) {
     nodes.push(el('span', `logic-face mini mark-${mark}`, face));
   }
   if (view.blank) for (let at = 0; at < 2; at++) nodes.push(el('span', 'logic-face mini blank', view.blank));
+  if (view.ask) nodes.push(el('span', 'logic-ask-mark', view.ask));
   if (view.fork) {
     const roads = el('span', 'logic-roads mini');
     roads.append(el('span', 'logic-road road-left'), el('span', 'logic-road road-right'));
     nodes.push(roads);
+  }
+  if (view.week) {
+    // 한 주를 작게: 주민마다 한 줄, 거짓말하는 요일을 칠한다(글자는 넣지 않는다)
+    const strip = el('span', 'logic-week mini');
+    strip.style.setProperty('--n', String(view.week));
+    for (const days of view.lies ?? []) for (let at = 0; at < view.week; at++) strip.append(el('span', `logic-week-cell${days.includes(at) ? ' lie' : ''}`));
+    nodes.push(strip);
   }
   root.setAttribute('aria-hidden', 'true');
   root.replaceChildren(...nodes);
@@ -171,6 +236,35 @@ export function boardCard(view, note) {
   card.append(picture);
   drawBoard(picture, { ...view, live: false, small: true });
   if (note) card.append(el('p', 'strip-note', note));
+  return card;
+}
+
+/**
+ * 질문마다 네 가지 경우의 대답을 늘어놓은 표(질문 고르기의 풀이). 질문과 표시("길을 알 수 있어요")는 표의 너비만큼 한 줄로 적고, 그 아래 줄에 네 경우의 대답을 적는다.
+ * 쓸모 있는 질문의 두 줄은 굵은 테두리로도 보인다.
+ * @param {{heads: string[], rows: {no: string, text: string, cells: string[], mark: string, useful: boolean}[]}} view heads는 네 경우의 이름
+ */
+export function replyTable(view) {
+  const table = el('table', 'logic-table');
+  const head = el('tr');
+  for (const text of view.heads) head.append(el('th', '', text));
+  const thead = el('thead');
+  thead.append(head);
+  table.append(thead);
+  for (const row of view.rows) {
+    const body = el('tbody', row.useful ? 'useful' : '');
+    const title = el('tr');
+    const first = el('th', 'logic-table-q');
+    first.colSpan = view.heads.length;
+    first.append(el('span', 'logic-q-no', row.no), el('span', 'logic-q-line', row.text), el('span', 'logic-table-mark', row.mark));
+    title.append(first);
+    const line = el('tr');
+    line.append(...row.cells.map((text) => el('td', '', text)));
+    body.append(title, line);
+    table.append(body);
+  }
+  const card = el('div', 'logic-figure wide');
+  card.append(table);
   return card;
 }
 

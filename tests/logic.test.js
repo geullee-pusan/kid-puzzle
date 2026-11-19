@@ -9,6 +9,7 @@ import {
   blankGuess,
   boxAnswers,
   checkBoard,
+  dayWorld,
   diagnose,
   expectedPresses,
   follow,
@@ -23,7 +24,7 @@ import {
   worldsOf,
 } from '../src/core/logic.js';
 import { createRng, randInt } from '../src/core/rng.js';
-import { bruteAnswer, bruteBoxes, bruteReply, bruteUseful, bruteWorlds } from './helpers/brute-logic.js';
+import { bruteAnswer, bruteBoxes, bruteDays, bruteReply, bruteUseful, bruteWorlds } from './helpers/brute-logic.js';
 
 const T = true;
 const L = false;
@@ -139,32 +140,30 @@ test('따라가 보기: 쳐 본 대로 말이 참인지 거짓인지, 말한 주
   const box = { kind: 'box', labels: [{ t: 'here' }, { t: 'not-here' }, { t: 'not-in', box: 0 }], rule: { of: 'true', n: 1 }, ask: 'box' };
   assert.deepEqual(follow(box, { ...blankGuess(box), box: 0 }), { truths: [true, true, false], count: 2, fits: false, done: false });
   assert.equal(follow(box, { ...blankGuess(box), box: 1 }).fits, true);
-  // 질문: 주민과 길을 모르면 "당신은 참말쟁이인가요?"만 대답이 정해진다(늘 "예").
-  const ask = { kind: 'question', people: [0], questions: [{ q: 'me' }, { q: 'road', side: 'left' }, { q: 'kin', side: 'left' }], ask: 'question' };
+  // 질문: 주민과 길을 모르면 "하마는 참말쟁이인가요?"만 대답이 정해진다(늘 "예").
+  const ask = { kind: 'question', people: [0], questions: [{ q: 'me' }, { q: 'road', side: 'left' }, { q: 'would', inner: { q: 'road', side: 'left' } }], ask: 'question' };
   assert.deepEqual(follow(ask, blankGuess(ask)).replies, [true, null, null]);
   assert.deepEqual(follow(ask, { ...blankGuess(ask), road: 'left' }).replies, [true, null, true]);
 });
 
-test('질문의 쓸모: 대답만 듣고 길이 정해지면 쓸모 있다. 따로 적은 식과 견준다', () => {
-  const all = [
-    { q: 'road', side: 'left' },
-    { q: 'road', side: 'right' },
-    { q: 'me' },
-    { q: 'fact', yes: true },
-    { q: 'fact', yes: false },
-    { q: 'kin', side: 'left' },
-    { q: 'kin', side: 'right' },
-    { q: 'would', side: 'left' },
-    { q: 'would', side: 'right' },
-  ];
+test('질문의 쓸모: 대답만 듣고 길이 정해지면 쓸모 있다. 따로 적은 식과 견준다. 되묻는 질문은 "제가 …라고 물으면" 한 꼴뿐이다', () => {
+  const plain = [{ q: 'road', side: 'left' }, { q: 'road', side: 'right' }, { q: 'me' }, { q: 'fact', yes: true }, { q: 'fact', yes: false }];
+  const all = [...plain, ...plain.map((inner) => ({ q: 'would', inner }))];
   for (const question of all) {
     for (const world of questionWorlds()) assert.equal(replyOf(question, world), bruteReply(question, world.kinds[0], world.road === 'left'), JSON.stringify([question, world]));
     assert.equal(judgeQuestion(question).useful, bruteUseful(question), JSON.stringify(question));
   }
+  // 쓸모 있는 질문은 길을 묻는 질문을 되묻는 것뿐이다.
   assert.deepEqual(
     all.map((question) => judgeQuestion(question).useful),
-    [false, false, false, false, false, true, true, true, true],
+    [false, false, false, false, false, true, true, false, false, false],
   );
+  // "당신 같은 주민에게 물으면"(kin)과 되묻는 질문 안의 되묻는 질문은 판으로 받지 않는다.
+  const board = (questions) => ({ kind: 'question', people: [0], questions, ask: 'question' });
+  assert.equal(checkBoard(board([{ q: 'me' }, { q: 'would', inner: { q: 'road', side: 'left' } }])), null);
+  assert.notEqual(checkBoard(board([{ q: 'me' }, { q: 'kin', side: 'left' }])), null);
+  assert.notEqual(checkBoard(board([{ q: 'me' }, { q: 'would', side: 'left' }])), null);
+  assert.notEqual(checkBoard(board([{ q: 'me' }, { q: 'would', inner: { q: 'would', inner: { q: 'me' } } }])), null);
   // 쓸모없는 질문에는 같은 대답이 나오는데 길이 다른 두 경우가 있다.
   const { clash } = judgeQuestion({ q: 'road', side: 'left' });
   assert.notEqual(clash.worlds[0].road, clash.worlds[1].road);
@@ -229,8 +228,55 @@ test('오답 짐작: 낸 배정에서 맞지 않게 되는 첫 말을 짚는다.
   const box = { kind: 'box', labels: [{ t: 'here' }, { t: 'not-here' }, { t: 'not-in', box: 0 }], rule: { of: 'true', n: 1 }, ask: 'box' };
   assert.deepEqual([diagnose(box, { type: 'box', at: 0 }).count, diagnose(box, { type: 'box', at: 2 }).count, diagnose(box, { type: 'box', at: 1 }).correct], [2, 2, true]);
   // 질문: 쓸모없는 질문이면 길이 달라도 같이 나오는 대답
-  const ask = { kind: 'question', people: [0], questions: [{ q: 'me' }, { q: 'would', side: 'left' }], ask: 'question' };
+  const ask = { kind: 'question', people: [0], questions: [{ q: 'me' }, { q: 'would', inner: { q: 'road', side: 'left' } }], ask: 'question' };
   assert.deepEqual([diagnose(ask, { type: 'question', at: 0 }).reply, diagnose(ask, { type: 'question', at: 1 }).correct], [true, true]);
+  // 요일: 그 요일이면 어긋나는 첫 말을 짚는다.
+  const week = { kind: 'day', people: [0, 1], lies: [[0, 1, 2], [3, 4, 5]], says: [say(0, { t: 'lieday', who: 0, off: -1, lie: true }), say(1, { t: 'lieday', who: 1, off: -1, lie: true })], ask: 'day' };
+  assert.equal(solve(week).answer, 3);
+  assert.deepEqual([diagnose(week, { type: 'day', day: 3 }).correct, diagnose(week, { type: 'day', day: 3 }).guess], [true, null]);
+  const wrongDay = diagnose(week, { type: 'day', day: 0 });
+  assert.deepEqual([wrongDay.correct, wrongDay.guess, wrongDay.say], [false, 'day-clash', 1]);
+});
+
+test('요일 섬: 주민마다 거짓말하는 요일이 있다. 어제와 내일은 한 주를 돈다. 오늘이 하나로 정해지는 판을 따로 적은 풀이와 견준다', () => {
+  // 너구리는 월·화·수, 여우는 목·금·토에 거짓말한다. 둘 다 "어제는 내가 거짓말하는 날이었어요": 목요일뿐이다.
+  const week = { kind: 'day', people: [2, 4], lies: [[0, 1, 2], [3, 4, 5]], says: [say(0, { t: 'lieday', who: 0, off: -1, lie: true }), say(1, { t: 'lieday', who: 1, off: -1, lie: true })], ask: 'day' };
+  assert.equal(checkBoard(week), null);
+  const solved = solve(week);
+  assert.deepEqual([solved.possible, solved.answer, solved.worlds, solved.kinds], [true, 3, 1, [true, false]]);
+  assert.deepEqual(bruteDays(week), [3]);
+  // 월요일의 어제는 일요일, 일요일의 내일은 월요일이다.
+  assert.equal(sayTruth(say(0, { t: 'dayname', off: -1, day: 6 }), dayWorld(week, 0)), true);
+  assert.equal(sayTruth(say(0, { t: 'dayname', off: 1, day: 0 }), dayWorld(week, 6)), true);
+  assert.equal(sayTruth(say(0, { t: 'lieday', who: 1, off: 1, lie: false }), dayWorld(week, 5)), true, '토요일의 내일(일요일)은 여우가 참말하는 날');
+  // 따라가 보기: 요일을 모르면 정해지는 것만, 요일을 치면 주민의 종류가 정해진다.
+  assert.deepEqual(follow(week, blankGuess(week)).says, [{ truth: null, clash: false }, { truth: null, clash: false }]);
+  // 월요일이라고 치면: 너구리는 거짓말하는 날이고 말은 거짓(들어맞는다), 여우는 참말하는 날인데 말이 거짓(어긋난다).
+  assert.deepEqual(follow(week, { ...blankGuess(week), day: 0 }).says, [{ truth: false, clash: false }, { truth: false, clash: true }]);
+  assert.equal(follow(week, { ...blankGuess(week), day: 3 }).done, true);
+  assert.equal(guessFits(week, { ...blankGuess(week), day: 3 }), true);
+  assert.equal(guessFits(week, { ...blankGuess(week), day: 4 }), false);
+  // 요일 단추를 아무렇게나 누를 때: 상자 일곱과 같다.
+  assert.equal(Math.round(expectedPresses(week)), 7);
+  // 판 검사: 요일 판에는 요일 섬의 말만, 다른 판에는 요일 섬의 말이 없다. 거짓말하는 요일은 하루 이상, 모든 요일은 아니다.
+  assert.notEqual(checkBoard({ ...week, says: [say(0, { t: 'some' })] }), null);
+  assert.notEqual(checkBoard(folk(2, [say(0, { t: 'lieday', who: 0, off: -1, lie: true })])), null);
+  assert.notEqual(checkBoard({ ...week, lies: [[], [3]] }), null);
+  assert.notEqual(checkBoard({ ...week, lies: [[0, 1, 2, 3, 4, 5, 6], [3]] }), null);
+  assert.notEqual(checkBoard({ ...week, lies: [[2, 1], [3]] }), null);
+  // 무작위로 만든 요일 판 모두: 풀이 프로그램과 따로 적은 풀이가 같은 요일들을 낸다.
+  const rng = createRng(5);
+  const pool = sayPool(2, ['lieday', 'dayname']);
+  for (let run = 0; run < 3000; run++) {
+    const runOf = () => {
+      const size = randInt(rng, 1, 5);
+      const start = randInt(rng, 0, 7 - size);
+      return Array.from({ length: size }, (_, at) => start + at);
+    };
+    const says = Array.from({ length: randInt(rng, 1, 3) }, () => pool[randInt(rng, 0, pool.length - 1)]);
+    const board = { kind: 'day', people: [0, 1], lies: [runOf(), runOf()], says, ask: 'day' };
+    assert.deepEqual(worldsOf(board).map((world) => world.day), bruteDays(board), JSON.stringify(board));
+  }
 });
 
 test('판 검사: 꼴이 맞지 않는 판을 걸러 낸다', () => {

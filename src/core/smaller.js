@@ -20,7 +20,7 @@ import { checkBoard as checkLamps } from './lamps.js';
 import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
 import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } from './dandelion.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
-import { boxBoards, smallFolkBoards } from './logic-ladder.js';
+import { boxBoards, oneDayBoards, smallFolkBoards, someBoards, usefulQuestions } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
 import { checkBoard as checkMaze, smallBoards as smallMazeBoards } from './maze.js';
 import { createRng, randInt, seedFrom } from './rng.js';
@@ -290,16 +290,42 @@ export function smallerTax(origin, turn = 0) {
   return sizes.length > 0 ? { board: { cards: cardsUpTo(sizes[turn % sizes.length]) } } : null;
 }
 
-// ---- 참말 섬: 주민 셋은 주민 둘로, 상자 셋은 상자 둘로. 질문 고르기와 주민 둘의 판에는 없다 ----
+// ---- 참말 섬: 주민 셋은 주민 둘로, 상자 셋은 상자 둘로, "적어도 한 명"의 말 둘은 말 하나로,
+//      요일 섬의 주민 둘은 주민 하나로, 질문 넷은 질문 둘로. 1단계(주민 둘)의 판과 이미 가장 작은 판에는 없다 ----
 
-/** 작은 판의 주민 수와 상자 수 */
-export const LOGIC_SMALL = { people: 2, boxes: 2 };
+/** 작은 판의 주민 수와 상자 수, 요일 판의 주민 수, 질문 판의 질문 수 */
+export const LOGIC_SMALL = { people: 2, boxes: 2, dayPeople: 1, questions: 2 };
 
 export function smallerLogic(origin, turn = 0) {
   const { board } = origin;
-  if (checkLogic(board) !== null || board.kind === 'question') return null;
+  if (checkLogic(board) !== null) return null;
   // 원래 판마다 정해 둔 차례로 돈다. 같은 원래 판, 같은 차례에는 늘 같은 판이 나온다.
   const rng = createRng(seedFrom('logic-smaller', JSON.stringify(board)));
+  if (board.kind === 'question') {
+    // 쓸모 있는 질문 하나와 쓸모없는 질문 하나. 쓸모없는 질문은 차례대로 바꾼다. 질문의 차례는 원래 판과 같다.
+    if (board.questions.length <= LOGIC_SMALL.questions) return null;
+    const useful = usefulQuestions(board);
+    const useless = board.questions.map((_, at) => at).filter((at) => !useful.includes(at));
+    if (useful.length === 0 || useless.length === 0) return null;
+    const keep = [useful[turn % useful.length], shuffled(rng, useless)[turn % useless.length]].sort((a, b) => a - b);
+    return { board: { kind: 'question', people: board.people.slice(), questions: keep.map((at) => board.questions[at]), ask: 'question' } };
+  }
+  if (board.kind === 'day') {
+    // 같은 동물, 같은 거짓말 요일의 주민 하나가 말 한두 개를 한다.
+    if (board.people.length <= LOGIC_SMALL.dayPeople) return null;
+    const list = shuffled(rng, oneDayBoards(board.lies[0]));
+    if (list.length === 0) return null;
+    return { board: { kind: 'day', people: board.people.slice(0, 1), lies: [board.lies[0]], says: list[turn % list.length], ask: 'day' } };
+  }
+  if (origin.mode === 'some') {
+    // 5단계(주민 둘, "적어도 한 명"): 같은 주민들의 말 하나뿐인 판. 말이 하나뿐인 판에는 없다.
+    if (board.says.length <= 1) return null;
+    const list = shuffled(
+      rng,
+      someBoards().filter((item) => item.says.length === 1),
+    );
+    return { board: { kind: 'folk', people: board.people.slice(), says: list[turn % list.length].says, ask: 'kinds' } };
+  }
   if (board.kind === 'box') {
     if (board.labels.length <= LOGIC_SMALL.boxes) return null;
     // 원래 판의 글과 같은 꼴의 글로만 된 판을 앞에 둔다. 상자 둘에서는 "참인 글은 둘"이나 "거짓인 글은 둘"이어야 답이 하나로 정해진다.

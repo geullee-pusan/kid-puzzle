@@ -74,17 +74,48 @@ export function bruteBoxes(board) {
 /**
  * 질문 판: 질문의 대답을 따로 적은 식으로 구한다(되묻는 질문을 풀어 쓴 꼴).
  *   길을 묻는 질문: 참말쟁이는 사실대로, 거짓말쟁이는 반대로
- *   "당신은 참말쟁이인가요?": 누구나 "예"
+ *   "하마는 참말쟁이인가요?": 누구나 "예"
  *   누구나 아는 사실: 참말쟁이는 사실대로, 거짓말쟁이는 반대로
- *   "당신 같은 주민에게 물으면 예라고 하나요?", "제가 물으면 예라고 할 건가요?": 거짓말쟁이는 거짓말을 두 번 겹치므로, 누구나 길을 사실대로 알려 준다
+ *   "제가 ‘…’라고 물으면 ‘예’라고 대답할 건가요?": 거짓말쟁이는 거짓말을 두 번 겹친다. 그래서
+ *     안이 길을 묻는 질문이면 누구나 길을 사실대로, 안이 "참말쟁이인가요?"면 참말쟁이만 "예",
+ *     안이 누구나 아는 사실이면 누구나 그 사실대로 대답한다
  */
 export function bruteReply(question, knight, left) {
   const roadFact = (question.side === 'left') === left;
   if (question.q === 'road') return knight ? roadFact : !roadFact;
   if (question.q === 'me') return true;
   if (question.q === 'fact') return knight ? question.yes : !question.yes;
-  if (question.q === 'kin' || question.q === 'would') return roadFact;
+  if (question.q === 'would') {
+    const inner = question.inner;
+    if (inner.q === 'road') return (inner.side === 'left') === left;
+    if (inner.q === 'me') return knight;
+    if (inner.q === 'fact') return inner.yes;
+  }
   throw new Error(question.q);
+}
+
+/** 질문 판: 쓸모 있는 질문의 번호들(질문마다 bruteUseful) */
+export const bruteUsefulAt = (board) => board.questions.map((question, at) => (bruteUseful(question) ? at : -1)).filter((at) => at >= 0);
+
+/**
+ * 요일 판: 오늘일 수 있는 요일들. src/core/logic.js와 따로 적었다.
+ * 요일을 하나씩 오늘이라고 놓고, 말마다 그 말이 가리키는 날(어제, 내일)을 먼저 구한 다음,
+ * 말한 주민이 오늘 거짓말하는 날이면 말이 거짓이어야 하고, 아니면 참이어야 한다.
+ */
+export function bruteDays(board) {
+  const answers = [];
+  const lying = (who, day) => board.lies[who].indexOf(day) !== -1;
+  for (let today = 0; today < 7; today++) {
+    const yesterday = today === 0 ? 6 : today - 1;
+    const tomorrow = today === 6 ? 0 : today + 1;
+    const ok = board.says.every(({ by, s }) => {
+      const when = s.off === -1 ? yesterday : s.off === 1 ? tomorrow : today;
+      const truth = s.t === 'lieday' ? lying(s.who, when) === s.lie : when === s.day;
+      return lying(by, today) ? !truth : truth;
+    });
+    if (ok) answers.push(today);
+  }
+  return answers;
 }
 
 /** 질문이 쓸모 있는가: "예"를 듣는 경우들과 "아니요"를 듣는 경우들이 길로 깔끔하게 갈린다 */

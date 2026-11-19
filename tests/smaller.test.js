@@ -16,6 +16,7 @@ import * as coinLadder from '../src/core/ladder.js';
 import * as logicLadder from '../src/core/logic-ladder.js';
 import { boxBoards } from '../src/core/logic-ladder.js';
 import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } from '../src/core/logic.js';
+import { bruteDays, bruteUsefulAt, bruteWorlds } from './helpers/brute-logic.js';
 import * as blockLadder from '../src/core/block-ladder.js';
 import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from '../src/core/block.js';
 import { BLOCK_SHRINK, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
@@ -294,15 +295,17 @@ test('약수 세금: 카드가 넷에서 여섯 장인 판. 원래 판보다 작
   assert.equal(smallerTax({ board: { cards: [2, 3, 4, 6, 8, 9, 12] } }), null);
 });
 
-test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글이 붙은 상자 둘로. 질문 고르기와 주민 둘의 판에는 없다', () => {
-  assert.deepEqual(LOGIC_SMALL, { people: 2, boxes: 2 });
+test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글이 붙은 상자 둘로, 5단계의 말 둘은 말 하나로, 요일 섬은 주민 하나로, 질문 넷은 둘로. 1단계(주민 둘)와 말 하나뿐인 판에는 없다', () => {
+  assert.deepEqual(LOGIC_SMALL, { people: 2, boxes: 2, dayPeople: 1, questions: 2 });
   let none = 0;
+  const kinds = new Set();
   eachBoard(logicLadder, (board, rung, where) => {
     const origin = { mode: rung.mode, board };
     const from = solveLogic(board);
     for (const turn of TURNS) {
       const small = smallerLogic(origin, turn);
-      if (board.kind === 'question' || (board.people && board.people.length <= 2)) {
+      const smallest = rung.mode === 'pair' || (rung.mode === 'some' && board.says.length === 1);
+      if (smallest) {
         assert.equal(small, null, `${where}: 작은 판이 없어야 해요`);
         none += turn === 0 ? 1 : 0;
         continue;
@@ -310,8 +313,31 @@ test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글�
       assert.ok(small, where);
       assert.equal(checkLogic(small.board), null, where);
       assert.equal(small.board.kind, board.kind, where);
+      kinds.add(rung.mode);
       const solved = solveLogic(small.board);
-      if (board.kind === 'box') {
+      if (board.kind === 'question') {
+        // 같은 주민, 원래 판의 질문 둘(쓸모 있는 질문 하나와 쓸모없는 질문 하나). 따로 적은 식으로도 쓸모 있는 질문은 하나다.
+        assert.deepEqual(small.board.people, board.people, where);
+        assert.equal(small.board.questions.length, 2, where);
+        for (const question of small.board.questions) assert.ok(board.questions.some((item) => JSON.stringify(item) === JSON.stringify(question)), where);
+        assert.equal(bruteUsefulAt(small.board).length, 1, where);
+        assert.deepEqual(solved.answer, bruteUsefulAt(small.board), where);
+        assert.deepEqual(smallerLogic({ mode: 'ask', board: small.board }, 0), null, `${where}: 질문 둘보다 작은 판은 없다`);
+      } else if (board.kind === 'day') {
+        // 같은 동물, 같은 거짓말 요일의 주민 하나. 이레를 따로 따져도 오늘은 하나로 정해진다.
+        assert.deepEqual(small.board.people, board.people.slice(0, 1), where);
+        assert.deepEqual(small.board.lies, board.lies.slice(0, 1), where);
+        assert.deepEqual(bruteDays(small.board), [solved.answer], where);
+        assert.equal(isLeanLogic(small.board), true, where);
+        assert.equal(smallerLogic({ mode: 'day', board: small.board }, 0), null);
+      } else if (rung.mode === 'some') {
+        // 같은 주민들의 말 하나뿐인 판
+        assert.deepEqual(small.board.people, board.people, where);
+        assert.equal(small.board.says.length, 1, where);
+        assert.ok(['some', 'or'].includes(small.board.says[0].s.t), where);
+        assert.equal(bruteWorlds(small.board).length, 1, where);
+        assert.equal(solved.possible, true, where);
+      } else if (board.kind === 'box') {
         assert.equal(small.board.labels.length, 2, where);
         assert.equal(solved.possible, true, where);
         // 원래 판의 글과 같은 꼴의 글로 된 판이 있으면 그것부터 낸다.
@@ -330,9 +356,12 @@ test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글�
     }
   });
   assert.ok(none > 0, `없는 판 ${none}개`);
+  assert.deepEqual([...kinds].sort(), ['ask', 'box', 'day', 'folk', 'road', 'some']);
   // 이어서 여는 두 판은 다르다.
   const folk = logicLadder.generateBoard(3, 1).board;
   assert.notDeepEqual(smallerLogic({ board: folk }, 0), smallerLogic({ board: folk }, 1));
+  const week = logicLadder.generateBoard(6, 1).board;
+  assert.notDeepEqual(smallerLogic({ mode: 'day', board: week }, 0), smallerLogic({ mode: 'day', board: week }, 1));
   assert.equal(smallerLogic({ board: null }), null);
 });
 
