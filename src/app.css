@@ -4552,6 +4552,12 @@ button.tax-card {
   cursor: pointer;
 }
 
+/* 칸 둘레의 누르는 자리: 보이지 않지만 눌린다 */
+.mz-hit {
+  fill: transparent;
+  stroke: none;
+}
+
 .mz-cell-group:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: -3px;

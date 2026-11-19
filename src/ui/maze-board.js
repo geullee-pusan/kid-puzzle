@@ -7,10 +7,11 @@ import { cellAt, cellCount, childrenOf, pathCell, rowCol } from '../core/maze.js
 
 const NS = 'http://www.w3.org/2000/svg';
 const UX = 100; // 이웃한 칸 사이의 가로 거리
-const UY = 92; // 줄 사이의 세로 거리
-const NODE = 66; // 갈림길 칸의 크기
-const BAR_H = 150; // 손님 막대의 가장 높은 키
-const TOP = 48; // 맨 위 칸의 가운데 높이
+/** 큰 판(이만큼 줄이 많은 판)은 줄 사이를 좁히고 칸을 키운다. 판 자리의 높이가 모자라 칸이 손가락보다 작아지지 않게 한다 */
+const BIG_ROWS = 6;
+const PLAIN = { UY: 92, NODE: 66, RX: 14, TOP: 48, BAR_H: 150 };
+const BIG = { UY: 86, NODE: 72, RX: 18, TOP: 50, BAR_H: 110 };
+// UY: 줄 사이의 세로 거리, NODE: 갈림길 칸의 크기, RX: 칸 모서리의 둥글기, TOP: 맨 위 칸의 가운데 높이, BAR_H: 손님 막대의 가장 높은 키
 let patterns = 0; // 빗금 무늬의 이름이 그림마다 겹치지 않게 센다
 
 function make(tag, attrs = {}, className = '') {
@@ -68,9 +69,9 @@ function lock(cx, cy) {
 }
 
 /** 막힌 갈림길: 금이 간 돌 */
-function stone(cx, cy) {
+function stone(cx, cy, node) {
   const group = make('g', {}, 'mz-stone');
-  const r = NODE / 2 - 2;
+  const r = node / 2 - 2;
   const points = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => {
     const angle = (Math.PI / 4) * k + Math.PI / 8;
     const reach = k % 2 === 0 ? r : r * 0.86;
@@ -109,6 +110,7 @@ export function drawMaze(root, view) {
   const focused = root.contains(document.activeElement) ? document.activeElement.dataset?.cell : undefined;
   root.className = `mz-board${small ? ' small' : ''}${live ? ' live' : ''}`;
   const bars = Array.isArray(ends);
+  const { UY, NODE, RX, TOP, BAR_H } = rows >= BIG_ROWS ? BIG : PLAIN;
   const width = (rows + 1) * UX;
   const x = (r, i) => UX / 2 + (i + (rows - r) / 2) * UX;
   const y = (r) => TOP + r * UY;
@@ -170,15 +172,18 @@ export function drawMaze(root, view) {
     if (marked.has(cell)) classes.push('marked');
     if (exit && board.target === i) classes.push('target');
     if (exit && picked === i) classes.push('picked');
-    if (blocked.has(cell)) group.append(stone(cx, cy));
+    // 누를 수 있는 판에서는 칸 둘레의 빈 곳(이웃 칸과 겹치지 않는 만큼)을 눌러도 그 칸이 눌린다
+    if (live && !blocked.has(cell)) group.append(make('rect', { x: cx - UX / 2 + 2, y: cy - UY / 2 + 1, width: UX - 4, height: UY - 2 }, 'mz-hit'));
+    if (blocked.has(cell)) group.append(stone(cx, cy, NODE));
     else if (exit) {
       // 출구: 위가 둥근 문
-      const left = cx - 38;
-      const right = cx + 38;
+      const half = NODE / 2 + 5;
+      const left = cx - half;
+      const right = cx + half;
       const top = cy - 30;
       const bottom = cy + 40;
-      group.append(make('path', { d: `M ${left} ${bottom} V ${top + 20} A 38 20 0 0 1 ${right} ${top + 20} V ${bottom} Z` }, classes.join(' ')));
-    } else group.append(make('rect', { x: cx - NODE / 2, y: cy - NODE / 2, width: NODE, height: NODE, rx: 14 }, classes.join(' ')));
+      group.append(make('path', { d: `M ${left} ${bottom} V ${top + 20} A ${half} 20 0 0 1 ${right} ${top + 20} V ${bottom} Z` }, classes.join(' ')));
+    } else group.append(make('rect', { x: cx - NODE / 2, y: cy - NODE / 2, width: NODE, height: NODE, rx: RX }, classes.join(' ')));
     if (painted.has(cell)) {
       const shape = group.lastChild.cloneNode();
       shape.setAttribute('class', 'mz-paint');
