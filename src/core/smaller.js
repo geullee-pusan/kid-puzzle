@@ -27,6 +27,8 @@ import { createRng, randInt, seedFrom } from './rng.js';
 import { checkBoard as checkRulehunt, smallBoards as smallRuleBoards } from './rulehunt.js';
 import { smallBoards as smallRoomBoards } from './rooms-ladder.js';
 import { checkBoard as checkRooms } from './rooms.js';
+import { smallBoards as smallSplitBoards } from './split-ladder.js';
+import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap } from './swap.js';
@@ -665,4 +667,16 @@ export function smallerMachine(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine };
+// ---- 똑같이 섞이게 자르기: 조각 수와 섞인 꼴이 같은 더 작은 판 ----
+
+/**
+ * 원래 판보다 칸이 적은(4분의 3 이하) 판을 낸다(src/core/split-ladder.js의 smallBoards). 조각 수와 섞인 꼴은 원래 판을 따른다.
+ * 되는 판에서 왔으면 되는 판만(모두 찾기 판이면 자르는 방법이 둘이나 셋인 판), 안 되는 판에서 왔으면 되는 판부터 같은 까닭의 안 되는 판과 번갈아 낸다.
+ * 더 줄일 수 없으면 null이다.
+ */
+export function smallerSplit(origin, turn = 0) {
+  if (!origin.board || checkSplit(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallSplitBoards(origin), solveSplit(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit };

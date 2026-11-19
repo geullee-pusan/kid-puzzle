@@ -7622,3 +7622,230 @@ button.mc-gcell {
   max-width: 140px;
   text-align: center;
 }
+
+
+/* ---- 똑같이 섞이게 자르기: 회색 칸과 흰 칸이 섞인 네모 판, 칸 사이의 선, 자른 선, 조각마다의 수 ----
+   색만으로 알리지 않는다: 회색 칸에는 빗금, 조각의 수 옆에는 빗금 친 작은 네모(회색)와 빈 네모(흰 칸),
+   다르게 섞인 조각은 점선 테두리, 짚는 선(끝에서 끝까지)은 굵은 점선, 자른 선은 굵은 실선으로 그린다. */
+.sp-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sp-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 104px);
+  max-height: calc(var(--h) * 104px);
+  overflow: visible;
+}
+
+.sp-board.small .sp-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.sp-board.live .sp-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.board-area > .sp-board,
+.door-picture > .sp-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.board-area:has(> #split-board:not([hidden])) {
+  padding: 8px;
+}
+
+.sp-cell.sp-white {
+  fill: #fff;
+}
+
+.sp-cell.sp-grey {
+  fill: #ced4da;
+}
+
+.sp-hatch {
+  stroke: #868e96;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.sp-grid {
+  stroke: #adb5bd;
+  stroke-width: 3;
+}
+
+.sp-frame {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 8;
+}
+
+.sp-cut {
+  stroke: #c92a2a;
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.sp-preview {
+  stroke: #c92a2a;
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 18 12;
+  opacity: 0.7;
+}
+
+.sp-line {
+  stroke: #1c7ed6;
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke-dasharray: 22 14;
+}
+
+.sp-uneven {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 7;
+  stroke-dasharray: 14 9;
+}
+
+.sp-tally-back {
+  fill: #fff;
+  fill-opacity: 0.93;
+  stroke: #495057;
+  stroke-width: 3;
+}
+
+.sp-swatch {
+  stroke: #343a40;
+  stroke-width: 3;
+}
+
+.sp-swatch.grey {
+  fill: #ced4da;
+}
+
+.sp-swatch.white {
+  fill: #fff;
+}
+
+.sp-swatch-hatch {
+  stroke: #495057;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.sp-num {
+  fill: #212529;
+  font-size: 38px;
+  font-weight: 900;
+}
+
+/* 누를 수 있는 선: 보이지 않는 굵은 선(글자판으로 고를 때만 테두리가 보인다) */
+.sp-edge {
+  stroke: transparent;
+  stroke-width: 26;
+}
+
+.sp-edge:focus-visible {
+  outline: none;
+  stroke: var(--gold);
+  stroke-opacity: 0.8;
+}
+
+.sp-board [data-cell]:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.sp-paint.grey {
+  fill: #868e96;
+  opacity: 0.55;
+}
+
+.sp-paint.white {
+  fill: #fff;
+  stroke: #868e96;
+  stroke-width: 4;
+  opacity: 0.85;
+}
+
+/* 풀이, "왜 그럴까?", 찾은 방법, 직접 만들기의 그림 */
+.sp-card {
+  width: min(100%, 236px);
+}
+
+.sp-card > .sp-board {
+  height: 150px;
+}
+
+.sp-card.big {
+  width: min(100%, 460px);
+}
+
+.sp-card.big > .sp-board {
+  height: 300px;
+}
+
+.sp-card .strip-note {
+  text-align: center;
+}
+
+/* 모두 찾기에서 찾은 방법, 직접 만들기에서 선생님이 자른 방법: 작은 그림을 두 장씩 */
+.sp-found {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sp-found:empty {
+  display: none;
+}
+
+.sp-found .sp-card {
+  width: 100%;
+}
+
+.sp-found .sp-card > .sp-board {
+  height: 70px;
+}
+
+#make-split .sp-found .sp-card > .sp-board {
+  height: 90px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .sp-board.small {
+  width: 90px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume.note-picture .sp-board.small {
+  width: 100%;
+  height: 110px;
+  justify-content: center;
+}
+
+.menu-picture > .sp-board {
+  display: flex;
+  height: 76px;
+}
+
+.level .sp-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}

@@ -93,7 +93,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules.circle, /점이 늘면 조각은 몇 개가 될까요\?$/);
   assert.match(T.rules['prime-closed'], /^차림표: 수에 그 수를 곱하고, 그 수를 더하고, \{k\}을 더해요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 18);
+  assert.equal(guides.length, 19);
   assert.ok(sentenceCount(guides[17]) <= 3, guides[17]);
   assert.match(guides[17], /아무리 돌려도 되풀이되지 않는 기계도 만들 수 있을까요\?$/);
 });
@@ -297,8 +297,8 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.ok(visibleText(part('id="machine-title"', '</section>')).includes(T.home.ask.fill));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-machine-make" class="menu-item"/);
   assert.equal([...part('id="machine-keys"', 'id="machine-put"').matchAll(/data-n="(\w+)"/g)].map((match) => match[1]).join(), '1,2,3,4,5,6,7,8,9,0,erase');
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 방 한 번씩 돌기 다음)
-  assert.match(read('src/main.js'), /rooms: createRooms\(frame\), machine: createMachine\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 방 한 번씩 돌기 다음)
+  assert.match(read('src/main.js'), /rooms: createRooms\(frame\), machine: createMachine\(frame\), /);
   assert.match(read('src/check-main.js'), /\['machine', '규칙 기계와 규칙이 깨지는 판'\]/);
   // 무르기와 되돌리기를 쓰지 않아서, 켜질 때 앞의 형식(방 한 번씩 돌기)이 보이게 해 둔 것을 감춘다
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = true;\s*\$\('reset'\)\.hidden = true;/);

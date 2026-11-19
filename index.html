@@ -249,6 +249,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="split-title">
+            <h2 id="split-title">똑같이 섞이게 자르기</h2>
+            <div class="door-picture"><div id="home-split-sample"></div></div>
+            <p id="home-split-ask" class="door-ask">똑같이 섞이게 자를 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-split-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-split-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -321,6 +331,9 @@
               </li>
               <li>
                 <button id="home-machine-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-machine-blank"></span></span><span class="menu-name">규칙 기계와 규칙이 깨지는 판</span></button>
+              </li>
+              <li>
+                <button id="home-split-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-split-blank"></span></span><span class="menu-name">똑같이 섞이게 자르기</span></button>
               </li>
             </ul>
           </div>
@@ -459,8 +472,17 @@
                 <div id="code-memo-rows"></div>
               </div>
             </div>
+            <!-- 똑같이 섞이게 자르기: 회색 칸(빗금)과 흰 칸이 섞인 네모 판, 칸 사이의 선, 자른 선, 조각마다의 회색 수와 흰 칸 수 -->
+            <div id="split-board" hidden></div>
           </div>
           <div class="board-foot">
+            <!-- 똑같이 섞이게 자르기: 윗줄에 더 그을 수 있는 선의 수(또는 다르게 섞인 조각이 있는지, 다 되었는지), 그 아래에 판 전체의 회색 수와 흰 칸 수. 몇 번 잘랐는지는 적지 않는다 -->
+            <span id="split-count" class="count tile-count block-count" hidden>
+              <span id="split-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>판 전체: 회색 <strong id="split-grey">0</strong>칸, 흰 칸 <strong id="split-white">0</strong>칸</span>
+              </span>
+            </span>
             <!-- 방 한 번씩 돌기: 윗줄에 막혔는지(또는 다 지났는지, 적힌 차례와 다른지), 그 아래에 남은 방의 수. 몇 번 그었는지는 적지 않는다 -->
             <span id="rooms-count" class="count tile-count block-count" hidden>
               <span id="rooms-status" class="tile-status" aria-live="polite"></span>
@@ -577,6 +599,23 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 똑같이 섞이게 자르기: 칸 사이의 선을 누르거나 따라 그어 자른다. 안 되는 판이 섞이는 판에는 "불가능해요" 단추가, 모두 찾기 판에는 찾은 자르기의 그림이 모인다 -->
+          <div id="split-pad" class="pad" hidden>
+            <div class="choices">
+              <h2>똑같이 섞이게 자르기</h2>
+              <p class="pad-note">칸 사이의 선을 누르거나 선을 따라 그으면 잘려요. 선은 판 끝이나 자른 선에 닿을 때까지 곧게 이어져요.</p>
+              <p class="pad-note">자른 선을 누르면 지워져요.</p>
+            </div>
+            <div id="split-maybe" class="choices" hidden>
+              <p class="pad-note">아무리 해도 안 될 것 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="split-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <div id="split-found-box" class="choices" hidden>
+              <h2>찾은 방법</h2>
+              <p id="split-found-none" class="pad-note">찾은 방법이 여기에 모여요.</p>
+              <div id="split-found" class="sp-found"></div>
+            </div>
+          </div>
           <!-- 켜고 끄기와 숫자 마술: 판의 종류마다 아래 상자 가운데 몇을 보인다. 불은 판에서 누른다.
                숫자판은 새 불의 수, 선생님의 수, 마술에서 고른 수와 계산한 답을 넣을 때 쓴다 -->
           <!-- 방 한 번씩 돌기: 손가락으로 방을 따라 긋는다. 안 되는 집이 섞이는 판에는 "불가능해요" 단추가, 가려 내기 판에는 "다 골랐어요" 단추가 있다 -->
@@ -1981,6 +2020,44 @@
             <button id="machine-make-solve" class="btn primary huge" type="button">선생님, 돌려 주세요</button>
             <p id="machine-make-result" class="make-result" aria-live="polite"></p>
             <button id="machine-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-split" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <strong id="split-make-count" class="make-count"></strong>
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="split-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="split-make-w"></strong>
+            <button id="split-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="split-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="split-make-h"></strong>
+            <button id="split-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>몇 조각으로</h2>
+          <div id="split-make-parts" class="segment">
+            <button class="btn" type="button" data-parts="3">세 조각</button>
+            <button class="btn" type="button" data-parts="4">네 조각</button>
+          </div>
+          <button id="split-make-clear" class="btn wide" type="button">모두 흰 칸으로</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 눌러 회색으로 칠해요. 선생님이 조각마다 똑같이 섞이게 자르는 방법을 모두 찾아 줘요. 아무리 잘라도 안 되는 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="split-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="split-make-solve" class="btn primary huge" type="button">선생님, 잘라 주세요</button>
+            <p id="split-make-result" class="make-result" aria-live="polite"></p>
+            <div id="split-make-picture" class="sp-found"></div>
+            <button id="split-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>
