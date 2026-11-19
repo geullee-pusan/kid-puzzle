@@ -48,7 +48,7 @@ function visibleText(source) {
   return [...labels, body].join(' ');
 }
 const part = (from, to) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
-const own = [part('id="cups-title"', 'id="make-title"'), part('id="cups-count"', 'id="trace-count"'), part('id="cups-notes"', 'id="why"'), part('id="cups-pad"', 'id="river-pad"'), part('id="make-cups"', '<script')]
+const own = [part('id="cups-title"', 'id="dandelion-title"'), part('id="cups-count"', 'id="trace-count"'), part('id="cups-notes"', 'id="why"'), part('id="cups-pad"', 'id="river-pad"'), part('id="make-cups"', 'id="make-dandelion"')]
   .map(visibleText)
   .join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
@@ -98,7 +98,7 @@ test('규칙 설명은 판의 종류마다 있고, 묻는 말까지 세 문장�
   assert.match(T.howto.colors, /방울이 둘을 차례로 누르면 만나요\./);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 11);
+  assert.equal(guides.length, 12);
   assert.ok(sentenceCount(guides[10]) <= 3, guides[10]);
   assert.match(guides[10], /아무리 해도 안 되는 판도 만들 수 있을까요\?$/);
   assert.equal(T.make.intro, '컵이나 방울이로 판을 만들어요. 다 만들면 선생님에게 풀어 보라고 할 수도 있어요.');
@@ -425,7 +425,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
     assert.ok(html.includes(`id="${id}"`), id);
   }
   for (const side of ['n', 'k', 'c0', 'c1', 'c2']) for (const way of ['fewer', 'more']) assert.ok(html.includes(`id="cups-make-${side}-${way}"`), `${side}-${way}`);
-  for (const kind of KINDS) assert.match(part('id="make-cups"', '<script'), new RegExp(`data-kind="${kind}">${T.kinds[kind]}<`), kind);
+  for (const kind of KINDS) assert.match(part('id="make-cups"', 'id="make-dandelion"'), new RegExp(`data-kind="${kind}">${T.kinds[kind]}<`), kind);
   assert.match(html, /id="home-cups-ask"[^>]*>엎어진 컵을 모두 바로 세울 수 있을까요\?</);
   assert.equal(T.home.ask.cups, '엎어진 컵을 모두 바로 세울 수 있을까요?');
   // 카드는 강 건너기 뒤, "퍼즐 만들기" 앞에 있고, "만들기" 목록에도 있다.
@@ -437,7 +437,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.deepEqual(T.tool, { off: '세어서 적어 보기', on: '적은 것 감추기' });
   assert.match(part('id="cups-pad"', 'id="river-pad"'), /안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요\./);
   // 틀이 형식을 안다.
-  assert.match(read('src/main.js'), /river: createRiver\(frame\), cups: createCups\(frame\) \};/);
+  assert.match(read('src/main.js'), /river: createRiver\(frame\), cups: createCups\(frame\), /);
   assert.match(read('src/check-main.js'), /\['cups', '컵 뒤집기와 세 색 무리'\]/);
 });
 

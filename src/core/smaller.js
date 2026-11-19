@@ -14,6 +14,7 @@ import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
 import { placeDown, solveOnce as solveCups } from './cups-ladder.js';
 import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
+import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } from './dandelion.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
 import { boxBoards, smallFolkBoards } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
@@ -436,4 +437,16 @@ export function smallerCups(origin, turn = 0) {
   return wrap(pickByTurn(lists, possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups };
+// ---- 민들레와 바람: 같은 방향 수의, 칸이 더 적은 판 ----
+
+/**
+ * 게임은 잘 두었을 때 이기는 쪽이 원래 판과 같은 판(아이가 선 쪽이 그대로 이기거나 진다), 혼자 덮기는 같은 바람 차례로 덮을 수 있는 판.
+ * 원래 판에 가까운 것(칸이 많은 것)부터 차례로 낸다. 그런 판이 없으면 null이다.
+ */
+export function smallerDandelion(origin, turn = 0) {
+  if (!origin.board || checkDandelion(origin.board) !== null) return null;
+  const list = smallDandelionBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion };

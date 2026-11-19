@@ -301,7 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열두 장이라 가로 1280px에서 넉 장씩 세 줄에 꼭 맞는다.
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열세 장이라 가로 1280px에서 넉 장씩 세 줄과, 넷째 줄의 퍼즐 만들기 카드 한 장이다.
+   (카드가 열두 장일 때는 세 줄에 꼭 맞았다.)
    (카드가 열 장일 때는 셋째 줄에 혼자 놓여서 두 칸을 썼다.) */
 
 .door h2 {
@@ -4245,4 +4246,266 @@ button.tax-card {
 
 .cups-board.colors:not(.small) > .folk {
   width: min(92px, calc((100% - 60px) / 6));
+}
+
+/* ---- 민들레와 바람: 네모 판, 꽃(민들레), 씨앗, 방금 분 바람의 화살표 ----
+   색만으로 알리지 않는다. 꽃은 꽃잎이 둘린 동그라미, 씨앗은 솜털이 달린 작은 점이다.
+   방금 심은 꽃에는 굵은 고리를, 방금 덮인 칸에는 굵은 점선 테두리를 두른다. 방금 분 바람은 판 위의 큰 화살표다. */
+.dl-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .dl-board,
+.door-picture > .dl-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.dl-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 110px);
+  max-height: calc(var(--h) * 110px);
+}
+
+.dl-board.small .dl-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.dl-board.live .dl-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.dl-board.live .dl-cell-group.open {
+  cursor: pointer;
+}
+
+.dl-cell {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.dl-cell.covered {
+  fill: #ebfbee;
+}
+
+.dl-petal {
+  fill: #ffd43b;
+  stroke: #e67700;
+  stroke-width: 2;
+}
+
+.dl-heart {
+  fill: #f59f00;
+  stroke: #e67700;
+  stroke-width: 3;
+}
+
+.dl-stalk,
+.dl-fluff {
+  stroke: #495057;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.dl-grain {
+  fill: #495057;
+}
+
+.dl-fresh-seed {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 7;
+  stroke-dasharray: 12 8;
+}
+
+.dl-fresh-flower {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 8;
+}
+
+/* 화살표와 자국은 누르는 것을 가로막지 않는다(밑의 칸이 눌린다) */
+.dl-arrow,
+.dl-arrow-head,
+.dl-fresh-seed,
+.dl-fresh-flower {
+  pointer-events: none;
+}
+
+.dl-arrow {
+  stroke: rgba(25, 113, 194, 0.55);
+  stroke-width: 16;
+  stroke-linecap: round;
+}
+
+.dl-arrow-head {
+  fill: rgba(25, 113, 194, 0.55);
+}
+
+.dl-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.board-foot:has(> #dandelion-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 바람 단추: 가운데를 비운 세 줄 세 칸. 네 방향 판에서는 대각선 단추를 감춰도 자리는 그대로다 */
+.dl-compass {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 8px;
+  justify-content: center;
+}
+
+.dl-wind {
+  min-height: 64px;
+  padding: 0;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.dl-wind[data-dir='7'] {
+  grid-area: 1 / 1;
+}
+
+.dl-wind[data-dir='0'] {
+  grid-area: 1 / 2;
+}
+
+.dl-wind[data-dir='4'] {
+  grid-area: 1 / 3;
+}
+
+.dl-wind[data-dir='3'] {
+  grid-area: 2 / 1;
+}
+
+.dl-compass-mid {
+  grid-area: 2 / 2;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f59f00 0 28%, #ffd43b 29% 52%, transparent 53%);
+}
+
+.dl-wind[data-dir='1'] {
+  grid-area: 2 / 3;
+}
+
+.dl-wind[data-dir='6'] {
+  grid-area: 3 / 1;
+}
+
+.dl-wind[data-dir='2'] {
+  grid-area: 3 / 2;
+}
+
+.dl-wind[data-dir='5'] {
+  grid-area: 3 / 3;
+}
+
+/* 한 번 분 방향: 점선 테두리로 흐리게 */
+.dl-wind.used {
+  border-style: dashed;
+  opacity: 0.4;
+}
+
+/* 혼자 덮기: 바람의 차례. 분 바람은 흐리게(점선), 다음 바람은 굵은 테두리 */
+.dl-order {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dl-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 3px solid #adb5bd;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.dl-order-item.done {
+  border-style: dashed;
+  opacity: 0.4;
+}
+
+.dl-order-item.next {
+  border: 5px solid var(--bar);
+  background: #e7f5ff;
+}
+
+/* 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책의 작은 그림 */
+.resume .dl-board.small {
+  width: 90px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.level .dl-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}
+
+.menu-picture > .dl-board {
+  height: 76px;
+}
+
+.resume.note-picture .dl-board.small {
+  justify-content: center;
+  width: 100%;
+  height: 110px;
+}
+
+/* 다시 보기, 풀이, "왜 그럴까?"의 그림 */
+.dl-card {
+  width: min(100%, 200px);
+}
+
+.dl-card > .dl-board {
+  height: 180px;
+}
+
+.dl-card.big {
+  width: min(100%, 420px);
+}
+
+.dl-card.big > .dl-board {
+  height: 330px;
+}
+
+.dl-card .strip-note {
+  text-align: center;
+}
+
+/* 혼자 덮기의 풀이: 바람마다의 그림이 여럿이라 작게 그린다 */
+.dl-strip .dl-card {
+  width: 136px;
+}
+
+.dl-strip .dl-card > .dl-board {
+  height: 120px;
+}
+
+.dl-table tr.marked td {
+  font-weight: 800;
 }

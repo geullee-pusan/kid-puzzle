@@ -1,5 +1,5 @@
 // 수준 맞추기. 기록 목록을 받아 "다음에 권할 것"을 돌려주는 순수 함수다.
-// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
+// 형식(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람)마다 따로 본다. 한 형식의 기록은 다른 형식의 수준에 영향을 주지 않는다.
 // 기록이 원본이다. 여기서 낸 값은 어디에도 저장하지 않고, 필요할 때마다 기록에서 다시 계산한다.
 //
 // 규칙(기획 문서의 표):
@@ -199,6 +199,27 @@ export const TUNING = {
       hintCount: 2,
       expectedSeconds: { 1: 90, 2: 150, 3: 150, 4: 240, 5: 240 },
     },
+    /**
+     * 민들레와 바람(모두 임시). 처음 보여 줄 단계는 1단계다(맨 첫 판은 2×2라 어떻게 심어도 꽃이 이긴다).
+     * 판을 내는 단계는 1~5단계다. 1~4단계는 선생님과 두는 게임이고, 5단계는 혼자 덮기(더 좋은 답을 찾는 판)다. 힌트는 질문 두 개다.
+     * fastWin: 게임 판은 누가 이길까와 같다. 이기는 쪽을 스스로 고르고(chose) 또는 단계가 정해 준 쪽에 서서(assigned),
+     *   그쪽이 잘 두면 이기는 쪽이었고(choseWinner) 그 판을 이겼으면(winner가 kid) "한 번에 빠르게"로 본다.
+     * fastRetries: 혼자 덮기 판(기록에 winner가 없다)은 약수 세금과 같다. 다시 해 보기 이만큼 안에 가장 적은 꽃의 수에 닿았는가(reachedBest).
+     * 끝까지 둔 게임은 이겼든 졌든 outcome이 solved다. 그래서 연달아 진 것만으로는 내려가지 않는다.
+     * expectedSeconds: 쓰이지 않는 자리 채움이다.
+     * whyAfter: 'finished'면 이 형식의 판을 한 번 끝까지 한 뒤에 틀이 "왜 그럴까?"를 막지 않는다.
+     *   이 형식은 따로 게임을 두 판 끝까지 둔 뒤에 연다(src/core/dandelion.js의 whyOpen).
+     */
+    dandelion: {
+      startLevel: 1,
+      bottomLevel: 1,
+      topLevel: 5,
+      hintCount: 2,
+      expectedSeconds: { 1: 120, 2: 180, 3: 180, 4: 240, 5: 300 },
+      fastWin: true,
+      fastRetries: 2,
+      whyAfter: 'finished',
+    },
   },
 };
 
@@ -250,8 +271,11 @@ const solved = (record) => record.outcome === 'solved';
 function fastClean(record, tuning) {
   if (!solved(record)) return false;
   if ((record.hintsOpened ?? 0) > 0) return false;
-  // 선생님과 번갈아 두는 판: 이기는 쪽을 스스로 고르고 그 판을 이겼는가. 걸린 시간은 보지 않는다.
-  if (tuning.fastWin) return record.chose === true && record.choseWinner === true && record.winner === 'kid' && record.rematch !== true;
+  // 선생님과 번갈아 두는 판: 이기는 쪽을 스스로 고르고(또는 단계가 정해 준 쪽에 서서) 그 판을 이겼는가. 걸린 시간은 보지 않는다.
+  // 게임과 혼자 하는 판이 섞인 형식(민들레와 바람)은 기록에 winner가 있는 판만 이렇게 본다.
+  if (tuning.fastWin && (!Number.isInteger(tuning.fastRetries) || record.winner !== undefined)) {
+    return (record.chose === true || record.assigned === true) && record.choseWinner === true && record.winner === 'kid' && record.rematch !== true;
+  }
   // 더 좋은 답을 찾는 판: 다시 해 보기 몇 번 안에 가장 큰 합에 닿았는가. 걸린 시간은 보지 않는다.
   if (Number.isInteger(tuning.fastRetries)) return record.reachedBest === true && Number.isInteger(record.retries) && record.retries <= tuning.fastRetries;
   const fewGuesses = tuning.fastGuesses?.[record.level];

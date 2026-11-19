@@ -40,7 +40,7 @@
       </main>
     </section>
 
-    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리)와 퍼즐 만들기, 판 고르기.
+    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람)와 퍼즐 만들기, 판 고르기.
          형식을 더할 때는 카드 하나를 "퍼즐 만들기" 앞에 더하고, "만들기" 목록에 단추 하나를 더한다 -->
     <section id="home" class="screen home" hidden>
       <header class="top">
@@ -179,6 +179,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="dandelion-title">
+            <h2 id="dandelion-title">민들레와 바람</h2>
+            <div class="door-picture"><div id="home-dandelion-sample"></div></div>
+            <p id="home-dandelion-ask" class="door-ask">꽃을 심어 판을 다 덮을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-dandelion-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-dandelion-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -230,6 +240,9 @@
               </li>
               <li>
                 <button id="home-cups-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-cups-blank"></span></span><span class="menu-name">컵 뒤집기와 세 색 무리</span></button>
+              </li>
+              <li>
+                <button id="home-dandelion-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-dandelion-blank"></span></span><span class="menu-name">민들레와 바람</span></button>
               </li>
             </ul>
           </div>
@@ -329,6 +342,8 @@
             <div id="river-board" hidden></div>
             <!-- 컵 뒤집기와 세 색 무리: 한 줄로 놓인 컵, 또는 여러 줄로 놓인 방울이. 눌러서 고른다 -->
             <div id="cups-board" hidden></div>
+            <!-- 민들레와 바람: 네모 칸들과 꽃, 씨앗. 빈칸을 누르면 꽃을 심는다. 방금 분 바람은 판 위의 큰 화살표로 보인다 -->
+            <div id="dandelion-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
             <div id="code-board" class="code-board" hidden>
               <div id="code-table" class="code-scroll"></div>
@@ -348,6 +363,14 @@
               <span id="logic-status" class="tile-status" aria-live="polite"></span>
             </span>
             <span id="coins-count" class="count">뒤집은 횟수 <strong id="count">0</strong>번</span>
+            <!-- 민들레와 바람: 윗줄에 누구 차례인지, 선생님이 방금 무엇을 두었는지(혼자 덮기는 다 덮였는지), 그 아래에 심은 꽃과 남은 빈칸의 수 -->
+            <span id="dandelion-count" class="count tile-count block-count" hidden>
+              <span id="dandelion-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>심은 꽃 <strong id="dandelion-flowers">0</strong>송이</span>
+                <span>남은 빈칸 <strong id="dandelion-empty">0</strong>칸</span>
+              </span>
+            </span>
             <!-- 컵 뒤집기와 세 색 무리: 윗줄에 같은 색을 눌렀는지(또는 끝났는지), 그 아래에 뒤집은 횟수나 만난 횟수 -->
             <span id="cups-count" class="count tile-count" hidden>
               <span id="cups-status" class="tile-status" aria-live="polite"></span>
@@ -405,6 +428,43 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 민들레와 바람: 게임은 꽃이 될지 바람이 될지 고르고, 차례가 오면 판의 빈칸을 누르거나 바람 단추를 누른다.
+               혼자 덮기는 바람의 차례와 "바람 불기" 단추, 다 덮은 뒤에 다시 해 볼지 여기까지 할지 고르는 단추가 있다 -->
+          <div id="dandelion-pad" class="pad" hidden>
+            <div id="dandelion-choose" class="choices">
+              <h2>어느 쪽이 될까요?</h2>
+              <button id="dandelion-flower" class="btn huge" type="button">꽃이 될래요</button>
+              <button id="dandelion-wind" class="btn huge" type="button">바람이 될래요</button>
+            </div>
+            <p id="dandelion-role" class="pad-note best-line" hidden></p>
+            <div id="dandelion-turn-box" class="choices" hidden>
+              <h2 id="dandelion-turn" aria-live="polite"></h2>
+              <p id="dandelion-plant-note" class="pad-note" hidden>빈칸을 누르면 꽃을 심어요.</p>
+              <p id="dandelion-wind-note" class="pad-note" hidden>아직 안 분 방향을 누르면 바람이 불어요.</p>
+              <div id="dandelion-winds" class="dl-compass">
+                <button class="btn dl-wind" type="button" data-dir="7" aria-label="바람을 왼쪽 위로 불기">↖</button>
+                <button class="btn dl-wind" type="button" data-dir="0" aria-label="바람을 위로 불기">↑</button>
+                <button class="btn dl-wind" type="button" data-dir="4" aria-label="바람을 오른쪽 위로 불기">↗</button>
+                <button class="btn dl-wind" type="button" data-dir="3" aria-label="바람을 왼쪽으로 불기">←</button>
+                <span class="dl-compass-mid" aria-hidden="true"></span>
+                <button class="btn dl-wind" type="button" data-dir="1" aria-label="바람을 오른쪽으로 불기">→</button>
+                <button class="btn dl-wind" type="button" data-dir="6" aria-label="바람을 왼쪽 아래로 불기">↙</button>
+                <button class="btn dl-wind" type="button" data-dir="2" aria-label="바람을 아래로 불기">↓</button>
+                <button class="btn dl-wind" type="button" data-dir="5" aria-label="바람을 오른쪽 아래로 불기">↘</button>
+              </div>
+              <p class="pad-note">한 번 분 방향은 점선 단추가 되고 다시 못 불어요.</p>
+            </div>
+            <div id="dandelion-cover" class="choices" hidden>
+              <p class="pad-note">빈칸을 누르면 꽃을 심어요. 바람 앞에는 꽃을 하나까지 심어요.</p>
+              <h2>바람의 차례</h2>
+              <div id="dandelion-order"></div>
+              <button id="dandelion-blow" class="btn good huge" type="button">바람 불기</button>
+              <p id="dandelion-best-line" class="pad-note best-line" hidden>지금까지 가장 적게 <strong id="dandelion-best"></strong>송이</p>
+              <button id="dandelion-again" class="btn huge" type="button" hidden>처음부터 다시 해 볼래요</button>
+              <button id="dandelion-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+            </div>
+          </div>
+
           <!-- 컵 뒤집기와 세 색 무리: 누르는 법, 고른 컵의 수. 가장 적게 뒤집는 판에는 다시 해 볼지 여기까지 할지 고르는 단추가, 안 되는 판이 섞이는 판에는 "불가능해요" 단추가 있다 -->
           <div id="cups-pad" class="pad" hidden>
             <p id="cups-howto" class="pad-note"></p>
@@ -641,6 +701,9 @@
             <button id="after-make" class="btn huge" type="button">직접 만들기</button>
             <button id="after-stop" class="btn huge" type="button">그만하기</button>
             <button id="after-solution" class="btn" type="button">풀이 보기</button>
+            <!-- 민들레와 바람의 게임에서만 보인다. 누가 이길까처럼, 끝난 뒤에 "같은 단계 새 판"(진 판 뒤)이나 "직접 만들기" 앞으로 옮겨 놓는다 -->
+            <button id="dandelion-swap" class="btn wide after-extra" type="button" hidden>자리를 바꿔서 다시 두기</button>
+            <button id="dandelion-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
           </div>
         </section>
       </main>
@@ -1188,6 +1251,42 @@
             <button id="cups-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
             <p id="cups-make-result" class="make-result" aria-live="polite"></p>
             <button id="cups-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-dandelion" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="dandelion-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="dandelion-make-w"></strong>
+            <button id="dandelion-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="dandelion-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="dandelion-make-h"></strong>
+            <button id="dandelion-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>바람의 방향</h2>
+          <div id="dandelion-make-dirs" class="segment column">
+            <button class="btn" type="button" data-dirs="4">네 방향</button>
+            <button id="dandelion-make-eight" class="btn" type="button" data-dirs="8">여덟 방향</button>
+          </div>
+          <p id="dandelion-make-eight-note" class="pad-note" hidden>여덟 방향은 가로와 세로가 4칸까지예요.</p>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">판의 크기와 바람의 방향을 정해요. 그림은 꽃 하나에 바람이 한 번 분 모습이에요. 바람이 이기는 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="dandelion-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="dandelion-make-solve" class="btn primary huge" type="button">선생님, 누가 이길까요?</button>
+            <p id="dandelion-make-result" class="make-result" aria-live="polite"></p>
+            <button id="dandelion-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>
