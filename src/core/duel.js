@@ -1,26 +1,38 @@
 // 누가 이길까: 선생님(컴퓨터)과 번갈아 두는 게임의 규칙과 풀이 프로그램. 순수 함수만 둔다.
 // 모든 게임에서 마지막 수를 둔 쪽이 이긴다(더 둘 수 없는 쪽이 진다).
 //
-// 게임은 넷이고, 판(board)의 꼴은 셋이다.
+// 게임은 일곱이고, 판(board)의 꼴은 여섯이다.
 //   초콜릿 쪼개기  { kind: 'choco', w, h }       조각 하나를 금을 따라 곧게 둘로 쪼갠다
 //   한 더미        { kind: 'one', n, max }       돌 n개에서 한 번에 1개부터 max개까지 가져간다
 //   두 더미·세 더미 { kind: 'piles', piles: [..] } 한 더미에서만, 원하는 만큼(1개 이상) 가져간다
+//   약수 빼기      { kind: 'divisor', n }         남은 돌의 수의 약수 가운데 그 수보다 작은 것만큼 가져간다
+//   절반까지       { kind: 'half', n }            1개부터 남은 돌의 절반(버림)까지 가져간다
+//   두 더미에서 같은 수도 { kind: 'both', piles: [a, b] } 한 더미에서 원하는 만큼, 또는 두 더미에서 같은 수만큼 가져간다
+// 약수 빼기와 절반까지는 돌이 1개 남으면 더 가져갈 수 없다. 마지막 돌은 남고, 마지막으로 가져간 쪽이 이긴다.
 //
 // 자리(state)
 //   초콜릿: 조각들의 목록. 조각 하나는 { x, y, w, h }(처음 판에서의 자리와 크기)
 //   돌:     더미마다 남은 돌의 수(한 더미 게임도 수 하나짜리 목록이다)
 // 수(move)
 //   초콜릿: { piece, dir, at }  piece번째 조각을 세로 금('v')이나 가로 금('h')을 따라 쪼갠다. at은 그 조각의 왼쪽(위)에서 몇 칸째 금인지
-//   돌:     { pile, take }      pile번째 더미에서 take개를 가져간다
+//   돌:     { pile, take }      pile번째 더미에서 take개를 가져간다. 두 더미에서 같은 수만큼 가져가는 수는 pile이 'both'다
 //
 // 풀이 프로그램은 지름길 규칙을 쓰지 않는다. 더 둘 수 없는 자리(둘 차례인 쪽이 진다)에서 시작해
 // "지는 자리로 보낼 수 있으면 이기는 자리, 어디로 가도 이기는 자리뿐이면 지는 자리"를 끝에서부터 따진다.
-// 지름길 규칙(칸의 수의 홀짝, 나머지, 같은 두 더미, 이진법)은 테스트에서 이 결과와 견준다.
+// 지름길 규칙(칸의 수의 홀짝, 나머지, 같은 두 더미, 이진법, 홀수, 두 배보다 하나 적은 수, 지는 두 더미의 짝)은 테스트에서 이 결과와 견준다.
 import { latestById } from './level.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 
 /** 게임의 이름표. 힌트와 "왜 그럴까?"는 게임마다 따로다 */
-export const GAMES = ['choco', 'one', 'two', 'three'];
+export const GAMES = ['choco', 'one', 'two', 'three', 'divisor', 'half', 'both'];
+
+/** "왜 그럴까?"를 일부러 붙이지 않은 게임(까닭을 남겨 둔 판) */
+export const NO_WHY = ['three', 'half', 'both'];
+
+/** 돌 한 더미로 두는 판인가(남은 돌의 수 하나가 자리다) */
+export const isHeap = (board) => board.kind === 'one' || board.kind === 'divisor' || board.kind === 'half';
+/** 돌이 1개 남으면 끝나는 판인가(마지막 돌을 가져가는 게임이 아니다) */
+export const keepsLast = (board) => board.kind === 'divisor' || board.kind === 'half';
 
 /** 직접 만들기에서 고를 수 있는 수(임시). 풀이 프로그램이 모든 자리를 따질 수 있는 크기만 넣는다 */
 export const LIMITS = {
@@ -44,6 +56,11 @@ export function checkBoard(board) {
   if (!board || typeof board !== 'object') return 'board';
   if (board.kind === 'choco') return whole(board.w, LIMITS.choco.min, LIMITS.choco.max) && whole(board.h, LIMITS.choco.min, LIMITS.choco.max) ? null : 'size';
   if (board.kind === 'one') return whole(board.n, LIMITS.one.min, LIMITS.one.max) && whole(board.max, LIMITS.take.min, LIMITS.take.max) ? null : 'count';
+  if (keepsLast(board)) return whole(board.n, LIMITS.one.min, LIMITS.one.max) ? null : 'count';
+  if (board.kind === 'both') {
+    if (!Array.isArray(board.piles) || board.piles.length !== 2) return 'piles';
+    return board.piles.every((count) => whole(count, LIMITS.pile.min, LIMITS.pile.max)) ? null : 'count';
+  }
   if (board.kind === 'piles') {
     if (!Array.isArray(board.piles) || !whole(board.piles.length, LIMITS.piles.min, LIMITS.piles.max)) return 'piles';
     return board.piles.every((count) => whole(count, LIMITS.pile.min, LIMITS.pile.max)) ? null : 'count';
@@ -54,7 +71,8 @@ export function checkBoard(board) {
 export function copyBoard(board) {
   if (board.kind === 'choco') return { kind: 'choco', w: board.w, h: board.h };
   if (board.kind === 'one') return { kind: 'one', n: board.n, max: board.max };
-  return { kind: 'piles', piles: board.piles.slice() };
+  if (keepsLast(board)) return { kind: board.kind, n: board.n };
+  return { kind: board.kind, piles: board.piles.slice() };
 }
 
 /** 이 판의 게임 */
@@ -67,7 +85,8 @@ export function gameOf(board) {
 export function boardKey(board) {
   if (board.kind === 'choco') return `choco-${board.w}x${board.h}`;
   if (board.kind === 'one') return `one-${board.n}-${board.max}`;
-  return `piles-${board.piles.join('-')}`;
+  if (keepsLast(board)) return `${board.kind}-${board.n}`;
+  return `${board.kind}-${board.piles.join('-')}`;
 }
 
 /** 수를 글자로 적는다 */
@@ -78,8 +97,27 @@ export function moveKey(move) {
 /** 처음 자리 */
 export function startState(board) {
   if (board.kind === 'choco') return [{ x: 0, y: 0, w: board.w, h: board.h }];
-  if (board.kind === 'one') return [board.n];
+  if (isHeap(board)) return [board.n];
   return board.piles.slice();
+}
+
+/**
+ * 한 더미에서 한 번에 가져갈 수 있는 돌의 수 모두(작은 것부터). count는 그 더미에 남은 돌의 수다.
+ *   한 더미: 1개부터 max개까지(남은 돌보다 많이는 못 가져간다)
+ *   약수 빼기: count의 약수 가운데 count보다 작은 것(1개가 남으면 없다)
+ *   절반까지: 1개부터 count의 절반(버림)까지(1개가 남으면 없다)
+ *   여러 더미, 두 더미에서 같은 수도: 1개부터 count개까지
+ * @param {{kind: string, max?: number}} board 판(돌의 수는 보지 않는다)
+ */
+export function takesOf(board, count) {
+  const takes = [];
+  if (board.kind === 'divisor') {
+    for (let take = 1; take < count; take++) if (count % take === 0) takes.push(take);
+    return takes;
+  }
+  const most = board.kind === 'one' ? Math.min(count, board.max) : board.kind === 'half' ? Math.floor(count / 2) : count;
+  for (let take = 1; take <= most; take++) takes.push(take);
+  return takes;
 }
 
 /** 이 자리에서 둘 수 있는 수 모두 */
@@ -92,10 +130,11 @@ export function movesOf(board, state) {
     });
     return moves;
   }
-  const most = board.kind === 'one' ? board.max : Infinity;
   state.forEach((count, pile) => {
-    for (let take = 1; take <= Math.min(count, most); take++) moves.push({ pile, take });
+    for (const take of takesOf(board, count)) moves.push({ pile, take });
   });
+  // 두 더미에서 같은 수도: 두 더미에서 같은 수만큼 가져가는 수(두 더미에 다 돌이 있을 때만 있다)
+  if (board.kind === 'both') for (let take = 1; take <= Math.min(...state); take++) moves.push({ pile: 'both', take });
   return moves;
 }
 
@@ -120,9 +159,12 @@ export function applyMove(board, state, move) {
     // 쪼갠 두 조각은 원래 조각의 자리에 차례로 들어간다.
     return [...state.slice(0, move.piece), ...parts, ...state.slice(move.piece + 1)];
   }
+  if (move.pile === 'both') {
+    if (board.kind !== 'both' || !Number.isInteger(move.take) || move.take < 1 || move.take > Math.min(...state)) return null;
+    return state.map((item) => item - move.take);
+  }
   const count = state[move.pile];
-  const most = board.kind === 'one' ? board.max : Infinity;
-  if (!Number.isInteger(count) || !Number.isInteger(move.take) || move.take < 1 || move.take > Math.min(count, most)) return null;
+  if (!Number.isInteger(count) || !Number.isInteger(move.take) || !takesOf(board, count).includes(move.take)) return null;
   return state.map((item, pile) => (pile === move.pile ? item - move.take : item));
 }
 
@@ -160,9 +202,14 @@ function nextPositions(kind, max, position) {
       parts(a, b);
       parts(b, a);
     } else {
-      for (let take = 1; take <= Math.min(item, max); take++) found.push(without(position, index, item > take ? [item - take] : []));
+      for (const take of takesOf({ kind, max }, item)) found.push(without(position, index, item > take ? [item - take] : []));
     }
   });
+  // 두 더미에서 같은 수만큼: 두 더미가 다 남아 있을 때만(빈 더미는 자리에 적지 않는다)
+  if (kind === 'both' && position.length === 2) {
+    const [low, high] = position;
+    for (let take = 1; take <= low; take++) found.push([low - take, high - take].filter((count) => count > 0));
+  }
   return found;
 }
 
@@ -333,13 +380,14 @@ export function randomKidWinRate(board, kidFirst) {
 
 // ---- 작은 판: 틀의 "더 작은 판으로"가 이 목록을 차례로 낸다(src/core/smaller.js) ----
 
-const totalOf = (board) => (board.kind === 'choco' ? board.w * board.h : board.kind === 'one' ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
+const totalOf = (board) => (board.kind === 'choco' ? board.w * board.h : isHeap(board) ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
 
 /**
  * 같은 게임의 가장 작은 판 몇 개(작은 것부터). 원래 판보다 작은 판만 낸다.
  *   초콜릿: 칸이 적은 판부터(가로가 세로보다 길지 않게)
  *   한 더미: 한 번에 가져갈 수 있는 수는 그대로 두고, 돌 1개, 2개, 3개 …
- *   두 더미·세 더미: 돌이 적은 판부터(더미마다 3개까지)
+ *   약수 빼기·절반까지: 돌 2개, 3개, 4개 …(1개짜리는 처음부터 둘 수가 없어서 뺀다)
+ *   두 더미·세 더미·두 더미에서 같은 수도: 돌이 적은 판부터(더미마다 3개까지)
  */
 export function smallBoards(board, count = SMALL_COUNT) {
   const found = [];
@@ -347,9 +395,11 @@ export function smallBoards(board, count = SMALL_COUNT) {
     for (let h = 1; h <= 3; h++) for (let w = Math.max(h, 2); w <= LIMITS.choco.max; w++) found.push({ kind: 'choco', w, h });
   } else if (board.kind === 'one') {
     for (let n = 1; n <= 2 * (board.max + 1); n++) found.push({ kind: 'one', n, max: board.max });
+  } else if (keepsLast(board)) {
+    for (let n = 2; n <= count + 1; n++) found.push({ kind: board.kind, n });
   } else {
     const build = (piles) => {
-      if (piles.length === board.piles.length) found.push({ kind: 'piles', piles });
+      if (piles.length === board.piles.length) found.push({ kind: board.kind, piles });
       else for (let next = piles.at(-1) ?? 1; next <= 3; next++) build([...piles, next]);
     };
     build([]);
@@ -366,10 +416,10 @@ export function smallBoards(board, count = SMALL_COUNT) {
 
 /**
  * 그 게임의 "왜 그럴까?"를 열어도 되는가. 그 게임을 WHY_AFTER판 이상 끝까지 둔 뒤에 열린다(임시).
- * 세 더미에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판).
+ * 세 더미, 절반까지, 두 더미에서 같은 수도에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판. NO_WHY).
  */
 export function whyOpen(records, game) {
-  return game !== 'three' && finishedCount(records, game) >= WHY_AFTER;
+  return !NO_WHY.includes(game) && finishedCount(records, game) >= WHY_AFTER;
 }
 
 /** 끝까지 둔 판들(오래된 것부터). 이긴 판도 진 판도 들어간다. 직접 만든 판과 자리를 바꿔 다시 둔 판도 센다. 작은 판(곁판)은 세지 않는다 */

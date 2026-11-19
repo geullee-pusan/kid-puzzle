@@ -7,11 +7,11 @@ import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { LADDER, MAKE_LEVEL, generateBoard, opensFixed, rungOf } from '../src/core/duel-ladder.js';
-import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, gameOf, isOver, isWin, movesOf, moveKey, replay, solve, startState, whyOpen, winningMoves } from '../src/core/duel.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, opensFixed, rungOf } from '../src/core/duel-ladder.js';
+import { GAMES, LIMITS, NO_WHY, WHY_AFTER, applyMove, checkBoard, gameOf, isHeap, isOver, isWin, movesOf, moveKey, replay, solve, startState, takesOf, whyOpen, winningMoves } from '../src/core/duel.js';
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { fill, ordinal, sentenceCount } from '../src/core/text.js';
-import { bruteLengths, fromState } from './helpers/brute-duel.js';
+import { bruteLengths, bruteWin, fromBoard, fromState } from './helpers/brute-duel.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(resolve(ROOT, path), 'utf8');
@@ -20,19 +20,35 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const code = read('src/formats/duel.js');
 
-const WHY_GAMES = ['choco', 'one', 'two'];
-const RULE_KEYS = ['choco-first', 'choco', 'one', 'one-1', 'two', 'three'];
-const RIGHT_KEYS = ['kid-choco', 'teacher-choco', 'kid-stones', 'teacher-stones', 'first-board', 'swap-invite', 'why-invite'];
-const STATUS_KEYS = ['kid-turn', 'teacher-turn', 'teacher-choco', 'teacher-one', 'teacher-piles', 'over-kid-choco', 'over-teacher-choco', 'over-kid-stones', 'over-teacher-stones', 'over-max'];
-const VALUES = { k: 3, n: 2, no: 4, at: 1, pile: '둘째', w: 3, h: 2, a: 3, b: 5, c: 2 };
+const WHY_GAMES = ['choco', 'one', 'two', 'divisor'];
+const RULE_KEYS = ['choco-first', 'choco', 'one', 'one-1', 'two', 'three', 'divisor', 'half', 'both'];
+const RIGHT_KEYS = ['kid-choco', 'teacher-choco', 'kid-stones', 'teacher-stones', 'kid-rest', 'teacher-rest', 'first-board', 'swap-invite', 'why-invite'];
+const STATUS_KEYS = [
+  'kid-turn',
+  'teacher-turn',
+  'teacher-choco',
+  'teacher-one',
+  'teacher-piles',
+  'teacher-both',
+  'over-kid-choco',
+  'over-teacher-choco',
+  'over-kid-stones',
+  'over-teacher-stones',
+  'over-kid-rest',
+  'over-teacher-rest',
+  'over-max',
+  'over-both',
+  'not-take',
+];
+const VALUES = { k: 3, n: 2, no: 4, at: 1, pile: '둘째', w: 3, h: 2, a: 3, b: 5, c: 2, list: '1, 2, 3, 6' };
 
-/** 대본의 모든 글(값)을 길과 함께 모은다. 설명(_로 시작하는 것)과 그림의 값(판의 꼴, 금의 방향, 이기는 쪽의 이름표)은 뺀다. */
+/** 대본의 모든 글(값)을 길과 함께 모은다. 설명(_로 시작하는 것)과 그림의 값(판의 꼴, 금의 방향, 이기는 쪽의 이름표, 더미 번호)은 뺀다. */
 function allStrings(value, path = '') {
   if (typeof value === 'string') return [[path, value]];
   if (Array.isArray(value)) return value.flatMap((item, index) => allStrings(item, `${path}[${index}]`));
   if (value && typeof value === 'object') {
     return Object.entries(value)
-      .filter(([key]) => !key.startsWith('_') && key !== 'kind' && key !== 'dir' && key !== 'winner')
+      .filter(([key]) => !key.startsWith('_') && key !== 'kind' && key !== 'dir' && key !== 'winner' && key !== 'game' && key !== 'pile')
       .flatMap(([key, item]) => allStrings(item, path ? `${path}.${key}` : key));
   }
   return [];
@@ -65,31 +81,58 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
   for (const [path, text] of strings) assert.ok(text.trim().length > 0, path);
   assert.equal(T.title, '누가 이길까');
   assert.deepEqual(Object.keys(T.games), GAMES);
-  assert.deepEqual(Object.values(T.games), ['초콜릿 쪼개기', '한 더미', '두 더미', '세 더미']);
+  assert.deepEqual(Object.values(T.games), ['초콜릿 쪼개기', '한 더미', '두 더미', '세 더미', '약수 빼기', '절반까지', '두 더미에서 같은 수도']);
   assert.deepEqual(T.piles, ['첫째', '둘째', '셋째']);
   assert.equal(T.piles.length, LIMITS.piles.max);
   assert.deepEqual(T.sides, { first: '먼저 두는 쪽', second: '나중에 두는 쪽' });
 });
 
-test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·도전이다', () => {
+test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·응용·응용·도전·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '응용', '응용', '도전', '도전']);
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.match(T.levels[0].name, /초콜릿/);
   assert.match(T.levels[1].name, /한 더미/);
   assert.match(T.levels[2].name, /두 더미/);
   assert.match(T.levels[3].name, /세 더미/);
+  assert.match(T.levels[4].name, /약수/);
+  assert.match(T.levels[5].name, /절반/);
+  assert.match(T.levels[6].name, /두 더미에서 같은 수/);
+  // 단계의 이름은 이름표라서 무엇이 이기는지는 말하지 않는다.
+  for (const entry of T.levels) assert.doesNotMatch(entry.name, /홀수|짝수|지는|이기는/, entry.name);
 });
 
 test('규칙 설명은 세 문장을 넘지 않고, 마지막 수를 둔 쪽이 이긴다고 말한다', () => {
   assert.deepEqual(Object.keys(T.rules).sort(), [...RULE_KEYS].sort());
   for (const key of RULE_KEYS) {
     assert.ok(sentenceCount(T.rules[key]) <= 3, `${key}: ${T.rules[key]}`);
-    // 어느 게임이든 마지막 수를 둔 쪽이 이긴다.
-    assert.match(T.rules[key], /마지막(에 쪼갠| 돌을 가져간) 쪽이 이겨요\.$/, key);
+    // 어느 게임이든 마지막 수를 둔 쪽이 이긴다. 돌이 1개 남는 게임은 마지막으로 가져간 쪽이다.
+    assert.match(T.rules[key], /마지막(에 쪼갠| 돌을 가져간|으로 가져간) 쪽이 이겨요\.$/, key);
     assert.match(T.rules[key], /번갈아/, key);
   }
+  // 약수 빼기: 약수만큼, 다 가져갈 수는 없다(그래서 1개가 남으면 끝난다). 절반까지: 1개부터 절반까지.
+  assert.match(T.rules.divisor, /약수만큼/);
+  assert.match(T.rules.divisor, /남은 돌을 다 가져갈 수는 없어요\./);
+  assert.match(T.rules.half, /한 번에 1개부터 남은 돌의 절반까지 가져갈 수 있어요\./);
+  for (const key of ['divisor', 'half']) assert.match(T.rules[key], /마지막으로 가져간 쪽이 이겨요\.$/, key);
+  // 두 더미에서 같은 수도: 한 더미에서 원하는 만큼, 또는 두 더미에서 같은 수만큼. 마지막 돌을 가져간 쪽이 이긴다.
+  assert.match(T.rules.both, /번갈아 한 더미에서 원하는 만큼, 또는 두 더미에서 같은 수만큼 가져가요\./);
+  assert.match(T.rules.both, /마지막 돌을 가져간 쪽이 이겨요\.$/);
+  // 차례마다 가져갈 수 있는 수를 답하는 칸에 적는다(약수 빼기, 절반까지). 둘 다에서 단추가 있다(두 더미에서 같은 수도).
+  assert.equal(fill(T.allow.divisor, { list: takesOf({ kind: 'divisor' }, 12).join(', ') }), '지금 가져갈 수 있는 수는 1, 2, 3, 4, 6개예요');
+  assert.equal(fill(T.allow.half, { k: 3 }), '지금은 1개부터 3개까지 가져갈 수 있어요');
+  // 1개만 가져갈 수 있을 때(2개나 3개가 남았을 때)는 "1개부터 1개까지"라고 하지 않는다.
+  assert.equal(T.allow['half-one'], '지금은 1개만 가져갈 수 있어요');
+  assert.match(code, /return takes\.length === 1 \? T\.allow\['half-one'\] : fill\(T\.allow\.half, \{ k: takes\.at\(-1\) \}\);/);
+  // 둘 다에서를 눌러 두었을 때 돌을 읽어 주는 글
+  assert.equal(fill(T.labels['stone-both'], { n: 2 }), '두 더미에서 2개씩 가져가기');
+  const padPart = part('id="duel-pad"', 'id="leave-ask"');
+  assert.match(padPart, /id="duel-allow-line" class="pad-note" aria-live="polite" hidden><\/p>/);
+  assert.match(padPart, /id="duel-both" class="btn" type="button" aria-pressed="false" hidden>둘 다에서</);
+  assert.match(visibleText(padPart), /둘 다에서를 누르고 돌을 고르면 두 더미에서 같은 수만큼 골라져요\./);
+  assert.match(code, /\$\('duel-allow-line'\)\.hidden = !keepsLast\(board\);/);
+  assert.match(code, /\$\('duel-both'\)\.hidden = board\.kind !== 'both';/);
   assert.match(T.rules.choco, /금을 따라 곧게 둘로 쪼개요/);
   assert.equal(fill(T.rules.one, { k: 3 }), '번갈아 돌을 가져가요. 한 번에 1개부터 3개까지 가져갈 수 있어요. 마지막 돌을 가져간 쪽이 이겨요.');
   // 여러 더미: 한 개 이상을, 한 더미에서만 가져간다(하나도 안 가져가는 수는 없다).
@@ -149,12 +192,20 @@ test('판이 끝나면 누가 마지막 수를 두었는지를 사실로 말한�
   assert.equal(T.right['kid-stones'], '마지막 돌을 가져갔어요. 이번 판은 이겼어요.');
   assert.equal(T.right['kid-choco'], '마지막 조각을 쪼갰어요. 이번 판은 이겼어요.');
   assert.equal(T.right['teacher-stones'], '마지막 돌을 선생님이 가져갔어요. 이번 판은 선생님이 이겼어요.');
-  for (const key of ['kid-choco', 'teacher-choco', 'kid-stones', 'teacher-stones']) {
+  for (const key of ['kid-choco', 'teacher-choco', 'kid-stones', 'teacher-stones', 'kid-rest', 'teacher-rest']) {
     const [fact, result, ...rest] = sentences(T.right[key]);
     assert.equal(rest.length, 0, `${key}: 두 문장이어야 해요`);
-    assert.match(fact, /^마지막 (조각|돌)을/, key);
+    // 돌이 1개 남는 게임은 누구 차례에 1개가 남았는지(더 가져갈 수 없는 쪽)를 말한다.
+    if (key.endsWith('-rest')) assert.match(fact, /^(선생님|내) 차례에 돌이 1개만 남았어요\.$/, key);
+    else assert.match(fact, /^마지막 (조각|돌)을/, key);
     assert.match(result, /^이번 판은 (선생님이 )?이겼어요\.$/, key);
   }
+  // 이긴 쪽의 상대 차례에 1개가 남는다.
+  assert.match(T.right['kid-rest'], /^선생님 차례에/);
+  assert.match(T.right['teacher-rest'], /^내 차례에/);
+  assert.equal(T.status['over-kid-rest'], '선생님 차례에 돌이 1개만 남았어요');
+  assert.equal(T.status['over-teacher-rest'], '내 차례에 돌이 1개만 남았어요');
+  assert.match(code, /const kindOf = \(board\) => \(board\.kind === 'choco' \? 'choco' : keepsLast\(board\) \? 'rest' : 'stones'\);/);
   // 칭찬 낱말, 축하하는 말, 진 것을 깎아내리는 말이 어디에도 없다.
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   const cheer = /축하|만세|야호|와!|우와|신난|기뻐|폭죽|성공/;
@@ -197,6 +248,10 @@ test('선생님이 둔 수는 판 아래의 글과 말로 알린다', () => {
   assert.equal(fill(T.status['teacher-piles'], { pile: '둘째', n: 2 }), '선생님이 둘째 더미에서 2개를 가져갔어요');
   assert.equal(fill(T.play['teacher-piles'], { pile: '둘째', n: 2 }), '선생님은 둘째 더미에서 2개를 가져갔어요.');
   assert.equal(fill(T.play['teacher-one'], { n: 3 }), '선생님은 3개를 가져갔어요.');
+  assert.equal(fill(T.play['teacher-both'], { n: 2 }), '선생님은 두 더미에서 2개씩 가져갔어요.');
+  assert.equal(fill(T.status['teacher-both'], { n: 2 }), '선생님이 두 더미에서 2개씩 가져갔어요');
+  assert.equal(fill(T.status['not-take'], { n: 5 }), '지금은 5개를 가져갈 수 없어요');
+  assert.equal(fill(T.status['over-both'], { k: 3 }), '둘 다에서는 3개까지만 가져갈 수 있어요');
   assert.match(T.play['teacher-choco'], /조각 하나를 둘로 쪼갰어요\.$/);
   assert.deepEqual(T.turn, { kid: '내 차례예요', teacher: '선생님 차례예요' });
   // 오른쪽 칸의 차례와 판 아래의 차례는 같은 때 함께 보이므로 같은 말이다.
@@ -340,7 +395,9 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
     ...Object.values(T.play),
     ...GAMES.flatMap((game) => T.hints[game]),
     ...Object.values(T.right),
-    ...Object.values(T.solution),
+    ...Object.entries(T.solution)
+      .filter(([key]) => key !== 'marks-note')
+      .map(([, text]) => text),
     T.make.intro,
     T.make.first,
     T.make.second,
@@ -352,8 +409,9 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
   ];
   for (const text of spoken) for (const sentence of sentences(text)) assert.match(sentence, /요[.?!]$/, sentence);
   // 마침표 없이 쓰는 짧은 글도 "~요"로 끝난다(이름표처럼 쓰는 글은 뺀다).
-  for (const text of [...Object.values(T.status), ...Object.values(T.pick), ...Object.values(T.turn), ...Object.values(T.marks)]) assert.match(text, /요$/, text);
+  for (const text of [...Object.values(T.status), ...Object.values(T.pick), ...Object.values(T.allow), ...Object.values(T.turn), ...Object.values(T.marks), T.solution['marks-note']]) assert.match(text, /요$/, text);
   for (const item of figures) assert.match(item.note, /(요|도)$/, item.note);
+  for (const slide of slides) if (slide.marks) assert.match(slide.marks.note, /요$/, slide.marks.note);
 });
 
 test('한 문장에 한 가지 뜻: 문장이 너무 길지 않다(60자 이하)', () => {
@@ -363,7 +421,7 @@ test('한 문장에 한 가지 뜻: 문장이 너무 길지 않다(60자 이하)
 });
 
 test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => {
-  const name = /횟수 미리 세기|끝에서부터 따지기|따라 두기/;
+  const name = /횟수 미리 세기|끝에서부터 따지기|따라 두기|홀짝 넘겨주기/;
   const reason = /홀수|짝수|나머지|따라 하|따라 가져|같게 만들|같아져|하나씩 늘|칸의 수보다|건너뛰|이진법|이미 정해져/;
   for (const [path, text] of strings) {
     if (path.startsWith('why')) continue;
@@ -376,7 +434,7 @@ test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => 
   assert.ok(own.includes('누가 먼저 둘까요?') && own.includes('자리를 바꿔서 다시 두기') && own.includes('선생님, 누가 이길까요?'));
   assert.doesNotMatch(own, reason);
   // 이름은 까닭을 다 본 뒤에, 이야기의 맨 끝에서 처음 꺼낸다(뜻밖의 결과 → 그림 → 이름).
-  const names = { choco: /횟수 미리 세기/, one: /끝에서부터 따지기/, two: /따라 두기/ };
+  const names = { choco: /횟수 미리 세기/, one: /끝에서부터 따지기/, two: /따라 두기/, divisor: /홀짝 넘겨주기/ };
   for (const game of WHY_GAMES) {
     const story = T.why[game];
     for (const slide of story.slice(0, -1)) assert.doesNotMatch(slide.say, name, slide.say);
@@ -388,6 +446,8 @@ test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => 
     assert.equal(T.solution[key], T.make[key]);
     assert.match(T.solution[key], /^이 판은 둘 다 잘 두면 (먼저|나중에) 두는 쪽이 이겨요\.$/);
   }
+  // 5~7단계의 풀이에 붙는 표의 말도 까닭은 말하지 않는다(어느 수에서 지는지만 보인다).
+  for (const key of ['marks', 'marks-note', 'pairs']) assert.doesNotMatch(T.solution[key], reason, key);
 });
 
 test('"왜 그럴까?"는 게임마다 따로 있고, 그림 서너 장이고, 설명이 아니라 어떻게 알아챘는지의 이야기다', () => {
@@ -479,7 +539,52 @@ test('"왜 그럴까?" 그림 속의 판과 수는 풀이 프로그램이 따진
     }
     checked += 1;
   }
-  assert.equal(checked, 16);
+  assert.equal(checked, 20);
+});
+
+test('"왜 그럴까?"의 주장(약수 빼기): 차례가 오면 지는 돌의 수는 홀수뿐이고, 홀수에서는 짝수만, 짝수에서는 1개를 가져가 홀수를 넘길 수 있다', () => {
+  const story = T.why.divisor;
+  assert.equal(story.length, 4);
+  // 1장과 4장의 표: 차례가 오면 지는 수는 풀이 프로그램과 다른 탐색이 따진 것과 같고, 모두 홀수다. 말로 적은 수도 그 수들이다.
+  for (const marks of [story[0].marks, story[3].marks]) {
+    assert.equal(marks.game, 'divisor');
+    const losing = [];
+    for (let n = 1; n <= marks.upto; n++) {
+      const board = { kind: 'divisor', n };
+      const win = isWin(board, [n]);
+      const { kind, max, state } = fromBoard(board);
+      assert.equal(win, bruteWin(kind, max, state), `${n}개(다른 탐색)`);
+      if (!win) losing.push(n);
+    }
+    assert.deepEqual(marks.lose, losing);
+    assert.deepEqual(losing, losing.filter((n) => n % 2 === 1));
+    assert.equal(losing.length, Math.ceil(marks.upto / 2), '홀수가 모두 들어 있다');
+    assert.ok(marks.upto <= LIMITS.one.max);
+  }
+  assert.ok(story[0].say.includes(`차례가 오면 지는 돌의 수가 ${story[0].marks.lose.join(', ')}였어요.`));
+  // 2장: 15개에서 가져갈 수 있는 수는 1, 3, 5뿐이고 모두 홀수다. 그림 둘은 그 가운데 두 수이고, 남는 수는 짝수다.
+  assert.deepEqual(takesOf({ kind: 'divisor' }, 15), [1, 3, 5]);
+  assert.match(story[1].say, /15개에서 가져갈 수 있는 수 1, 3, 5도 모두 홀수였어요\./);
+  for (const item of story[1].figures) {
+    assert.deepEqual(item.board, { kind: 'divisor', n: 15 });
+    assert.equal(item.left % 2, 0, item.note);
+  }
+  // 1~25개 모두: 홀수에서 둘 수 있는 수는 모두 짝수를 남긴다(그래서 홀수를 받으면 짝수를 넘겨줄 수밖에 없다).
+  for (let n = 3; n <= LIMITS.one.max; n += 2) for (const take of takesOf({ kind: 'divisor' }, n)) assert.equal((n - take) % 2, 0, `${n}개에서 ${take}개`);
+  // 3장: 짝수에서는 1개를 가져가 홀수를 넘길 수 있고, 그 수는 이기는 수다. 끝은 상대 차례에 1개가 남는 것이다.
+  for (let n = 2; n <= LIMITS.one.max; n += 2) {
+    assert.ok(takesOf({ kind: 'divisor' }, n).includes(1), `${n}개`);
+    assert.ok(winningMoves({ kind: 'divisor', n }, [n]).some((move) => move.take === 1), `${n}개`);
+  }
+  const [give, last] = story[2].figures;
+  assert.equal(give.trail[0].take, 1);
+  assert.equal(give.board.n % 2, 0);
+  assert.equal(last.left, 1);
+  assert.equal(last.over, true);
+  // 4장: 짝수 개일 때 차례가 오면 이기고 홀수 개일 때 차례가 오면 진다. 이름은 맨 끝에서 처음 꺼낸다.
+  assert.match(story[3].say, /^그래서 짝수 개일 때 차례가 오면 이기고, 홀수 개일 때 차례가 오면 져요\./);
+  // 글자(문자)를 쓰지 않는다: 수와 그림으로만 말한다.
+  for (const slide of story) assert.doesNotMatch(slide.say, /[A-Za-z]|n개|2n/, slide.say);
 });
 
 test('"왜 그럴까?"의 주장(쪼개기): 어떻게 쪼개도 횟수는 칸의 수보다 하나 적고, 그 수가 홀수면 먼저 두는 쪽이 이긴다', () => {
@@ -616,9 +721,12 @@ test('"왜 그럴까?"의 주장(두 더미): 같은 두 더미에서는 따라 
   assert.deepEqual(T.table.two, ['판', '이기는 쪽']);
 });
 
-test('세 더미에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판)', () => {
+test('세 더미에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판). 절반까지와 두 더미에서 같은 수도도 그렇다', () => {
   assert.match(T._설명, /세 더미는 일부러 까닭을 남겨 둔 판이다\. 그래서 '왜 그럴까\?'를 붙이지 않았다\./);
+  assert.match(T._설명, /절반까지와 두 더미에서 같은 수도도 일부러 까닭을 남겨 두었다\./);
   assert.equal(T.why.three, undefined);
+  for (const game of NO_WHY) assert.equal(T.why[game], undefined, game);
+  assert.deepEqual(Object.keys(T.why).sort(), GAMES.filter((game) => !NO_WHY.includes(game)).sort());
   for (const item of figures) assert.notEqual(gameOf(item.board), 'three');
   for (const slide of slides) assert.doesNotMatch(slide.say, /세 더미|셋째/);
   // 이진법이라는 말은 대본 어디에도 없다.
@@ -643,10 +751,41 @@ test('판 고르기의 그림: 단계마다 그 단계의 게임이고, 그림 �
     assert.equal(replay(picture.board, picture.trail).ok, true, `${rung.level}단계의 그림`);
     if (rung.game === 'choco') assert.ok(rung.boards.some(([w, h]) => w === picture.board.w && h === picture.board.h), `${rung.level}단계`);
     else {
-      const counts = picture.board.kind === 'one' ? [picture.board.n] : picture.board.piles;
+      const counts = isHeap(picture.board) ? [picture.board.n] : picture.board.piles;
       for (const count of counts) assert.ok(count >= rung.stones[0] && count <= rung.stones[1], `${rung.level}단계`);
     }
   }
+  // 5~7단계의 그림은 그 게임만의 수 하나를 보인다: 12개에서 4개(약수), 10개에서 5개(절반), 두 더미에서 2개씩.
+  const shown = (level) => T.levels.find((entry) => entry.level === level).picture.trail;
+  assert.ok(takesOf({ kind: 'divisor' }, 12).includes(shown(5)[0].take));
+  assert.equal(shown(6)[0].take, 10 / 2);
+  assert.equal(shown(7)[0].pile, 'both');
+});
+
+test('5~7단계의 풀이: 판 그림 뒤에 표를 한 장 더 붙인다. 표의 승패는 풀이 프로그램이 따진다', () => {
+  assert.match(code, /if \(keepsLast\(board\)\) \{\s*pages\.push\(\{ say: T\.solution\.marks, nodes: \[marksOf\(\{ game: board\.kind, upto: board\.n, per: SOLUTION_PER, note: T\.solution\['marks-note'\] \}\)\] \}\);/);
+  assert.match(code, /const board = \{ kind: 'both', piles: \[a, b\] \};\s*if \(!isWin\(board, startState\(board\)\)\) pairs\.push\(\[a, b\]\);/);
+  assert.equal(fill(T.solution.pairs, { k: LIMITS.pile.max }), '더미마다 9개까지에서, 차례가 오면 지는 두 더미는 이것뿐이에요. 두 더미의 차례를 바꾼 판도 같아요.');
+  assert.deepEqual(T.table.both, ['두 더미', '차례가 오면']);
+  // 더미마다 9개까지에서 지는 두 더미는 셋뿐이다(차례를 바꾼 것은 같은 판으로 친다).
+  const pairs = [];
+  for (let a = 1; a <= LIMITS.pile.max; a++) {
+    for (let b = a; b <= LIMITS.pile.max; b++) {
+      const { kind, max, state } = fromBoard({ kind: 'both', piles: [a, b] });
+      if (!bruteWin(kind, max, state)) pairs.push([a, b]);
+    }
+  }
+  assert.deepEqual(pairs, [[1, 2], [3, 5], [4, 7]]);
+});
+
+test('하던 판: 5~7단계의 판은 그 단계의 게임이어야 하고, 직접 만든 판은 지금의 8단계와 예전의 5단계를 모두 받는다', () => {
+  assert.match(code, /if \(saved\.custom === true\) return \[MAKE_LEVEL, OLD_MAKE_LEVEL\]\.includes\(saved\.level\) && DRAFT_KINDS\.includes\(saved\.board\.kind\);/);
+  assert.match(code, /saved\.level <= TOP_LEVEL && rungOf\(saved\.level\)\.game === saved\.mode;/);
+  assert.match(code, /if \(!levelOk\(saved\)\) return false;/);
+  assert.deepEqual([TOP_LEVEL, MAKE_LEVEL, OLD_MAKE_LEVEL], [7, 8, 5]);
+  // 예전의 직접 만들기(5단계)에서 만든 판은 지금의 5단계(약수 빼기)의 판과 꼴이 달라서 섞이지 않는다.
+  assert.equal(rungOf(OLD_MAKE_LEVEL).game, 'divisor');
+  assert.equal(generateBoard(OLD_MAKE_LEVEL, 1).board.kind, 'divisor');
 });
 
 test('직접 만들기: 게임을 고르고 수를 정하면, 잘 두었을 때 어느 쪽이 이기는지 알려 준다', () => {
@@ -773,7 +912,9 @@ test('누가 이길까의 수준 맞추기 값은 임시값이고, 처음 보여
   const tuning = tuningFor('duel');
   assert.equal(tuning.startLevel, 1);
   assert.equal(tuning.bottomLevel, 1);
-  assert.equal(tuning.topLevel, 4);
+  assert.equal(tuning.topLevel, TOP_LEVEL);
+  assert.equal(tuning.topLevel, 7);
+  for (let level = 1; level <= TOP_LEVEL; level++) assert.equal(typeof tuning.expectedSeconds[level], 'number', `${level}단계`);
   assert.equal(tuning.hintCount, 2);
   assert.equal(tuning.fastWin, true);
   assert.equal(tuning.whyAfter, 'finished');
@@ -808,6 +949,7 @@ test('"한 번에 빠르게"는 이기는 쪽을 스스로 고르고 그 판을 
   // 단계가 다른 판이 섞이면 권하지 않는다. 맨 위 단계에서는 직접 만들기를 가리킨다.
   assert.equal(recommend([duel({ level: 1 }), duel()], 'duel').offerHarder, false);
   assert.deepEqual(recommend([duel({ level: 4 }), duel({ level: 4 })], 'duel'), { level: 4, small: false, offerHarder: true, harderLevel: 5, reason: 'fast' });
+  assert.deepEqual(recommend([duel({ level: 7 }), duel({ level: 7 })], 'duel'), { level: 7, small: false, offerHarder: true, harderLevel: MAKE_LEVEL, reason: 'fast' });
 });
 
 test('연달아 진 것만으로는 내려가지 않는다. 연달아 그만두면 조용히 한 단계 아래를 먼저 보여 준다', () => {
@@ -825,8 +967,10 @@ test('연달아 진 것만으로는 내려가지 않는다. 연달아 그만두�
   // 들여다보기만 한 판(고르지도, 두지도, 힌트를 열지도 않았다)은 세지 않는다. 직접 만든 판도 세지 않는다.
   const peek = () => duel({ level: 3, outcome: 'left', winner: null, answers: [], first: null, choseWinner: null, moveCount: 0, turnCount: 0 });
   assert.equal(recommend([peek(), peek()], 'duel').reason, 'start');
-  const custom = () => duel({ level: 5, custom: true, outcome: 'left', winner: null });
-  assert.equal(recommend([custom(), custom()], 'duel').reason, 'start');
+  // 예전의 직접 만들기 단계(5단계)에서 둔 판도 지금의 5단계(약수 빼기)로 세지 않는다.
+  const custom = (level) => duel({ level, custom: true, outcome: 'left', winner: null });
+  assert.equal(recommend([custom(OLD_MAKE_LEVEL), custom(OLD_MAKE_LEVEL)], 'duel').reason, 'start');
+  assert.equal(recommend([custom(MAKE_LEVEL), custom(MAKE_LEVEL)], 'duel').reason, 'start');
   // 다른 형식의 기록은 영향을 주지 않고, 이 형식의 기록도 다른 형식에 영향을 주지 않는다.
   for (const format of ['coins', 'trace', 'code', 'swap', 'tile']) {
     assert.equal(recommend([quit(3), quit(3)], format).reason, 'start', format);

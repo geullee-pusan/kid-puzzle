@@ -6,6 +6,12 @@
 //   초콜릿: 조각마다 [가로, 세로]의 목록(자리는 적지 않는다. 쪼개는 데에는 크기만 쓰인다)
 //   돌:     더미마다 남은 돌의 수
 // max는 한 번에 가져갈 수 있는 돌의 수의 위 끝이다(초콜릿과 여러 더미에서는 Infinity).
+// kind
+//   'choco'    초콜릿
+//   'stones'   한 더미(1개부터 max개까지)와 여러 더미(한 더미에서 원하는 만큼)
+//   'divisor'  약수 빼기: 남은 수를 나누어떨어지게 하는 수 가운데 남은 수보다 작은 것만큼
+//   'half'     절반까지: 1개부터, 가져간 수의 두 배가 남은 수를 넘지 않을 때까지
+//   'both'     두 더미에서 같은 수도: 한 더미에서 원하는 만큼, 또는 두 더미에서 같은 수만큼
 
 /** 수 하나를 둔 다음의 자리 모두 */
 export function nextStates(kind, max, state) {
@@ -16,10 +22,22 @@ export function nextStates(kind, max, state) {
       const [w, h] = item;
       for (let at = 1; at < w; at++) found.push(rest([[at, h], [w - at, h]]));
       for (let at = 1; at < h; at++) found.push(rest([[w, at], [w, h - at]]));
+    } else if (kind === 'divisor') {
+      // 나누어떨어지는지는 곱셈으로 따진다(몇 배를 하면 남은 수가 되는가)
+      for (let take = 1; take < item; take++) {
+        let times = 1;
+        while (take * times < item) times += 1;
+        if (take * times === item) found.push(rest([item - take]));
+      }
+    } else if (kind === 'half') {
+      for (let take = 1; take + take <= item; take++) found.push(rest([item - take]));
     } else {
       for (let take = 1; take <= Math.min(item, max); take++) found.push(rest([item - take]));
     }
   });
+  if (kind === 'both' && state.length === 2) {
+    for (let take = 1; take <= state[0] && take <= state[1]; take++) found.push([state[0] - take, state[1] - take]);
+  }
   return found;
 }
 
@@ -64,6 +82,8 @@ export function allPlays(kind, max, state) {
 export function fromBoard(board) {
   if (board.kind === 'choco') return { kind: 'choco', max: Infinity, state: [[board.w, board.h]] };
   if (board.kind === 'one') return { kind: 'stones', max: board.max, state: [board.n] };
+  if (board.kind === 'divisor' || board.kind === 'half') return { kind: board.kind, max: Infinity, state: [board.n] };
+  if (board.kind === 'both') return { kind: 'both', max: Infinity, state: board.piles.slice() };
   return { kind: 'stones', max: Infinity, state: board.piles.slice() };
 }
 

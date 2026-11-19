@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import {
   GAMES,
   LIMITS,
+  NO_WHY,
   SMALL_COUNT,
   WHY_AFTER,
   allPositions,
@@ -30,6 +31,7 @@ import {
   smallBoards,
   solve,
   startState,
+  takesOf,
   teacherMove,
   turnOf,
   whyOpen,
@@ -42,6 +44,9 @@ import { allPlays, bruteLengths, bruteWin, fromBoard, fromState } from './helper
 const choco = (w, h) => ({ kind: 'choco', w, h });
 const one = (n, max) => ({ kind: 'one', n, max });
 const piles = (...counts) => ({ kind: 'piles', piles: counts });
+const divisor = (n) => ({ kind: 'divisor', n });
+const half = (n) => ({ kind: 'half', n });
+const both = (a, b) => ({ kind: 'both', piles: [a, b] });
 const brute = (board, state = startState(board)) => {
   const { kind, max } = fromBoard(board);
   return bruteWin(kind, max, fromState(board, state));
@@ -79,12 +84,139 @@ test('판의 값: 정해진 범위 안의 판만 받는다', () => {
   assert.equal(checkBoard({ kind: 'chess' }), 'kind');
   assert.equal(checkBoard(null), 'board');
   assert.deepEqual(LIMITS, { choco: { min: 1, max: 5 }, one: { min: 1, max: 25 }, take: { min: 1, max: 4 }, piles: { min: 2, max: 3 }, pile: { min: 1, max: 9 } });
-  assert.deepEqual(GAMES, ['choco', 'one', 'two', 'three']);
-  assert.deepEqual([choco(2, 3), one(7, 2), piles(3, 3), piles(1, 2, 3)].map(gameOf), GAMES);
+  assert.deepEqual(GAMES, ['choco', 'one', 'two', 'three', 'divisor', 'half', 'both']);
+  assert.deepEqual([choco(2, 3), one(7, 2), piles(3, 3), piles(1, 2, 3), divisor(12), half(10), both(3, 5)].map(gameOf), GAMES);
   const board = piles(3, 4);
   const copy = copyBoard(board);
   copy.piles[0] = 9;
   assert.deepEqual(board.piles, [3, 4]);
+  // 5~7단계의 판: 돌 1~25개(약수 빼기, 절반까지), 더미 둘에 더미마다 1~9개(두 더미에서 같은 수도)
+  for (const kind of ['divisor', 'half']) {
+    assert.equal(checkBoard({ kind, n: 1 }), null);
+    assert.equal(checkBoard({ kind, n: 25 }), null);
+    assert.equal(checkBoard({ kind, n: 26 }), 'count');
+    assert.equal(checkBoard({ kind, n: 0 }), 'count');
+    assert.equal(checkBoard({ kind, n: 2.5 }), 'count');
+    assert.deepEqual(copyBoard({ kind, n: 9, extra: 1 }), { kind, n: 9 });
+  }
+  assert.equal(checkBoard(both(1, 9)), null);
+  assert.equal(checkBoard(both(0, 3)), 'count');
+  assert.equal(checkBoard(both(10, 3)), 'count');
+  assert.equal(checkBoard({ kind: 'both', piles: [1, 2, 3] }), 'piles');
+  const pair = both(3, 4);
+  const pairCopy = copyBoard(pair);
+  pairCopy.piles[0] = 9;
+  assert.deepEqual(pair.piles, [3, 4]);
+  assert.deepEqual(pairCopy, { kind: 'both', piles: [9, 4] });
+  assert.deepEqual([boardKey(divisor(12)), boardKey(half(10)), boardKey(both(3, 5))], ['divisor-12', 'half-10', 'both-3-5']);
+});
+
+test('약수 빼기: 남은 돌의 수의 약수 가운데 그 수보다 작은 것만큼 가져간다. 1개가 남으면 끝이다', () => {
+  assert.deepEqual(movesOf(divisor(12), [12]).map((move) => move.take), [1, 2, 3, 4, 6]);
+  assert.deepEqual(takesOf(divisor(12), 15), [1, 3, 5]);
+  assert.deepEqual(takesOf(divisor(12), 13), [1]);
+  assert.deepEqual(takesOf(divisor(12), 1), []);
+  assert.deepEqual(applyMove(divisor(12), [12], { pile: 0, take: 4 }), [8]);
+  for (const take of [5, 12, 0, 13, 1.5]) assert.equal(applyMove(divisor(12), [12], { pile: 0, take }), null, `${take}개`);
+  assert.equal(applyMove(divisor(12), [12], { pile: 'both', take: 1 }), null);
+  assert.equal(isOver(divisor(12), [1]), true);
+  assert.equal(isOver(divisor(12), [2]), false);
+  // 어떻게 두어도 돌은 0개가 되지 않는다(가져가고 남는 수는 늘 1개 이상이다).
+  for (let count = 2; count <= LIMITS.one.max; count++) for (const move of movesOf(divisor(25), [count])) assert.ok(applyMove(divisor(25), [count], move)[0] >= 1);
+});
+
+test('절반까지: 1개부터 남은 돌의 절반(버림)까지 가져간다. 1개가 남으면 끝이다', () => {
+  assert.deepEqual(movesOf(half(10), [10]).map((move) => move.take), [1, 2, 3, 4, 5]);
+  assert.deepEqual(takesOf(half(10), 7), [1, 2, 3]);
+  assert.deepEqual(takesOf(half(10), 2), [1]);
+  assert.deepEqual(takesOf(half(10), 1), []);
+  assert.deepEqual(applyMove(half(10), [7], { pile: 0, take: 3 }), [4]);
+  assert.equal(applyMove(half(10), [7], { pile: 0, take: 4 }), null);
+  assert.equal(isOver(half(10), [1]), true);
+  assert.equal(isOver(half(10), [2]), false);
+});
+
+test('두 더미에서 같은 수도: 한 더미에서 원하는 만큼, 또는 두 더미에서 같은 수만큼 가져간다', () => {
+  const board = both(3, 5);
+  const moves = movesOf(board, [3, 5]);
+  // 첫째 더미 3가지, 둘째 더미 5가지, 두 더미에서 같은 수만큼 3가지
+  assert.equal(moves.length, 11);
+  assert.deepEqual(moves.filter((move) => move.pile === 'both').map((move) => move.take), [1, 2, 3]);
+  assert.deepEqual(applyMove(board, [3, 5], { pile: 'both', take: 3 }), [0, 2]);
+  assert.equal(applyMove(board, [3, 5], { pile: 'both', take: 4 }), null);
+  assert.equal(applyMove(board, [3, 5], { pile: 'both', take: 0 }), null);
+  assert.deepEqual(applyMove(board, [3, 5], { pile: 1, take: 5 }), [3, 0]);
+  // 한 더미가 비면 같은 수만큼 가져가는 수는 없다.
+  assert.deepEqual(movesOf(board, [0, 2]), [{ pile: 1, take: 1 }, { pile: 1, take: 2 }]);
+  assert.equal(isOver(board, [0, 0]), true);
+  // 두 더미에서 같은 수만큼 가져가는 수는 이 게임에만 있다.
+  assert.equal(applyMove(piles(3, 5), [3, 5], { pile: 'both', take: 1 }), null);
+  assert.equal(moveKey({ pile: 'both', take: 2 }), 'both-2');
+});
+
+test('약수 빼기의 지름길 규칙: 홀수 개일 때 차례가 오면 진다. 끝에서부터 따진 결과와 다른 탐색이 같다', () => {
+  for (let n = 1; n <= LIMITS.one.max; n++) {
+    const board = divisor(n);
+    assert.equal(isWin(board, [n]), n % 2 === 0, `${n}개`);
+    assert.equal(brute(board), n % 2 === 0, `${n}개(다른 탐색)`);
+  }
+  for (let count = 1; count <= LIMITS.one.max; count++) {
+    const takes = takesOf(divisor(25), count);
+    // 홀수에서 가져갈 수 있는 수는 모두 홀수라서, 가져가면 늘 짝수가 남는다.
+    if (count % 2 === 1) for (const take of takes) assert.equal((count - take) % 2, 0, `${count}개에서 ${take}개`);
+    // 짝수에서는 1개를 가져가면 홀수가 남는다. 이기는 수는 홀수만큼 가져가는 수 모두다.
+    else {
+      assert.ok(takes.includes(1), `${count}개`);
+      assert.deepEqual(winningMoves(divisor(25), [count]).map((move) => move.take), takes.filter((take) => take % 2 === 1), `${count}개`);
+    }
+  }
+  // 25개짜리 판에서 나올 수 있는 자리는 1~25개 모두다.
+  assert.equal(allPositions(divisor(25)).size, 25);
+});
+
+test('절반까지의 지름길 규칙: 돌의 수에 1을 더하면 2, 4, 8, 16, 32가 될 때(1, 3, 7, 15개) 차례가 오면 진다. 다른 탐색과 같다', () => {
+  const losing = [];
+  for (let n = 1; n <= LIMITS.one.max; n++) {
+    const board = half(n);
+    assert.equal(isWin(board, [n]), brute(board), `${n}개(다른 탐색)`);
+    if (!isWin(board, [n])) losing.push(n);
+  }
+  assert.deepEqual(losing, [1, 3, 7, 15]);
+  // 지는 수는 앞의 수의 두 배보다 하나 많다. 그 사이의 수에서는 이기는 수가 꼭 하나다(지는 수로 보내기).
+  losing.slice(1).forEach((n, index) => assert.equal(n, 2 * losing[index] + 1));
+  for (let n = 2; n <= LIMITS.one.max; n++) {
+    if (losing.includes(n)) continue;
+    const moves = winningMoves(half(n), [n]);
+    assert.equal(moves.length, 1, `${n}개`);
+    assert.ok(losing.includes(n - moves[0].take), `${n}개`);
+  }
+});
+
+test('두 더미에서 같은 수도의 지는 자리: 1개와 2개, 3개와 5개, 4개와 7개, 6개와 10개(차례를 바꾼 것도). 다른 탐색과 같다', () => {
+  const found = [];
+  for (let a = 0; a <= 12; a++) {
+    for (let b = 0; b <= 12; b++) {
+      const board = both(Math.max(a, 1), Math.max(b, 1));
+      const win = isWin(board, [a, b]);
+      assert.equal(win, brute(board, [a, b]), `${a}개와 ${b}개`);
+      if (!win && a <= b) found.push([a, b]);
+    }
+  }
+  assert.deepEqual(found, [[0, 0], [1, 2], [3, 5], [4, 7], [6, 10]]);
+  // 다른 방법으로 다시 만든다: 작은 더미는 앞에서 쓰지 않은 가장 작은 수, 큰 더미는 그보다 (몇째 짝인지)만큼 크다.
+  const used = new Set();
+  const built = [];
+  for (let index = 0; built.length < found.length; index++) {
+    let low = 0;
+    while (used.has(low)) low += 1;
+    built.push([low, low + index]);
+    used.add(low).add(low + index);
+  }
+  assert.deepEqual(built, found);
+  // 더미마다 1~9개인 판 81가지 가운데 지는 판은 여섯 가지다.
+  let second = 0;
+  for (let a = 1; a <= LIMITS.pile.max; a++) for (let b = 1; b <= LIMITS.pile.max; b++) if (!solve(both(a, b)).first) second += 1;
+  assert.equal(second, 6);
 });
 
 test('초콜릿: 조각 하나를 금을 따라 곧게 둘로 쪼갠다', () => {
@@ -273,7 +405,7 @@ test('세 더미의 지름길 규칙: 세 수를 이진법으로 적어 자리�
 });
 
 test('이기는 수의 목록: 상대를 지는 자리로 보내는 수가 빠짐없이 들어 있다', () => {
-  for (const board of [choco(3, 2), choco(3, 3), one(7, 2), one(9, 3), piles(5, 3), piles(4, 4), piles(1, 2, 3), piles(3, 5, 2), piles(7, 6, 3)]) {
+  for (const board of [choco(3, 2), choco(3, 3), one(7, 2), one(9, 3), piles(5, 3), piles(4, 4), piles(1, 2, 3), piles(3, 5, 2), piles(7, 6, 3), divisor(12), divisor(15), half(10), half(15), both(3, 6), both(4, 7), both(9, 9)]) {
     const start = startState(board);
     const moves = movesOf(board, start);
     const winning = winningMoves(board, start);
@@ -310,7 +442,7 @@ test('차례와 다시 두기', () => {
 });
 
 test('선생님이 두는 법: 이길 수 있는 자리에서는 이기는 수를, 질 자리에서는 둘 수 있는 수 가운데 하나를 둔다', () => {
-  for (const board of [one(7, 2), one(17, 3), piles(5, 3), piles(2, 7), piles(3, 5, 2), piles(7, 6, 3), choco(3, 2)]) {
+  for (const board of [one(7, 2), one(17, 3), piles(5, 3), piles(2, 7), piles(3, 5, 2), piles(7, 6, 3), choco(3, 2), divisor(18), half(20), both(2, 9)]) {
     const start = startState(board);
     assert.equal(isWin(board, start), true, boardKey(board));
     for (let seed = 1; seed <= 30; seed++) {
@@ -319,7 +451,7 @@ test('선생님이 두는 법: 이길 수 있는 자리에서는 이기는 수�
     }
   }
   // 질 자리에서는 둘 수 있는 수 가운데 시드 난수로 고른다. 여러 가지 수가 나온다.
-  for (const board of [one(9, 2), piles(4, 4), piles(1, 2, 3), choco(3, 3)]) {
+  for (const board of [one(9, 2), piles(4, 4), piles(1, 2, 3), choco(3, 3), divisor(15), half(15), both(4, 7)]) {
     const start = startState(board);
     assert.equal(isWin(board, start), false, boardKey(board));
     const seen = new Set();
@@ -354,7 +486,7 @@ test('선생님의 수는 (단계, 판 번호, 먼저 두는 쪽, 지금까지 �
 test('이기는 쪽을 고르고 끝까지 옳게 두면 이기고, 지는 쪽을 고르면 어떻게 두어도 진다', () => {
   const rng = createRng(2026);
   const anyMove = (state, moves) => moves[randInt(rng, 0, moves.length - 1)];
-  const boards = [choco(2, 2), choco(3, 3), choco(4, 3), one(5, 2), one(13, 2), one(20, 3), one(18, 3), piles(3, 7), piles(8, 8), piles(2, 1, 1), piles(3, 6, 5), piles(7, 6, 3)];
+  const boards = [choco(2, 2), choco(3, 3), choco(4, 3), one(5, 2), one(13, 2), one(20, 3), one(18, 3), piles(3, 7), piles(8, 8), piles(2, 1, 1), piles(3, 6, 5), piles(7, 6, 3), divisor(14), divisor(19), half(12), half(15), both(5, 3), both(8, 6)];
   for (const board of boards) {
     const { first } = solve(board);
     const winningSide = first ? 'kid' : 'teacher'; // 아이가 이기는 쪽에 서려면 먼저 둘 쪽
@@ -370,7 +502,7 @@ test('이기는 쪽을 고르고 끝까지 옳게 두면 이기고, 지는 쪽�
 
 test('이기는 쪽을 골라 놓고 한 번 잘못 두면 선생님이 뒤집는다(돌 게임). 초콜릿은 잘못 둘 수가 없다', () => {
   const rng = createRng(77);
-  for (const board of [one(7, 2), one(13, 2), one(18, 3), piles(3, 7), piles(8, 6), piles(3, 5, 2), piles(7, 6, 3)]) {
+  for (const board of [one(7, 2), one(13, 2), one(18, 3), piles(3, 7), piles(8, 6), piles(3, 5, 2), piles(7, 6, 3), divisor(20), half(24), both(6, 9)]) {
     const first = solve(board).first ? 'kid' : 'teacher';
     let slipped = false;
     const kid = (state, moves) => {
@@ -429,7 +561,7 @@ test('아무렇게나 두었을 때 아이가 이기는 비율: 모든 경우를
   for (const board of [one(9, 2), piles(4, 4), piles(1, 2, 3)]) assert.equal(randomKidWinRate(board, true), 0, boardKey(board));
   // 시드 난수로 4000판 두어 본 값과 견준다(선생님은 이기는 수 가운데 하나를 고르게 둔다).
   const rng = createRng(31);
-  for (const board of [one(7, 2), one(10, 3), piles(5, 3), piles(3, 5, 2)]) {
+  for (const board of [one(7, 2), one(10, 3), piles(5, 3), piles(3, 5, 2), divisor(12), half(10), both(3, 6)]) {
     const kidFirst = solve(board).first;
     let wins = 0;
     const trials = 4000;
@@ -451,8 +583,8 @@ test('아무렇게나 두었을 때 아이가 이기는 비율: 모든 경우를
 });
 
 test('작은 판으로 두어 보기: 같은 게임의 가장 작은 판들을 작은 것부터 낸다. 원래 판보다 작은 판만 낸다', () => {
-  const total = (board) => (board.kind === 'choco' ? board.w * board.h : board.kind === 'one' ? board.n : board.piles.reduce((sum, item) => sum + item, 0));
-  for (const board of [choco(2, 2), choco(3, 3), choco(4, 3), one(5, 2), one(5, 3), one(20, 3), piles(2, 2), piles(8, 8), piles(1, 1, 1), piles(3, 5, 2), piles(7, 7, 7)]) {
+  const total = (board) => (board.kind === 'choco' ? board.w * board.h : 'n' in board ? board.n : board.piles.reduce((sum, item) => sum + item, 0));
+  for (const board of [choco(2, 2), choco(3, 3), choco(4, 3), one(5, 2), one(5, 3), one(20, 3), piles(2, 2), piles(8, 8), piles(1, 1, 1), piles(3, 5, 2), piles(7, 7, 7), divisor(6), divisor(20), half(5), half(24), both(1, 2), both(9, 9)]) {
     const list = smallBoards(board);
     assert.ok(list.length <= SMALL_COUNT, boardKey(board));
     for (const small of list) {
@@ -471,14 +603,20 @@ test('작은 판으로 두어 보기: 같은 게임의 가장 작은 판들을 �
   assert.deepEqual(smallBoards(piles(8, 8)).map((board) => board.piles), [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]);
   assert.deepEqual(smallBoards(piles(3, 5, 2)).map((board) => board.piles), [[1, 1, 1], [1, 1, 2], [1, 1, 3], [1, 2, 2], [1, 2, 3], [2, 2, 2]]);
   // 사다리에 나오는 판에서는 작은 판들 가운데 먼저 두는 쪽이 이기는 판과 나중에 두는 쪽이 이기는 판이 모두 있다(두어 보면 다른 것이 보인다).
-  for (const board of [choco(3, 2), choco(3, 3), one(5, 2), one(5, 3), one(20, 3), piles(2, 3), piles(8, 8), piles(3, 5, 2)]) {
+  for (const board of [choco(3, 2), choco(3, 3), one(5, 2), one(5, 3), one(20, 3), piles(2, 3), piles(8, 8), piles(3, 5, 2), divisor(6), divisor(20), half(5), half(24), both(2, 2), both(9, 9)]) {
     const firsts = new Set(smallBoards(board).map((small) => solve(small).first));
     assert.equal(firsts.size, 2, boardKey(board));
   }
+  // 약수 빼기와 절반까지는 2개부터(1개짜리는 처음부터 둘 수가 없다), 두 더미에서 같은 수도는 두 더미의 꼴 그대로 작은 판을 낸다.
+  assert.deepEqual(smallBoards(divisor(20)).map((board) => board.n), [2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(smallBoards(half(5)).map((board) => board.n), [2, 3, 4]);
+  assert.deepEqual(smallBoards(both(9, 9)).map(boardKey), ['both-1-1', 'both-1-2', 'both-1-3', 'both-2-2', 'both-2-3', 'both-3-3']);
   // 가장 작은 판에는 더 작은 판이 없다.
   assert.deepEqual(smallBoards(choco(2, 1)), []);
   assert.deepEqual(smallBoards(one(1, 2)), []);
   assert.deepEqual(smallBoards(piles(1, 1)), []);
+  assert.deepEqual(smallBoards(divisor(2)), []);
+  assert.deepEqual(smallBoards(both(1, 1)), []);
 });
 
 // ---- 기록에서 읽는 것 ----
@@ -506,10 +644,15 @@ test('"왜 그럴까?"는 그 게임을 세 판 끝까지 둔 뒤에 열린다. 
   // 같은 판의 기록이 여러 번 남았으면 한 판으로 센다.
   const twice = duel();
   assert.equal(finishedCount([twice, { ...twice, rev: 2 }, { ...twice, rev: 3 }], 'choco'), 1);
-  // 세 더미는 일부러 까닭을 남겨 둔 판이다. 몇 판을 두어도 열리지 않는다.
+  // 세 더미는 일부러 까닭을 남겨 둔 판이다. 몇 판을 두어도 열리지 않는다. 절반까지와 두 더미에서 같은 수도도 그렇다.
   const three = Array.from({ length: 10 }, () => duel({ mode: 'three', level: 4 }));
   assert.equal(finishedCount(three, 'three'), 10);
   assert.equal(whyOpen(three, 'three'), false);
+  assert.deepEqual(NO_WHY, ['three', 'half', 'both']);
+  for (const mode of ['half', 'both']) assert.equal(whyOpen(Array.from({ length: 5 }, () => duel({ mode })), mode), false, mode);
+  // 약수 빼기는 세 판을 끝까지 둔 뒤에 열린다.
+  assert.equal(whyOpen([duel({ mode: 'divisor' }), duel({ mode: 'divisor' })], 'divisor'), false);
+  assert.equal(whyOpen([duel({ mode: 'divisor' }), duel({ mode: 'divisor' }), duel({ mode: 'divisor', winner: 'teacher' })], 'divisor'), true);
   // 다른 형식의 기록은 세지 않는다. 기록이 깨져 있어도 오류를 내지 않는다.
   assert.equal(whyOpen([duel(), duel(), { ...duel(), format: 'tile' }], 'choco'), false);
   assert.equal(whyOpen(null, 'choco'), false);

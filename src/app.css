@@ -2436,6 +2436,13 @@ button.duel-stone {
   background: transparent;
 }
 
+/* 지금 가져갈 수 없는 돌: 흐리게, 테두리는 점선으로(색만으로 가리지 않는다). 누르면 판 아래에 까닭을 적는다 */
+.duel-stone.barred {
+  border-style: dotted;
+  background: #e9ecef;
+  opacity: 0.55;
+}
+
 .duel-stones.small .duel-stone {
   border-width: 2px;
 }

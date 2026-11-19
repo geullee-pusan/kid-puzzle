@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LADDER, MAKE_LEVEL, SECOND_RATE, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../src/core/duel-ladder.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, SECOND_RATE, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../src/core/duel-ladder.js';
 import { applyMove, boardKey, checkBoard, gameOf, isOver, movesOf, randomKidWinRate, solve, startState, teacherMove, turnOf, winnerOf } from '../src/core/duel.js';
 import { createRng, randInt } from '../src/core/rng.js';
 import { bruteLengths, bruteWin, fromBoard } from './helpers/brute-duel.js';
@@ -13,14 +13,14 @@ const SEEDS = 400;
 const boards = (level, count = SEEDS) => Array.from({ length: count }, (_, index) => generateBoard(level, index + 1));
 const firstRate = (level) => boards(level).filter((made) => made.solution.first).length / SEEDS;
 
-test('사다리: 다섯 단계이고 맨 위는 직접 만들기다. 표시는 기본·응용·응용·도전·도전이다', () => {
-  assert.deepEqual(LADDER.map((rung) => rung.level), [1, 2, 3, 4, 5]);
-  assert.deepEqual(LADDER.map((rung) => rung.game), ['choco', 'one', 'two', 'three', 'make']);
-  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'applied', 'applied', 'challenge', 'challenge']);
-  assert.equal(TOP_LEVEL, 4);
-  assert.equal(MAKE_LEVEL, 5);
+test('사다리: 여덟 단계이고 맨 위는 직접 만들기다. 5~7단계(약수 빼기, 절반까지, 두 더미에서 같은 수도)는 직접 만들기 앞에 더했다', () => {
+  assert.deepEqual(LADDER.map((rung) => rung.level), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(LADDER.map((rung) => rung.game), ['choco', 'one', 'two', 'three', 'divisor', 'half', 'both', 'make']);
+  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'applied', 'applied', 'challenge', 'applied', 'applied', 'challenge', 'challenge']);
+  // 1~4단계의 번호는 그대로이고, 직접 만들기는 5단계에서 8단계로 옮겼다(예전 번호는 OLD_MAKE_LEVEL로 받는다).
+  assert.deepEqual([TOP_LEVEL, MAKE_LEVEL, OLD_MAKE_LEVEL], [7, 8, 5]);
   assert.equal(rungOf(3).game, 'two');
-  assert.throws(() => rungOf(6));
+  assert.throws(() => rungOf(9));
   assert.throws(() => generateBoard(MAKE_LEVEL, 1));
 });
 
@@ -136,6 +136,56 @@ test('4단계: 세 더미. 더미마다 1~7개. 나중에 두는 쪽이 이기�
   assert.ok(42 / 343 < 0.13);
 });
 
+test('5단계: 약수 빼기. 돌 6~20개. 차례가 오면 지는 판(홀수 개)과 이기는 판(짝수 개)이 반반쯤 섞인다', () => {
+  const made = boards(5);
+  const counts = new Set();
+  for (const { board, solution } of made) {
+    assert.equal(board.kind, 'divisor');
+    assert.ok(board.n >= 6 && board.n <= 20, `돌 ${board.n}개`);
+    // 지름길 규칙과 견준다: 홀수 개면 나중에 두는 쪽이 이긴다.
+    assert.equal(solution.first, board.n % 2 === 0, boardKey(board));
+    counts.add(board.n);
+  }
+  assert.equal(counts.size, 15, '6개부터 20개까지 모두 나온다');
+  assert.equal(rungOf(5).second, undefined, '나중에 두는 쪽이 이기는 판의 비율은 SECOND_RATE');
+  const rate = firstRate(5);
+  assert.ok(rate > 0.42 && rate < 0.58, `먼저 두는 쪽이 이기는 판 ${rate}`);
+});
+
+test('6단계: 절반까지 가져가기. 돌 5~24개. 나중에 두는 쪽이 이기는 판은 7개와 15개뿐이라 셋에 하나쯤으로 낸다', () => {
+  const made = boards(6);
+  const seconds = new Set();
+  for (const { board, solution } of made) {
+    assert.equal(board.kind, 'half');
+    assert.ok(board.n >= 5 && board.n <= 24, `돌 ${board.n}개`);
+    // 지름길 규칙과 견준다: 돌의 수에 1을 더하면 2, 4, 8, 16, 32가 되는 판(1, 3, 7, 15개)에서 나중에 두는 쪽이 이긴다.
+    assert.equal(solution.first, ![1, 3, 7, 15, 31].includes(board.n), boardKey(board));
+    if (!solution.first) seconds.add(board.n);
+  }
+  assert.deepEqual([...seconds].sort((a, b) => a - b), [7, 15]);
+  assert.equal(rungOf(6).second, 1 / 3);
+  const rate = firstRate(6);
+  assert.ok(rate > 0.58 && rate < 0.75, `먼저 두는 쪽이 이기는 판 ${rate}`);
+});
+
+test('7단계: 두 더미에서 같은 수도. 더미마다 1~9개. 나중에 두는 쪽이 이기는 판은 여섯 가지뿐이라 셋에 하나쯤으로 낸다', () => {
+  const made = boards(7);
+  const losing = ['1-2', '2-1', '3-5', '5-3', '4-7', '7-4'];
+  const seconds = new Set();
+  for (const { board, solution } of made) {
+    assert.equal(board.kind, 'both');
+    assert.equal(board.piles.length, 2);
+    for (const count of board.piles) assert.ok(count >= 1 && count <= 9, `더미에 ${count}개`);
+    assert.equal(solution.first, !losing.includes(board.piles.join('-')), boardKey(board));
+    if (!solution.first) seconds.add(board.piles.join('-'));
+  }
+  // 여섯 가지가 모두 나온다.
+  assert.deepEqual([...seconds].sort(), [...losing].sort());
+  assert.equal(rungOf(7).second, 1 / 3);
+  const rate = firstRate(7);
+  assert.ok(rate > 0.58 && rate < 0.75, `먼저 두는 쪽이 이기는 판 ${rate}`);
+});
+
 test('단계마다 처음 여섯 판 안에 두 가지 판(먼저가 이기는 판, 나중이 이기는 판)이 모두 나온다', () => {
   for (let level = 1; level <= TOP_LEVEL; level++) {
     const seen = new Set(boards(level, 6).map((made) => made.solution.first));
@@ -168,6 +218,12 @@ test('아이가 아무렇게나 두었을 때(이기는 쪽을 골랐다고 하�
   for (const level of [2, 3, 4]) {
     const rate = mean(level);
     assert.ok(rate > 0.02 && rate < 0.2, `${level}단계 ${rate.toFixed(3)}`);
+  }
+  // 5~7단계도 드물다. 약수 빼기는 짝수 개에서 홀수인 약수(1은 늘 있다)를 고르면 되는 수가 많아서 조금 더 자주 이긴다.
+  const later = { 5: [0.15, 0.3], 6: [0.08, 0.2], 7: [0.1, 0.22] };
+  for (const [level, [low, high]] of Object.entries(later)) {
+    const rate = mean(Number(level));
+    assert.ok(rate > low && rate < high, `${level}단계 ${rate.toFixed(3)}`);
   }
   // 지는 쪽을 고르면 어느 단계에서나 0이다.
   for (let level = 1; level <= TOP_LEVEL; level++) {

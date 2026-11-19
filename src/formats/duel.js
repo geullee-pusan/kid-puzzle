@@ -5,6 +5,9 @@
 // 선생님(컴퓨터)과 번갈아 둔다. 어느 게임이든 마지막 수를 둔 쪽이 이긴다.
 // 판의 종류(mode)는 게임이다.
 //   choco  초콜릿 쪼개기(1단계)   one  한 더미(2단계)   two  두 더미(3단계)   three  세 더미(4단계)
+//   divisor  약수 빼기(5단계)   half  절반까지 가져가기(6단계)   both  두 더미에서 같은 수도(7단계)
+// 약수 빼기와 절반까지는 돌이 1개 남으면 끝난다. 차례마다 가져갈 수 있는 수를 답하는 칸에 적고, 가져갈 수 없는 돌은 판에서 흐리게 둔다.
+// 두 더미에서 같은 수도는 답하는 칸의 "둘 다에서"를 누르고 돌을 고르면 두 더미에서 같은 수만큼 골라진다.
 // 이 형식의 답은 "먼저 둘래요 / 나중에 둘래요"라는 고르기다. 형식의 맨 첫 판만 고르기 없이 아이가 먼저 둔다.
 // 판이 끝나면 누가 마지막 수를 두었는지를 사실로만 말한다. 몇 번 이기고 졌는지는 세어 보여 주지 않는다.
 // 선생님은 자기 차례에 잠깐 뜸을 들이고 둔다. 무엇을 두었는지는 판(방금 생긴 조각, 방금 가져간 돌의 자리)과 말로 보인다.
@@ -12,8 +15,32 @@
 // 작은 판으로 두어 보는 일은 틀의 "더 작은 판으로"가 맡는다(예전에는 이 형식만의 도구 단추였다).
 //   같은 게임의 가장 작은 판을 작은 것부터 차례로 낸다. 작은 판도 판 하나라서 먼저 둘지 고르고 끝까지 둔다.
 import T from '../content/duel.json';
-import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../core/duel-ladder.js';
-import { GAMES, LIMITS, WHY_AFTER, applyMove, checkBoard, copyBoard, finishedCount, gameOf, isOver, isWin, lostStreak, movesOf, otherOf, replay, slipsOf, solve, startState, teacherMove, turnOf, whyOpen } from '../core/duel.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, opensFixed, rungOf } from '../core/duel-ladder.js';
+import {
+  GAMES,
+  LIMITS,
+  WHY_AFTER,
+  applyMove,
+  checkBoard,
+  copyBoard,
+  finishedCount,
+  gameOf,
+  isHeap,
+  isOver,
+  isWin,
+  keepsLast,
+  lostStreak,
+  movesOf,
+  otherOf,
+  replay,
+  slipsOf,
+  solve,
+  startState,
+  takesOf,
+  teacherMove,
+  turnOf,
+  whyOpen,
+} from '../core/duel.js';
 import { smallerDuel } from '../core/smaller.js';
 import { fill, ordinal } from '../core/text.js';
 import { drawGame, gameCard, marksCard, tableCard } from '../ui/duel-board.js';
@@ -27,6 +54,10 @@ const BLANK = { kind: 'choco', w: 3, h: 2 };
 /** 직접 만들기의 처음 값. 게임을 바꿔도 다른 게임에서 정해 둔 수는 그대로 남는다 */
 const FIRST_DRAFT = { game: 'choco', w: 3, h: 3, n: 7, max: 2, count: 2, piles: [3, 3, 3] };
 const DRAFT_GAMES = ['choco', 'one', 'piles'];
+/** 직접 만든 판의 꼴(직접 만들기에서 고를 수 있는 게임) */
+const DRAFT_KINDS = ['choco', 'one', 'piles'];
+/** 풀이에 붙이는 표(약수 빼기, 절반까지)에서 한 줄에 놓는 칸의 수(임시) */
+const SOLUTION_PER = 8;
 /** 연달아 이만큼 지면 자리를 바꿔 보기를 권한다(임시) */
 const SWAP_INVITE_AFTER = 2;
 
@@ -40,29 +71,56 @@ export function createDuel(frame) {
   let timer = null; // 선생님이 뜸을 들이는 중이면 그 타이머
   let preset = null; // 자리를 바꿔서 다시 둘 때, 새 판에 미리 정해 줄 것 { first, rematchOf }
   let draft = null; // 직접 만들기에서 만들던 판
+  let together = false; // 두 더미에서 같은 수도: "둘 다에서"를 눌러 두었는가
 
-  const kindOf = (board) => (board.kind === 'choco' ? 'choco' : 'stones');
+  /** 끝났을 때 하는 말의 꼴: 초콜릿, 마지막 돌을 가져가는 게임, 돌이 1개 남는 게임 */
+  const kindOf = (board) => (board.kind === 'choco' ? 'choco' : keepsLast(board) ? 'rest' : 'stones');
   const count = (value) => Number.isInteger(value) && value >= 0;
 
   /** 판의 이름: "가로 3칸, 세로 2칸", "돌 7개", "3개와 5개" */
   function nameOf(board) {
     if (board.kind === 'choco') return fill(T.names.choco, { w: board.w, h: board.h });
-    if (board.kind === 'one') return fill(T.names.one, { n: board.n });
+    if (isHeap(board)) return fill(T.names.one, { n: board.n });
     const [a, b, c] = board.piles;
-    return fill(T.names[gameOf(board)], { a, b, c });
+    return fill(T.names[board.piles.length === 2 ? 'two' : 'three'], { a, b, c });
   }
+
+  /** 수를 말로 적는 꼴: 초콜릿, 한 더미(돌이 1개 남는 게임도), 여러 더미, 두 더미에서 같은 수만큼 */
+  const textKind = (board, move) => (board.kind === 'choco' ? 'choco' : move.pile === 'both' ? 'both' : isHeap(board) ? 'one' : 'piles');
 
   /** 수 하나를 말로: 누가(kid | teacher) 무엇을 두었는가. set은 대본의 한 묶음(status, play, replay) */
   function moveText(set, who, board, move, more = {}) {
-    return fill(set[`${who}-${board.kind}`], { ...more, n: move.take ?? 0, pile: T.piles[move.pile ?? 0] });
+    return fill(set[`${who}-${textKind(board, move)}`], { ...more, n: move.take ?? 0, pile: T.piles[move.pile] ?? '' });
   }
 
   const labelsOf = (board) => ({
     line: (index, dir, at) => fill(T.labels[`line-${dir}`], { no: ordinal(index + 1), at: ordinal(at) }),
-    stone: (pile, take) => (board.kind === 'one' ? fill(T.labels['stone-one'], { n: take }) : fill(T.labels['stone-piles'], { pile: T.piles[pile], n: take })),
-    pile: (pile) => (board.kind === 'one' ? '' : fill(T.labels.pile, { pile: T.piles[pile] })),
+    stone: (pile, take) => {
+      if (isHeap(board)) return fill(T.labels['stone-one'], { n: take });
+      // 둘 다에서를 눌러 두었으면 그 돌을 누를 때 두 더미에서 같은 수만큼 골라진다고 읽어 준다.
+      return together ? fill(T.labels['stone-both'], { n: take }) : fill(T.labels['stone-piles'], { pile: T.piles[pile], n: take });
+    },
+    pile: (pile) => (isHeap(board) ? '' : fill(T.labels.pile, { pile: T.piles[pile] })),
     count: (n) => fill(T.labels.count, { n }),
   });
+
+  /** 골라 둔 돌을 말로 */
+  function pickText(board, picked) {
+    if (picked === null) return T.pick.none;
+    if (picked.pile === 'both') return fill(T.pick.both, { n: picked.take });
+    return fill(T.pick[isHeap(board) ? 'one' : 'piles'], { n: picked.take, pile: T.piles[picked.pile] });
+  }
+
+  /** 지금 가져갈 수 있는 돌의 수를 말로(돌이 1개 남는 게임에만 적는다) */
+  function allowText(board, state) {
+    const takes = takesOf(board, state[0]);
+    if (board.kind === 'divisor') return fill(T.allow.divisor, { list: takes.join(', ') });
+    // 2개나 3개가 남으면 1개만 가져갈 수 있다("1개부터 1개까지"라고 하지 않는다).
+    return takes.length === 1 ? T.allow['half-one'] : fill(T.allow.half, { k: takes.at(-1) });
+  }
+
+  /** 이 돌을 누르면 고르게 되는 수(둘 다에서를 눌러 두었으면 두 더미에서 같은 수만큼) */
+  const pickOf = (pile, take) => (together ? { pile: 'both', take } : { pile, take });
 
   /** 방금 둔 수의 자국: 초콜릿은 방금 생긴 두 조각, 돌은 방금 가져간 돌 */
   const freshOf = (board, move) => (!move ? null : board.kind === 'choco' ? [move.piece, move.piece + 1] : { pile: move.pile, take: move.take });
@@ -78,6 +136,7 @@ export function createDuel(frame) {
   function forget() {
     pick = null;
     flash = null;
+    together = false;
     clearTimer();
   }
 
@@ -102,10 +161,15 @@ export function createDuel(frame) {
     const mine = live && turnOf(game.first, game.trail.length) === 'kid';
     const stones = board.kind !== 'choco';
     if (!mine) pick = null;
+    // 둘 다에서는 두 더미에 다 돌이 있을 때만 누를 수 있다.
+    const pair = board.kind === 'both' && Math.min(...played.state) > 0;
+    if (!pair) together = false;
 
     drawGame($('duel-board'), {
       ...viewOf(board, game.trail),
       pick,
+      // 가져갈 수 없는 돌은 흐리게 둔다(돌이 1개 남는 게임과 둘 다에서를 눌러 둔 때)
+      allowed: mine && (keepsLast(board) || together) ? (pile, take) => applyMove(board, played.state, pickOf(pile, take)) !== null : undefined,
       onLine: mine && !stones ? (move) => play('kid', move) : undefined,
       onStone: mine && stones ? tapStone : undefined,
     });
@@ -118,8 +182,14 @@ export function createDuel(frame) {
       $('duel-turn').textContent = T.turn[mine ? 'kid' : 'teacher'];
       $('duel-choco-note').hidden = stones;
       $('duel-stones-box').hidden = !stones;
-      $('duel-pick-line').textContent = pick === null ? T.pick.none : fill(T.pick[board.kind], { n: pick.take, pile: T.piles[pick.pile] });
+      $('duel-pick-line').textContent = pickText(board, pick);
       $('duel-take').disabled = pick === null;
+      $('duel-allow-line').hidden = !keepsLast(board);
+      if (keepsLast(board)) $('duel-allow-line').textContent = allowText(board, played.state);
+      $('duel-both').hidden = board.kind !== 'both';
+      $('duel-both-note').hidden = board.kind !== 'both';
+      $('duel-both').disabled = !mine || !pair;
+      $('duel-both').setAttribute('aria-pressed', String(together));
     }
 
     // 끝난 뒤 고르기에 이 형식만의 것 둘을 더한다. 진 판 뒤에는 "자리를 바꿔서 다시 두기"를 맨 위에 둔다.
@@ -167,6 +237,7 @@ export function createDuel(frame) {
     game.trail = [...game.trail, move];
     pick = null;
     flash = null;
+    together = false;
     const over = isOver(game.board, next);
 
     frame.note('move', { by: who, turn: game.trail.length, ...move });
@@ -198,16 +269,34 @@ export function createDuel(frame) {
     frame.say(T.play[first === 'kid' ? 'picked-first' : 'picked-second']);
   }
 
-  /** 돌을 눌렀다: 그 돌부터 맨 위의 돌까지를 골라 둔다. 같은 돌을 다시 누르면 고른 것을 푼다. */
+  /**
+   * 돌을 눌렀다: 그 돌부터 맨 위의 돌까지를 골라 둔다(둘 다에서를 눌러 두었으면 두 더미에서 같은 수만큼). 같은 돌을 다시 누르면 고른 것을 푼다.
+   * 가져갈 수 없는 수면 골라지지 않고, 판 아래에 그 사실을 적는다.
+   */
   function tapStone(pile, take) {
-    const { board } = frame.round;
-    if (board.kind === 'one' && take > board.max) {
+    const { board, trail } = frame.round;
+    const state = replay(board, trail).state;
+    const want = pickOf(pile, take);
+    if (applyMove(board, state, want) === null) {
       pick = null;
-      flash = fill(T.status['over-max'], { k: board.max });
+      if (want.pile === 'both') flash = fill(T.status['over-both'], { k: Math.min(...state) });
+      else if (board.kind === 'one') flash = fill(T.status['over-max'], { k: board.max });
+      else if (board.kind === 'half') flash = fill(T.status['over-max'], { k: Math.floor(state[0] / 2) });
+      else flash = fill(T.status['not-take'], { n: take });
     } else {
       flash = null;
-      pick = pick !== null && pick.pile === pile && pick.take === take ? null : { pile, take };
+      pick = pick !== null && pick.pile === want.pile && pick.take === want.take ? null : want;
     }
+    draw();
+  }
+
+  /** "둘 다에서"를 누르거나 푼다. 골라 둔 돌은 푼다. */
+  function toggleTogether() {
+    const { round } = frame;
+    if (!round || round.done || round.board.kind !== 'both') return;
+    together = !together;
+    pick = null;
+    flash = null;
     draw();
   }
 
@@ -291,15 +380,18 @@ export function createDuel(frame) {
     );
   }
 
-  /** 수마다 "차례가 오면 이기는 수인지 지는 수인지"를 적은 줄. 승패는 풀이 프로그램이 따진다 */
+  /**
+   * 수마다 "차례가 오면 이기는 수인지 지는 수인지"를 적은 줄. 승패는 풀이 프로그램이 따진다.
+   * marks.game이 적혀 있으면 그 게임(약수 빼기, 절반까지)의 판이고, 없으면 한 번에 marks.max개까지 가져가는 한 더미다.
+   */
   function marksOf(marks) {
     const cells = Array.from({ length: marks.upto }, (_, index) => {
-      const board = { kind: 'one', n: index + 1, max: marks.max };
+      const board = marks.game ? { kind: marks.game, n: index + 1 } : { kind: 'one', n: index + 1, max: marks.max };
       const win = isWin(board, startState(board));
       return { no: String(index + 1), text: T.marks[win ? 'win' : 'lose'], marked: !win };
     });
-    // 한 줄에 (한 번에 가져갈 수 있는 수 + 1)칸씩 놓는다.
-    return marksCard({ note: marks.note, per: marks.max + 1, cells });
+    // 한 줄에 적어 둔 칸의 수만큼(한 더미는 한 번에 가져갈 수 있는 수 + 1칸씩) 놓는다.
+    return marksCard({ note: marks.note, per: marks.per ?? marks.max + 1, cells });
   }
 
   /**
@@ -322,9 +414,33 @@ export function createDuel(frame) {
     }));
   }
 
-  /** 풀이: 잘 두었을 때 어느 쪽이 이기는지를 알려 준다. */
+  /** 두 더미에서 같은 수도: 더미마다 LIMITS.pile.max개까지에서 차례가 오면 지는 두 더미(작은 더미부터). 풀이 프로그램이 따진다 */
+  function losingPairs() {
+    const pairs = [];
+    for (let a = 1; a <= LIMITS.pile.max; a++) {
+      for (let b = a; b <= LIMITS.pile.max; b++) {
+        const board = { kind: 'both', piles: [a, b] };
+        if (!isWin(board, startState(board))) pairs.push([a, b]);
+      }
+    }
+    return pairs;
+  }
+
+  /**
+   * 풀이: 잘 두었을 때 어느 쪽이 이기는지를 알려 준다.
+   * 5~7단계의 게임에는 한 장을 더 붙인다. 약수 빼기와 절반까지는 1개부터 이 판의 돌의 수까지 "차례가 오면 이기는지"의 표,
+   * 두 더미에서 같은 수도는 차례가 오면 지는 두 더미의 표다. 모두 풀이 프로그램이 따진 것이다.
+   */
   function solutionPages(round, solution) {
-    return [{ say: T.solution[solution.winner], nodes: [rowOf([gameCard({ ...viewOf(round.board, []), counts: true }, nameOf(round.board), { big: true })])] }];
+    const { board } = round;
+    const pages = [{ say: T.solution[solution.winner], nodes: [rowOf([gameCard({ ...viewOf(board, []), counts: true }, nameOf(board), { big: true })])] }];
+    if (keepsLast(board)) {
+      pages.push({ say: T.solution.marks, nodes: [marksOf({ game: board.kind, upto: board.n, per: SOLUTION_PER, note: T.solution['marks-note'] })] });
+    } else if (board.kind === 'both') {
+      const rows = losingPairs().map((piles) => ({ marked: true, cells: [nameOf({ kind: 'both', piles }), T.marks.lose] }));
+      pages.push({ say: fill(T.solution.pairs, { k: LIMITS.pile.max }), get nodes() { return [tableCard(T.table.both, rows)]; } });
+    }
+    return pages;
   }
 
   // ---- 직접 만들기: 게임을 고르고 수를 정한다. ----
@@ -427,8 +543,18 @@ export function createDuel(frame) {
     if (board) frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
   }
 
+  /**
+   * 적어 둔 하던 판의 단계가 판과 맞는가. 만들어 낸 판은 그 단계의 게임이어야 한다.
+   * 직접 만든 판은 지금의 직접 만들기 단계(8단계)와, 5~7단계를 더하기 전의 직접 만들기 단계(5단계)를 모두 받는다.
+   */
+  const levelOk = (saved) => {
+    if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && DRAFT_KINDS.includes(saved.board.kind);
+    return Number.isInteger(saved.level) && saved.level >= LADDER[0].level && saved.level <= TOP_LEVEL && rungOf(saved.level).game === saved.mode;
+  };
+
   // ---- 단추 잇기 ----
   $('duel-first').addEventListener('click', () => choose('kid'));
+  $('duel-both').addEventListener('click', toggleTogether);
   $('duel-second').addEventListener('click', () => choose('teacher'));
   $('duel-take').addEventListener('click', takePicked);
   $('duel-swap').addEventListener('click', rematch);
@@ -491,6 +617,7 @@ export function createDuel(frame) {
     /** 기기에 적어 둔 하던 판이 이 형식의 판으로 쓸 수 있는 값인가 */
     valid(saved) {
       if (!GAMES.includes(saved.mode) || checkBoard(saved.board) !== null || gameOf(saved.board) !== saved.mode) return false;
+      if (!levelOk(saved)) return false;
       if (saved.first !== null && !SIDES.includes(saved.first)) return false;
       const played = replay(saved.board, saved.trail);
       // 끝난 판은 하던 판이 아니다. 먼저 두는 쪽을 정하기 전에는 둔 수가 없다.

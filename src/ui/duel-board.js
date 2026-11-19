@@ -1,7 +1,7 @@
 // 누가 이길까의 판을 그린다: 초콜릿 한 판(쪼개진 조각은 조금 벌어져 보인다)과 돌 더미.
 // 누를 수 있는 판과 보기만 하는 그림을 같은 모양으로 그린다.
 // 색만으로 알리지 않는다. 방금 쪼개진 조각에는 굵은 테두리를 두르고, 방금 가져간 돌의 자리는 점선 고리로 남기고,
-// 골라 둔 돌은 테두리를 굵게 하고 가운데에 점을 찍는다. 글자는 대본에서 받는다.
+// 골라 둔 돌은 테두리를 굵게 하고 가운데에 점을 찍는다. 지금 가져갈 수 없는 돌은 흐리게 하고 테두리를 점선으로 한다. 글자는 대본에서 받는다.
 // 초콜릿은 조각 안의 금을 누르면 그 금을 알려 주고, 돌은 누른 돌이 "그 더미에서 몇 개째인지"를 알려 준다.
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -102,12 +102,15 @@ function drawChoco(root, view) {
 /**
  * 돌 더미를 그린다. 더미마다 처음 돌의 수만큼 자리를 잡아 두어서, 돌을 가져가도 남은 돌이 움직이지 않는다.
  * 돌은 아래에서부터 쌓인다. 돌 하나를 누르면 그 돌부터 맨 위의 돌까지가 "가져갈 돌"이다.
+ * 두 더미에서 같은 수만큼 가져가는 수(pile이 'both')는 두 더미 모두에 자국을 남긴다.
  */
 function drawStones(root, view) {
   const { board, state, fresh = null, pick = null, small = false, counts = !small } = view;
   const live = Boolean(view.onStone);
-  const starts = board.kind === 'one' ? [board.n] : board.piles;
-  const per = board.kind === 'one' ? ONE_PER_ROW : 1;
+  // 한 더미로 두는 판(한 더미, 약수 빼기, 절반까지)은 돌의 수 n 하나, 여러 더미는 더미마다의 수
+  const heap = !Array.isArray(board.piles);
+  const starts = heap ? [board.n] : board.piles;
+  const per = heap ? ONE_PER_ROW : 1;
   const rowsOf = (start) => Math.ceil(start / per);
   root.className = `duel-game duel-stones${small ? ' small' : ''}${live ? ' live' : ''}`;
   root.style.setProperty('--rows', String(Math.max(...starts.map(rowsOf))));
@@ -122,15 +125,16 @@ function drawStones(root, view) {
       const take = left - index; // 이 돌을 누르면 가져가게 되는 돌의 수
       let stone;
       if (index < left) {
-        const picked = pick !== null && pick.pile === pile && take <= pick.take;
-        stone = el(live ? 'button' : 'span', picked ? 'duel-stone picked' : 'duel-stone');
+        const picked = pick !== null && (pick.pile === pile || pick.pile === 'both') && take <= pick.take;
+        const barred = !picked && live && view.allowed !== undefined && !view.allowed(pile, take);
+        stone = el(live ? 'button' : 'span', picked ? 'duel-stone picked' : barred ? 'duel-stone barred' : 'duel-stone');
         if (live) {
           stone.type = 'button';
           stone.setAttribute('aria-label', view.labels?.stone?.(pile, take) ?? '');
           stone.setAttribute('aria-pressed', String(picked));
           stone.addEventListener('click', () => view.onStone(pile, take));
         }
-      } else if (fresh !== null && !Array.isArray(fresh) && fresh.pile === pile && index < left + fresh.take) stone = el('span', 'duel-stone gone');
+      } else if (fresh !== null && !Array.isArray(fresh) && (fresh.pile === pile || fresh.pile === 'both') && index < left + fresh.take) stone = el('span', 'duel-stone gone');
       else stone = el('span', 'duel-slot');
       stone.style.gridRow = String(rowsOf(start) - Math.floor(index / per));
       stone.style.gridColumn = String((index % per) + 1);
@@ -154,10 +158,11 @@ function drawStones(root, view) {
  * 판을 그린다.
  * @param {HTMLElement} root 그릴 자리(안의 것을 모두 바꾼다)
  * @param {object} view
- *   board    판({ kind: 'choco', w, h } | { kind: 'one', n, max } | { kind: 'piles', piles })
+ *   board    판({ kind: 'choco', w, h } | { kind: 'one' | 'divisor' | 'half', n, … } | { kind: 'piles' | 'both', piles })
  *   state    지금 자리(초콜릿은 조각들, 돌은 더미마다 남은 수)
  *   fresh    방금 둔 수의 자국. 초콜릿은 방금 생긴 두 조각의 번호들, 돌은 { pile, take }(방금 가져간 돌)
- *   pick     골라 둔 돌 { pile, take }
+ *   pick     골라 둔 돌 { pile, take }(pile이 'both'면 두 더미에서 같은 수만큼)
+ *   allowed  (더미 번호, 몇 개) → 그 돌을 눌러 지금 가져갈 수 있는가. 적혀 있으면 가져갈 수 없는 돌을 흐리게 그린다
  *   labels   글자를 내주는 함수들: line(조각 번호, 'v'|'h', 몇째 금), stone(더미 번호, 몇 개), pile(더미 번호), count(돌의 수)
  *   counts   더미 아래에 이름과 남은 수를 적는가(작은 그림에서는 적지 않는다)
  *   onLine   (수) → 금을 눌렀을 때(초콜릿)

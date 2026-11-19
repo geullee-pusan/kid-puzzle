@@ -251,7 +251,7 @@ test('조각 덮기: 같은 조각, 한 단 작은 판. 뺀 칸의 수가 같고
 });
 
 test('누가 이길까: 같은 게임의 가장 작은 판들을 작은 것부터 차례로 낸다', () => {
-  const total = (board) => (board.kind === 'choco' ? board.w * board.h : board.kind === 'one' ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
+  const total = (board) => (board.kind === 'choco' ? board.w * board.h : 'n' in board ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
   eachBoard(duelLadder, (board, rung, where) => {
     const origin = { board };
     const list = smallBoards(board);
