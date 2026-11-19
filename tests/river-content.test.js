@@ -98,7 +98,7 @@ test('규칙 설명은 판의 종류마다 있고, 묻는 말까지 세 문장�
   assert.match(code, /const k = board\.kind === 'pets' \? board\.seats - 1 :/);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 17);
+  assert.equal(guides.length, 18);
   assert.ok(sentenceCount(guides[9]) <= 3, guides[9]);
   assert.match(guides[9], /아무리 해도 모두 건널 수 없는 판도 만들 수 있을까요\?$/);
   assert.equal(T.make.intro, '판의 종류를 고르고 수를 정해요. 다 정하면 선생님에게 풀어 보라고 할 수도 있어요.');

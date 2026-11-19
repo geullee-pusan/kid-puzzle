@@ -14,6 +14,8 @@ import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
 import { placeDown, solveOnce as solveCups } from './cups-ladder.js';
 import { smallBoards as smallLampBoards } from './lamps-ladder.js';
+import { smallBoards as smallMachineBoards } from './machine-ladder.js';
+import { checkBoard as checkMachine } from './machine.js';
 import { checkBoard as checkLamps } from './lamps.js';
 import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
 import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } from './dandelion.js';
@@ -525,4 +527,17 @@ export function smallerRooms(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms };
+// ---- 규칙 기계와 규칙이 깨지는 판: 칸이 적거나, 맞힐 칸이 가깝거나, 고를 수가 작거나, 점이 적거나, 더 일찍 깨지는 판 ----
+
+/**
+ * 같은 종류의 더 작은 판을 낸다(src/core/machine-ladder.js의 smallBoards). 채울 칸이 둘 적은 판, 넣을 수가 1~20인 판(넣은 수가 없는 판이면 없는 판),
+ * 맞힐 물음표가 하나인 상자, 30번째·25번째 칸, 고를 수의 끝이 작은 줄, 점이 하나 적은 원, 더 일찍 깨지는 차림표. 더 줄일 수 없으면 null이다.
+ * 이 형식에는 안 되는 판이 없어서(거꾸로 찾기의 "없는" 판도 답이 정해진 판이다) 차례대로 낸다.
+ */
+export function smallerMachine(origin, turn = 0) {
+  if (!origin.board || checkMachine(origin.board) !== null) return null;
+  const list = smallMachineBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine };

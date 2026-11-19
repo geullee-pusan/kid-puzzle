@@ -88,7 +88,7 @@ test('규칙 설명은 세 문장 안이고, 모든 방을 한 번씩 지나 끝
   // 형식이 판의 종류(직접 만든 판은 made)로 규칙 글을 고른다.
   assert.match(code, /const ruleKey = \(round\) => \(round\.custom \? 'made' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 17);
+  assert.equal(guides.length, 18);
   assert.ok(sentenceCount(guides[16]) <= 3, guides[16]);
   assert.match(guides[16], /아무리 해도 안 되는 집도 만들 수 있을까요\?$/);
 });
@@ -316,8 +316,8 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(part('id="rooms-judge-box"', 'id="lamps-pad"'), /id="rooms-judged"[^>]*>다 골랐어요</);
   assert.match(part('id="rooms-color"', 'id="rooms-colors"'), /id="rooms-color"[^>]*hidden>색 켜기</);
   assert.equal(T.tool.off, '색 켜기');
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 켜고 끄기와 숫자 마술 다음).
-  assert.match(read('src/main.js'), /lamps: createLamps\(frame\), rooms: createRooms\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 켜고 끄기와 숫자 마술 다음).
+  assert.match(read('src/main.js'), /lamps: createLamps\(frame\), rooms: createRooms\(frame\), /);
   assert.match(read('src/check-main.js'), /\['rooms', '방 한 번씩 돌기'\]/);
   // 켜질 때 앞의 형식(켜고 끄기와 숫자 마술 등)이 감춰 둔 무르기와 되돌리기를 보이게 한다.
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

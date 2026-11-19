@@ -301,7 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열여덟 장이라 가로 1280px에서 넉 장씩 다섯 줄이다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 방 한 번씩 돌기와 퍼즐 만들기).
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열아홉 장이라 가로 1280px에서 넉 장씩 다섯 줄이다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 방 한 번씩 돌기, 규칙 기계와 규칙이 깨지는 판, 퍼즐 만들기).
+   (카드가 열여덟 장일 때는 다섯째 줄에 방 한 번씩 돌기와 퍼즐 만들기였다.)
    (카드가 열일곱 장일 때는 다섯째 줄에 퍼즐 만들기 한 장이었다.)
    (카드가 열여섯 장일 때는 네 줄에 꼭 맞았다.)
    (카드가 열다섯 장일 때는 넷째 줄에 세 장이었다.)
@@ -6536,4 +6537,776 @@ button.rm-judge-card:focus-visible {
 
 .rooms-make-picture .rm-card > .rm-board {
   height: 180px;
+}
+
+/* ---- 규칙 기계와 규칙이 깨지는 판: 기계 그림, 칸의 줄, 넣은 수와 나온 수의 표, 원 위의 점과 조각, 차림표 ----
+   색만으로 알리지 않는다: 지금 채울 칸과 넣는 중인 칸, 맞힐 물음표 칸은 점선 테두리, 표시한 칸과 찾은 수는 동그라미,
+   앞 칸보다 작아진 칸은 아래쪽이 굵은 테두리, 작아지지 않은 칸은 빗금 한 줄, 점을 찍은 조각은 가운데의 점, 약수가 둘뿐이 아닌 수는 두 겹 테두리 */
+.board-area > #machine-board {
+  align-self: stretch;
+  display: flex;
+  align-items: safe center;
+  justify-content: safe center;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.mc-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+}
+
+/* 기계 그림: 넣는 곳 → 블록들 → 나오는 곳 */
+.mc-machine {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-width: 100%;
+  padding: 10px 10px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #f8f9fa;
+}
+
+.mc-example {
+  padding-top: 8px;
+}
+
+.mc-caption {
+  position: absolute;
+  top: -14px;
+  left: 14px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.mc-ins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mc-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.mc-slot-name {
+  color: var(--muted);
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.mc-slot-value {
+  display: grid;
+  place-items: center;
+  min-width: 70px;
+  height: 56px;
+  padding: 0 8px;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 28px;
+}
+
+.mc-slot.out .mc-slot-value {
+  border-style: double;
+  border-width: 5px;
+}
+
+.mc-arrow {
+  color: var(--muted);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.mc-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 300px;
+  min-height: 60px;
+  padding: 6px;
+  border: 3px dashed var(--bar);
+  border-radius: 12px;
+  background: #e6f4f1;
+}
+
+.mc-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border: 2px solid var(--bar);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  word-break: keep-all;
+}
+
+button.mc-chip {
+  min-height: 48px;
+  cursor: pointer;
+}
+
+.mc-chip.hidden {
+  min-width: 120px;
+  border-style: dashed;
+  font-size: 22px;
+}
+
+.mc-chip-value {
+  color: var(--bar);
+  font-size: 20px;
+}
+
+/* 칸의 줄: 칸 위에 번호, 칸 안에 수 */
+.mc-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mc-row.many {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  width: min(100%, 640px);
+  gap: 6px;
+}
+
+.mc-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  height: 72px;
+  padding: 0 4px;
+  border: 2px solid #adb5bd;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  user-select: none;
+}
+
+.mc-row.many .mc-cell {
+  min-width: 0;
+  height: 60px;
+  padding: 0;
+}
+
+button.mc-cell {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.mc-cell:focus-visible {
+  outline: 3px solid var(--gold);
+}
+
+.mc-no {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mc-value {
+  position: relative;
+  z-index: 1;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.mc-row.many .mc-value {
+  font-size: 21px;
+}
+
+.mc-cell.given {
+  background: #f1f3f5;
+}
+
+.mc-cell.done {
+  border-color: var(--good);
+  border-width: 3px;
+}
+
+/* 지금 채울 칸: 점선 테두리 */
+.mc-cell.active {
+  border: 3px dashed var(--bar);
+  background: #fff9db;
+}
+
+.mc-cell.blank {
+  border-style: dashed;
+  border-color: #ced4da;
+}
+
+/* 앞 칸보다 작아진 칸: 아래쪽이 굵은 테두리, 작아지지 않은 칸: 빗금 한 줄 */
+.mc-cell.fall {
+  border-color: var(--bar);
+  border-bottom-width: 6px;
+}
+
+.mc-cell.stop {
+  color: var(--muted);
+}
+
+.mc-cell.stop::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 55%;
+  border-top: 3px solid #495057;
+  transform: rotate(-35deg);
+}
+
+/* 표시한 칸: 동그라미 */
+.mc-cell.marked::before {
+  content: '';
+  position: absolute;
+  inset: 22% 6% 2%;
+  border: 3px solid var(--good);
+  border-radius: 50%;
+}
+
+/* 맞힐 칸 */
+.mc-target {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.mc-target.live {
+  border-style: dashed;
+  background: #fff9db;
+}
+
+.mc-target-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.mc-target-value {
+  min-width: 2ch;
+  font-size: 36px;
+  text-align: center;
+}
+
+.mc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* 찾은 수: 동그라미 친 수들 */
+.mc-found {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mc-found-title {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.mc-found-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 48px;
+}
+
+.mc-found-n {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 6px;
+  border: 3px solid var(--good);
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* 넣어 본 수와 나온 수의 짝들 */
+.mc-tries {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 640px;
+}
+
+.mc-try {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 20px;
+}
+
+.mc-try.hit {
+  border: 3px solid var(--good);
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.mc-try-arrow {
+  color: var(--muted);
+}
+
+/* 표 */
+.mc-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+}
+
+.mc-tr {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(80px, 1fr);
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+
+.mc-tr.head {
+  min-height: 0;
+  background: none;
+  color: var(--muted);
+}
+
+.mc-td {
+  padding: 4px 8px;
+  font-size: 22px;
+  white-space: nowrap;
+}
+
+.mc-tr.head .mc-td {
+  font-size: 18px;
+}
+
+.mc-tr.shown {
+  border-color: #dee2e6;
+}
+
+button.mc-tr {
+  min-height: 52px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mc-tr.ask {
+  border: 3px dashed var(--bar);
+  background: #fff9db;
+}
+
+.mc-tr.picked {
+  border: 4px solid var(--bar);
+  background: #fff3bf;
+}
+
+.mc-tr.right {
+  border: 3px solid var(--good);
+}
+
+.mc-tr.broken {
+  border: 5px double #c92a2a;
+}
+
+/* 원 위의 점과 모든 선, 조각 */
+.mc-circle-play {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+}
+
+.mc-circle-side {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.mc-circle {
+  display: block;
+  flex: none;
+  width: min(100%, 64cqh, 470px);
+  height: auto;
+  aspect-ratio: 1;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mc-disk {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 0.02;
+}
+
+.mc-piece {
+  fill: transparent;
+  stroke: none;
+}
+
+.mc-circle.live .mc-piece {
+  cursor: pointer;
+}
+
+.mc-piece:focus-visible {
+  outline: none;
+  fill: rgba(252, 196, 25, 0.35);
+}
+
+/* 점을 찍은 조각: 옅은 색과 가운데의 점(색만으로 알리지 않는다) */
+.mc-piece.marked {
+  fill: rgba(43, 138, 62, 0.16);
+}
+
+.mc-piece.fresh {
+  fill: rgba(252, 196, 25, 0.45);
+}
+
+.mc-chord {
+  stroke: var(--bar);
+  stroke-width: 0.012;
+  pointer-events: none;
+}
+
+.mc-chord.strong {
+  stroke: #e8590c;
+  stroke-width: 0.03;
+}
+
+.mc-mark {
+  fill: var(--good);
+  pointer-events: none;
+}
+
+.mc-cross {
+  fill: #fff;
+  stroke: #e8590c;
+  stroke-width: 0.02;
+  pointer-events: none;
+}
+
+.mc-point {
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+.mc-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.mc-count-label {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.mc-count-value {
+  font-size: 40px;
+  line-height: 1;
+}
+
+/* 컴퓨터가 넣어 본 칸들: 칸마다 넣은 수(위)와 나온 수(아래) */
+.mc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 6px;
+  width: min(100%, 760px);
+}
+
+.mc-gcell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 56px;
+  padding: 2px;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+button.mc-gcell {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mc-gcell.checked {
+  border-color: var(--bar);
+}
+
+.mc-gcell.found {
+  border: 5px double #c92a2a;
+}
+
+.mc-gin {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.mc-gout {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* 판 화면과 만들기의 넣는 칸: 두 수 기계의 처음 두 칸. 지금 넣는 칸은 점선 테두리 */
+.mc-pair-line {
+  display: flex;
+  gap: 10px;
+}
+
+.mc-slot-btn {
+  flex: 1;
+  min-height: 64px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 34px;
+  cursor: pointer;
+}
+
+.mc-slot-btn[aria-pressed='true'] {
+  border: 4px dashed var(--bar);
+  background: #fff9db;
+}
+
+/* 직접 만들기의 블록 단추: 이름이 길면 두 줄로 */
+.mc-ops .btn {
+  min-height: 56px;
+  padding: 6px 4px;
+  font-size: 18px;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.mc-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.mc-figure .mc-circle {
+  width: min(230px, 100%);
+}
+
+.mc-figure .mc-row.many {
+  width: min(560px, 100%);
+}
+
+.mc-figure .strip-note {
+  text-align: center;
+}
+
+/* 작은 그림(처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책): 글자를 적지 않고 모양만 그린다 */
+.mc-play.small {
+  gap: 6px;
+}
+
+.mc-play.small .mc-machine {
+  gap: 4px;
+  padding: 3px 4px;
+  border-width: 1px;
+  border-radius: 6px;
+}
+
+.mc-play.small .mc-example {
+  padding-top: 0;
+}
+
+.mc-play.small .mc-caption,
+.mc-play.small .mc-slot-name,
+.mc-play.small .mc-chip-value,
+.mc-play.small .mc-no,
+.mc-play.small .mc-value,
+.mc-play.small .mc-target-title,
+.mc-play.small .mc-td,
+.mc-play.small .mc-found,
+.mc-play.small .mc-arrow,
+.mc-play.small .mc-tries,
+.mc-play.small .mc-gin,
+.mc-play.small .mc-gout {
+  display: none;
+}
+
+.mc-play.small .mc-slot-value {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 4px;
+  font-size: 0;
+}
+
+.mc-play.small .mc-body {
+  min-height: 0;
+  max-width: none;
+  padding: 2px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+
+.mc-play.small .mc-chip {
+  width: 22px;
+  min-width: 0;
+  height: 12px;
+  padding: 0;
+  border-width: 2px;
+  font-size: 0;
+}
+
+.mc-play.small .mc-row,
+.mc-play.small .mc-row.many {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  gap: 3px;
+}
+
+.mc-play.small .mc-cell {
+  min-width: 0;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 3px;
+}
+
+.mc-play.small .mc-cell.marked::before {
+  inset: -3px;
+  border-width: 2px;
+}
+
+.mc-play.small .mc-cell.fall {
+  border-bottom-width: 4px;
+}
+
+.mc-play.small .mc-cell.stop::after {
+  border-top-width: 2px;
+}
+
+.mc-play.small .mc-target {
+  padding: 2px 6px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+
+.mc-play.small .mc-target-value {
+  font-size: 18px;
+}
+
+.mc-play.small .mc-table {
+  min-width: 0;
+  gap: 2px;
+}
+
+.mc-play.small .mc-tr {
+  grid-auto-columns: 22px;
+  min-height: 8px;
+  border-width: 2px;
+  border-radius: 3px;
+}
+
+.mc-play.small .mc-tr.head {
+  display: none;
+}
+
+.mc-play.small .mc-circle {
+  width: min(100cqw, 100cqh, 120px);
+}
+
+/* 판 화면의 숫자판: 단추가 많은 판(거꾸로 찾기, 차림표)에서도 오른쪽 칸에 다 들어가게 조금 낮게 */
+.mc-keys .key {
+  min-height: 50px;
+}
+
+/* 판 고르기의 원 그림은 칸이 낮아서 작게 */
+.level-picture .mc-play.small .mc-circle {
+  width: 72px;
+}
+
+/* 원을 세는 판: 표는 위에 옆으로 눕혀 좁게, 원은 남은 자리를 다 쓴다 */
+.mc-circle-side .mc-table {
+  min-width: 0;
+}
+
+.mc-circle-side .mc-tr {
+  grid-auto-columns: minmax(40px, auto);
+  min-height: 36px;
+}
+
+.mc-circle-side .mc-td {
+  padding: 2px 6px;
+  font-size: 20px;
+}
+
+.mc-circle-play > .mc-circle {
+  width: min(100cqw, calc(100cqh - 160px), 520px);
+}
+
+/* 원을 세는 판: 점을 찍은 조각의 수는 표 옆에 위아래로 */
+.mc-circle-side .mc-count {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 140px;
+  text-align: center;
 }
