@@ -18,7 +18,9 @@ import { boxBoards } from '../src/core/logic-ladder.js';
 import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } from '../src/core/logic.js';
 import * as blockLadder from '../src/core/block-ladder.js';
 import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from '../src/core/block.js';
-import { BLOCK_SHRINK, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, smallBlockBoards, smallerBlock, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import { BLOCK_SHRINK, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import * as riverLadder from '../src/core/river-ladder.js';
+import { castOf as riverCast, checkBoard as checkRiver } from '../src/core/river.js';
 import * as swapLadder from '../src/core/swap-ladder.js';
 import { checkBoard as checkSwap, solve as solveSwap } from '../src/core/swap.js';
 import * as taxLadder from '../src/core/tax-ladder.js';
@@ -31,7 +33,7 @@ import { checkFigure, fixesOf, isTidy, solve as solveTrace } from '../src/core/t
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Array.from({ length: 100 }, (_, index) => index + 1);
 const TURNS = [0, 1, 2, 3];
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river'];
 
 /** 사다리의 판마다(단계마다 판 번호 1~100) 일을 시킨다. */
 function eachBoard(ladder, visit) {
@@ -370,6 +372,42 @@ test('조각 못 들어가게 막기: 같은 조각, 칸 수가 절반 이하인
   assert.equal(smallerBlock({ board: null }), null);
 });
 
+test('강 건너기: 같은 종류에서 동물을 줄인 판. 배와 섬은 같고, 되는 판에서는 되는 판만 낸다', () => {
+  // 같은 판을 여러 번 풀지 않게 사다리의 적어 두는 풀이를 쓴다(풀이 프로그램 자체는 tests/river.test.js가 다른 방법과 견준다).
+  const solveRiver = riverLadder.solveOnce;
+  assert.equal(RIVER_FLOOR, 2);
+  let none = 0;
+  eachBoard(riverLadder, (board, rung, where) => {
+    const possible = solveRiver(board).possible;
+    for (const turn of TURNS) {
+      const small = smallerRiver({ mode: rung.mode, board }, turn);
+      if (!small) {
+        none += 1;
+        continue;
+      }
+      assert.equal(checkRiver(small.board), null, where);
+      assert.equal(small.board.kind, board.kind, where);
+      assert.ok(riverCast(small.board).length < riverCast(board).length, `${where}: 동물이 적다`);
+      if (board.kind !== 'weight') assert.equal(small.board.seats, board.seats, where);
+      if (board.kind === 'pairs') assert.equal(small.board.island, board.island, where);
+      if (board.kind === 'pets') assert.ok(small.board.pets.every((pet) => board.pets.includes(pet)), where);
+      const solved = solveRiver(small.board);
+      if (possible) assert.equal(solved.possible, true, `${where}: 되는 판에서는 되는 판만`);
+      if (solved.possible) assert.ok(solved.min >= 2, `${where}: 한 번에 끝나는 판`);
+      assert.deepEqual(smallerRiver({ mode: rung.mode, board }, turn), small, `${where}: 같은 판에서는 같은 작은 판`);
+    }
+  });
+  // 가장 작은 판(코끼리 하나와 생쥐 하나, 생쥐 둘, 엄마와 아기 두 쌍)에는 더 작은 판이 없다.
+  assert.ok(none > 0);
+  assert.equal(smallerRiver({ board: { kind: 'weight', heavy: 1, light: 2 } }), null);
+  assert.equal(smallerRiver({ board: { kind: 'pairs', pairs: 2, seats: 2, island: false } }), null);
+  // 안 되는 판(둘이 타는 배의 다섯 쌍)에서는 되는 판부터, 안 되는 판과 번갈아 낸다.
+  const five = { kind: 'pairs', pairs: 5, seats: 2, island: false };
+  assert.deepEqual([0, 1, 2].map((turn) => smallerRiver({ board: five }, turn).board.pairs), [3, 4, 2]);
+  assert.deepEqual(smallRiverBoards(five).map((board) => board.pairs), [4, 3, 2]);
+  assert.equal(smallerRiver({ board: null }), null);
+});
+
 test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은 작은 판에서 이 단추를 내지 않는다)', () => {
   // 숫자 추리의 작은 판은 가장 작은 판이다. 다른 형식도 한두 단이면 바닥에 닿는다.
   const chain = (name, origin) => {
@@ -389,4 +427,5 @@ test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은
   assert.ok(chain('duel', { board: { kind: 'piles', piles: [8, 8] } }) <= 3);
   assert.equal(chain('logic', { board: logicLadder.generateBoard(3, 1).board }), 2);
   assert.ok(chain('block', { board: blockLadder.generateBoard(4, 6).board }) <= 3);
+  assert.equal(chain('river', { board: riverLadder.generateBoard(5, 3).board }), 4);
 });

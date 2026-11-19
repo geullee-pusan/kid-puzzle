@@ -16,6 +16,8 @@ import { checkBoard as checkDuel, smallBoards } from './duel.js';
 import { boxBoards, smallFolkBoards } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
 import { createRng, randInt, seedFrom } from './rng.js';
+import { solveOnce as solveRiver } from './river-ladder.js';
+import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
 import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
 import { MIN_SIZE, checkBoard as checkTile, deadCells, solve as solveTile, xyOf } from './tile.js';
@@ -336,4 +338,42 @@ export function smallerBlock(origin, turn = 0) {
   return list.length > 0 ? { board: list[turn % list.length] } : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock };
+// ---- 강 건너기: 같은 종류의 판에서 동물을 줄인 판(코끼리나 생쥐를 줄이고, 할머니와 함께 건너는 동물을 빼고, 엄마와 아기를 한 쌍씩 줄인다) ----
+
+/**
+ * 원래 판보다 동물이 적은 같은 종류의 판들. 배는 같다(엄마와 아기는 섬도 같다).
+ * 배를 한 번만 보내면 끝나는 판은 뺀다. 원래 판에 가까운 것(동물이 많은 것)부터 줄 세운다.
+ */
+export function smallRiverBoards(board) {
+  const found = [];
+  if (board.kind === 'weight') {
+    for (let heavy = board.heavy; heavy >= 1; heavy--) {
+      for (let light = board.light; light >= 1; light--) {
+        if (heavy + light < board.heavy + board.light) found.push({ kind: 'weight', heavy, light });
+      }
+    }
+  } else if (board.kind === 'pets') {
+    for (let mask = 1; mask < 1 << board.pets.length; mask++) {
+      const pets = board.pets.filter((_, index) => mask & (1 << index));
+      if (pets.length < board.pets.length) found.push({ kind: 'pets', pets, seats: board.seats });
+    }
+  } else {
+    for (let pairs = board.pairs - 1; pairs >= RIVER_FLOOR; pairs--) found.push({ kind: 'pairs', pairs, seats: board.seats, island: board.island });
+  }
+  const size = (item) => castOfRiver(item).length;
+  return found
+    .filter((item) => checkRiver(item) === null && (solveRiver(item).min ?? 2) >= 2)
+    .sort((a, b) => size(b) - size(a) || JSON.stringify(a).localeCompare(JSON.stringify(b)));
+}
+
+/** 엄마와 아기 판의 작은 판은 두 쌍까지 줄인다 */
+export const RIVER_FLOOR = 2;
+
+export function smallerRiver(origin, turn = 0) {
+  if (!origin.board || checkRiver(origin.board) !== null) return null;
+  const lists = { yes: [], no: [] };
+  for (const board of smallRiverBoards(origin.board)) lists[solveRiver(board).possible ? 'yes' : 'no'].push(board);
+  return wrap(pickByTurn(lists, solveRiver(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver };
