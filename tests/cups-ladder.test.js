@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf, solveOnce } from '../src/core/cups-ladder.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf, solveOnce } from '../src/core/cups-ladder.js';
 import { applyMove, checkBoard, downCount, invariantRulesOut, isDone, replay, solve, startItems } from '../src/core/cups.js';
 import { COLORS_FLOOR, SMALLER, smallCupsBoards, smallerCups } from '../src/core/smaller.js';
 import { bruteOf } from './helpers/brute-cups.js';
@@ -13,19 +13,19 @@ const playing = LADDER.filter((rung) => rung.mode !== 'make');
 const madeAll = (level) => rungOf(level).boards.map((_, index) => generateBoard(level, index + 1));
 const size = (board) => (board.kind === 'cups' ? board.n : board.counts.reduce((sum, count) => sum + count, 0));
 
-test('사다리: 여섯 단계이고 표시는 기본·응용·응용·도전·도전·도전, 맨 위는 직접 만들기', () => {
-  assert.deepEqual(LADDER.map((rung) => rung.level), [1, 2, 3, 4, 5, 6]);
-  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'applied', 'applied', 'challenge', 'challenge', 'challenge']);
-  assert.deepEqual(LADDER.map((rung) => rung.mode), ['maybe', 'fewest', 'maybe', 'maybe', 'maybe', 'make']);
+test('사다리: 일곱 단계이고 표시는 기본·응용·응용·도전·도전·도전·도전, 맨 위는 직접 만들기', () => {
+  assert.deepEqual(LADDER.map((rung) => rung.level), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'applied', 'applied', 'challenge', 'challenge', 'challenge', 'challenge']);
+  assert.deepEqual(LADDER.map((rung) => rung.mode), ['maybe', 'fewest', 'maybe', 'maybe', 'maybe', 'maybe', 'make']);
   // 컵(익숙한 홀짝) → 컵, 가장 적게 → 세 색 무리(홀짝이 아닌 첫 열쇠) → 더 많이 → 섞어서
   assert.deepEqual(
     playing.map((rung) => [...new Set(rung.boards.map((entry) => entry[0]))]),
-    [['cups'], ['cups'], ['colors'], ['colors'], ['cups', 'colors']],
+    [['cups'], ['cups'], ['colors'], ['colors'], ['cups', 'colors'], ['merge']],
   );
-  assert.deepEqual(LADDER.map((rung) => rung.ask), ['cups', 'fewest', 'colors', 'colors', 'mixed', null]);
-  assert.equal(TOP_LEVEL, 5);
-  assert.equal(MAKE_LEVEL, 6);
-  assert.throws(() => rungOf(7));
+  assert.deepEqual(LADDER.map((rung) => rung.ask), ['cups', 'fewest', 'colors', 'colors', 'mixed', 'merge', null]);
+  // 1~5단계의 번호는 그대로이고, 직접 만들기는 6단계에서 7단계로 옮겼다(예전 번호는 OLD_MAKE_LEVEL로 받는다).
+  assert.deepEqual([TOP_LEVEL, MAKE_LEVEL, OLD_MAKE_LEVEL], [6, 7, 6]);
+  assert.throws(() => rungOf(8));
   assert.throws(() => generateBoard(MAKE_LEVEL, 1));
   assert.throws(() => nextSeed(9, 1));
 });
@@ -41,6 +41,7 @@ test('같은 번호는 늘 같은 판이고, 판마다 풀이 프로그램의 �
       // 차례에 적힌 대로: 컵 수, 한 번에 뒤집는 수, 엎어진 컵 수 / 세 색의 마릿수
       const entry = rung.boards[(seed - 1) % rung.boards.length];
       if (entry[0] === 'cups') assert.deepEqual([made.board.n, made.board.k, downCount(made.board.cups)], entry.slice(1), where);
+      else if (entry[0] === 'merge') assert.deepEqual([...made.board.counts, made.board.target], entry.slice(1), where);
       else assert.deepEqual(made.board.counts, entry.slice(1), where);
       const solved = solve(made.board);
       assert.deepEqual(made.solution, { possible: solved.possible, min: solved.min, moves: solved.moves }, where);
@@ -116,8 +117,8 @@ test('형식의 첫 판은 실패할 수 없다: 컵 넷이 모두 엎어진 판
   }
 });
 
-test('안 되는 판이 섞이는 단계(1, 3, 4, 5단계): 셋에 하나이고, 연달아 나오지 않고, 처음 만나는 판은 되는 판이다', () => {
-  for (const level of [1, 3, 4, 5]) {
+test('안 되는 판이 섞이는 단계(1, 3, 4, 5, 6단계): 셋에 하나이고, 연달아 나오지 않고, 처음 만나는 판은 되는 판이다', () => {
+  for (const level of [1, 3, 4, 5, 6]) {
     const made = madeAll(level);
     const impossible = made.filter((item) => !item.solution.possible);
     assert.equal(impossible.length * 3, made.length, `${level}단계`);
@@ -147,6 +148,7 @@ test('가장 적게(2단계)의 판은 모두 되는 판이다. 단계마다 가
   assert.deepEqual(mins(3), [2, 3, null, 3, null, 2]);
   assert.deepEqual(mins(4), [4, 5, null, 5, null, 4]);
   assert.deepEqual(mins(5), [3, 3, null, 4, 2, null]);
+  assert.deepEqual(mins(6), [2, null, 4, 4, null, 4]);
   // 2단계: 엎어진 컵이 하나뿐인데 세 번, 넷이 모두 엎어졌는데 네 번이 걸리는 판이 있다(엎어진 컵 수보다 많다).
   const fewest = madeAll(2).map((item) => [downCount(item.board.cups), item.solution.min]);
   assert.ok(fewest.some(([down, min]) => min > down));
@@ -170,6 +172,7 @@ test('"더 작은 판으로": 같은 종류에서 컵이나 방울이를 줄인 
         assert.equal(checkBoard(small.board), null, where);
         assert.equal(small.board.kind, board.kind, where);
         assert.ok(size(small.board) < size(board), `${where}: 더 작다`);
+        if (board.kind === 'merge') assert.equal(small.board.target, board.target, where);
         if (board.kind === 'cups') {
           assert.equal(small.board.k, board.k, where);
           assert.ok(small.board.n > small.board.k, `${where}: 모두 한 번에 뒤집는 판이 아니다`);
@@ -196,4 +199,21 @@ test('"더 작은 판으로": 같은 종류에서 컵이나 방울이를 줄인 
   assert.equal(smallerCups({ board: null }), null);
   // 원래 판에 가까운 것부터: 빨강 넷, 파랑 둘, 노랑 하나의 첫 작은 판은 한 마리 적은 판이다.
   assert.equal(size(smallCupsBoards({ kind: 'colors', counts: [4, 2, 1] })[0]), 6);
+});
+
+test('6단계(셋이 하나로): 어떻게 만나도 마지막에 남는 색이 정해진 판만 낸다. 되는 판은 정해진 색이 남길 색이고, 안 되는 판은 다른 색이다', () => {
+  const made = madeAll(6);
+  for (const { board, solution } of made) {
+    const where = board.counts.join(',');
+    const brute = bruteOf(board);
+    // 다른 방법으로 끝까지 따지면 남을 수 있는 색은 하나뿐이다.
+    assert.equal(brute.ends.length, 1, where);
+    assert.equal(solution.possible, brute.ends[0] === board.target, where);
+    assert.equal(isDone(board, startItems(board)), false, where);
+  }
+  // 처음 만나는 안 되는 판이 둘째 안 되는 판보다 작다.
+  const impossible = made.filter((item) => !item.solution.possible).map((item) => size(item.board));
+  assert.ok(impossible[0] < impossible[1]);
+  // 판 고르기의 그림과 같은 첫 판: 빨강 둘, 파랑 하나, 노랑 둘에서 파랑을 남긴다(2번이면 된다).
+  assert.deepEqual(made[0].board, { kind: 'merge', counts: [2, 1, 2], target: 1 });
 });

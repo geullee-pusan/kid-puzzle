@@ -7,11 +7,11 @@ import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { LADDER, MAKE_LEVEL, generateBoard, rungOf } from '../src/core/cups-ladder.js';
-import { applyMove, checkBoard, checkMove, countsOf, downCount, isDone, remainders, replay, solve } from '../src/core/cups.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, generateBoard, rungOf } from '../src/core/cups-ladder.js';
+import { applyMove, checkBoard, checkMove, countsOf, downCount, isDone, remainders, replay, solve, startItems } from '../src/core/cups.js';
 import { recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { fill, sentenceCount } from '../src/core/text.js';
-import { bruteColors, bruteCups } from './helpers/brute-cups.js';
+import { bruteColors, bruteCups, bruteMerge } from './helpers/brute-cups.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(resolve(ROOT, path), 'utf8');
@@ -20,8 +20,8 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const code = read('src/formats/cups.js');
 
-const KINDS = ['cups', 'colors'];
-const HINT_KEYS = ['cups', 'fewest', 'colors'];
+const KINDS = ['cups', 'colors', 'merge'];
+const HINT_KEYS = ['cups', 'fewest', 'colors', 'merge'];
 const GUESS_KEYS = ['impossible-no-try', 'impossible-only-down', 'impossible-same-pair', 'impossible-other-way'];
 const toItems = (text) => [...text].map(Number);
 
@@ -58,25 +58,28 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
   assert.ok(strings.length > 70);
   for (const [path, text] of strings) assert.ok(text.trim().length > 0, path);
   assert.equal(T.title, '컵 뒤집기와 세 색 무리');
-  assert.deepEqual(T.kinds, { cups: '컵 뒤집기', colors: '세 색 무리' });
+  assert.deepEqual(T.kinds, { cups: '컵 뒤집기', colors: '세 색 무리', merge: '셋이 하나로' });
   assert.deepEqual(T.colors, ['빨강', '파랑', '노랑']);
 });
 
 test('단계 목록이 사다리와 같고, 판 고르기의 그림은 그 단계의 판이다. 테두리는 한 번에 함께 움직이는 것이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전', '도전', '도전']);
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.equal(T.levels.at(-1).picture.blank, true);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) {
     const { picture } = T.levels.find((entry) => entry.level === rung.level);
-    const board = picture.kind === 'cups' ? { kind: 'cups', n: picture.n, k: picture.k, cups: toItems(picture.cups) } : { kind: 'colors', counts: picture.counts };
+    let board = { kind: 'colors', counts: picture.counts };
+    if (picture.kind === 'cups') board = { kind: 'cups', n: picture.n, k: picture.k, cups: toItems(picture.cups) };
+    if (picture.kind === 'merge') board = { kind: 'merge', counts: picture.counts, target: picture.target };
     const where = `${rung.level}단계`;
     assert.equal(checkBoard(board), null, where);
-    // 그 단계의 차례에 같은 꼴(컵 수, 한 번에 뒤집는 수, 엎어진 컵 수 / 마릿수)의 판이 있다.
-    const shape = board.kind === 'cups' ? ['cups', board.n, board.k, downCount(board.cups)] : ['colors', ...board.counts];
+    // 그 단계의 차례에 같은 꼴(컵 수, 한 번에 뒤집는 수, 엎어진 컵 수 / 마릿수 / 마릿수와 남길 색)의 판이 있다.
+    const shapes = { cups: () => ['cups', board.n, board.k, downCount(board.cups)], colors: () => ['colors', ...board.counts], merge: () => ['merge', ...board.counts, board.target] };
+    const shape = shapes[board.kind]();
     assert.ok(rung.boards.some((entry) => JSON.stringify(entry) === JSON.stringify(shape)), where);
-    const items = board.kind === 'cups' ? board.cups : countsOf([]).length && board.counts.flatMap((count, color) => Array(count).fill(color));
+    const items = startItems(board);
     assert.equal(checkMove(board, items, picture.mark), null, `${where}: 테두리`);
   }
   assert.match(T.levels[1].name, /가장 적게/);
@@ -86,7 +89,7 @@ test('단계 목록이 사다리와 같고, 판 고르기의 그림은 그 단�
 
 test('규칙 설명은 판의 종류마다 있고, 묻는 말까지 세 문장을 넘지 않는다', () => {
   assert.deepEqual(Object.keys(T.rules).sort(), [...KINDS].sort());
-  assert.deepEqual(Object.keys(T.asks).sort(), ['colors', 'cups', 'fewest']);
+  assert.deepEqual(Object.keys(T.asks).sort(), ['colors', 'cups', 'fewest', 'merge']);
   for (const kind of KINDS) for (const ask of Object.keys(T.asks)) assert.ok(sentenceCount(ruleOf(kind, ask)) <= 3, `${kind}, ${ask}`);
   assert.equal(fill(T.rules.cups, { k: 3 }), '엎어진 컵을 모두 바로 세워요. 한 번에 꼭 3개씩 골라서 함께 뒤집어요.');
   assert.match(T.rules.colors, /^색이 다른 방울이 둘이 만나면 둘 다 셋째 색이 돼요\./);
@@ -222,11 +225,12 @@ test('화면 글은 "~요"로 끝나는 말투이고, 한 문장은 60자를 넘
     ...Object.values(T.howto),
     T.refuse.same,
     T.stuck.loop,
+    T.stuck.merge,
     T.play.more,
     ...HINT_KEYS.flatMap((key) => T.hints[key]),
     ...Object.values(T.guess),
     ...Object.values(T.right),
-    ...['cups-possible', 'cups-impossible', 'colors-possible', 'colors-impossible'].map((key) => T.solution[key]),
+    ...['cups-possible', 'cups-impossible', 'colors-possible', 'colors-impossible', 'merge-possible', 'merge-impossible'].map((key) => T.solution[key]),
     ...Object.entries(T.make)
       .filter(([key]) => !['count', 'each', 'folk'].includes(key))
       .map(([, text]) => text),
@@ -425,7 +429,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
     assert.ok(html.includes(`id="${id}"`), id);
   }
   for (const side of ['n', 'k', 'c0', 'c1', 'c2']) for (const way of ['fewer', 'more']) assert.ok(html.includes(`id="cups-make-${side}-${way}"`), `${side}-${way}`);
-  for (const kind of KINDS) assert.match(part('id="make-cups"', 'id="make-dandelion"'), new RegExp(`data-kind="${kind}">${T.kinds[kind]}<`), kind);
+  for (const kind of ['cups', 'colors']) assert.match(part('id="make-cups"', 'id="make-dandelion"'), new RegExp(`data-kind="${kind}">${T.kinds[kind]}<`), kind);
   assert.match(html, /id="home-cups-ask"[^>]*>엎어진 컵을 모두 바로 세울 수 있을까요\?</);
   assert.equal(T.home.ask.cups, '엎어진 컵을 모두 바로 세울 수 있을까요?');
   // 카드는 강 건너기 뒤, "퍼즐 만들기" 앞에 있고, "만들기" 목록에도 있다.
@@ -479,7 +483,7 @@ function cups(overrides = {}) {
 
 test('수준 맞추기 값은 임시값이고, 처음 보여 줄 단계는 1단계다', () => {
   const tuning = tuningFor('cups');
-  assert.deepEqual([tuning.startLevel, tuning.bottomLevel, tuning.topLevel, tuning.hintCount], [1, 1, 5, 2]);
+  assert.deepEqual([tuning.startLevel, tuning.bottomLevel, tuning.topLevel, tuning.hintCount], [1, 1, 6, 2]);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(tuning.expectedSeconds[rung.level] > 0, `${rung.level}단계의 예상 시간`);
   assert.equal(tuning.whyAfter, undefined);
   assert.deepEqual(recommend([], 'cups'), { level: 1, small: false, offerHarder: false, harderLevel: null, reason: 'start' });
@@ -509,4 +513,71 @@ test('"왜 그럴까?"는 이 형식의 안 되는 판을 한 번 끝까지 만�
   assert.equal(whyUnlocked([impossible()], 'cups'), true);
   assert.equal(whyUnlocked([impossible()], 'river'), false, '다른 형식');
   assert.match(read('src/main.js'), /if \(!solution\.possible && whyAvailable\(\)\) parts\.push\(F\.T\.right\['why-invite'\]\);/);
+});
+
+test('셋이 하나로: 묻는 말에 남길 색이 들어가고, 다른 색만 남으면 본 것 하나와 할 수 있는 일 하나를 말한다', () => {
+  assert.equal(fill(T.asks.merge, { face: T.colors[2] }), '마지막에 노랑만 남게 할 수 있을까요?');
+  assert.ok(code.includes('fill(ask, { face: targetName(board) })'));
+  assert.equal(fill(T.stuck.merge, { face: '파랑' }), '파랑만 남아서 더 만날 수 없어요. 한 번 무르고 다르게 해 볼 수 있어요.');
+  assert.equal(fill(T.right['merge-clean'], { face: '파랑', k: 2 }), '마지막에 파랑만 남았어요. 한 번도 무르지 않고 2번 만나게 했어요.');
+  assert.equal(fill(T.right['impossible-merge-tried'], { face: '노랑', k: 4 }), '맞아요. 이 판은 아무리 해도 노랑만 남게 할 수 없어요. 4번 만나게 해 보고 알아냈어요.');
+  assert.equal(fill(T.solution['merge-possible'], { k: 4, face: '빨강' }), '가장 적게 4번 만나면 빨강만 남아요. 한 가지 방법을 보여 줄게요.');
+  assert.equal(T.status.over, '더 만날 방울이가 없어요');
+  // 같은 방울이 그림을 쓴다(색마다 머리 모양이 다르다).
+  assert.ok(code.includes("const art = (kind) => (kind === 'cups' ? 'cups' : 'colors');"));
+});
+
+test('셋이 하나로의 "왜 그럴까?": 그림의 차례는 모두 규칙에 맞는 만남이고, 표의 홀짝과 이야기가 풀이 프로그램과 맞다', () => {
+  const merge = (counts, target) => ({ kind: 'merge', counts, target });
+  for (const slide of T.why.merge) {
+    for (const strip of slide.strips) {
+      const steps = strip.steps.map(toItems);
+      const board = merge(countsOf(steps[0]), 0);
+      for (let index = 1; index < steps.length; index++) {
+        // 이어진 두 그림 사이에는 색이 다른 둘의 만남 하나가 있다.
+        const before = steps[index - 1];
+        let found = false;
+        for (let a = 0; a < before.length; a++) {
+          for (let b = a + 1; b < before.length; b++) {
+            if (checkMove(board, before, [a, b]) === null && JSON.stringify(applyMove(board, before, [a, b])) === JSON.stringify(steps[index])) found = true;
+          }
+        }
+        assert.ok(found, strip.note);
+      }
+    }
+  }
+  // 첫 장: 빨강 둘, 파랑 하나, 노랑 둘. 두 차례 모두 파랑만 남고, 노랑만 남기는 것은 안 된다.
+  for (const strip of T.why.merge[0].strips) {
+    assert.deepEqual(countsOf(toItems(strip.steps[0])), [2, 1, 2]);
+    assert.ok(toItems(strip.steps.at(-1)).every((color) => color === 1), strip.note);
+  }
+  assert.equal(solve(merge([2, 1, 2], 2)).possible, false);
+  assert.deepEqual(bruteMerge(merge([2, 1, 2], 2)).ends, [1]);
+  // 둘째 장의 표: 한 번씩 만난 차례(둘은 하나 줄고 하나는 하나 는다). 세 홀짝이 함께 바뀌고 빨강과 노랑은 늘 홀짝이 같다.
+  const table = T.why.merge[1].table;
+  assert.deepEqual(table[0], [2, 1, 2]);
+  for (let index = 1; index < table.length; index++) {
+    const diff = table[index].map((count, color) => count - table[index - 1][color]).sort((a, b) => a - b);
+    assert.deepEqual(diff, [-1, -1, 1], `${index}번`);
+  }
+  for (const row of table) {
+    assert.equal(row[0] % 2, row[2] % 2, row.join(','));
+    assert.notEqual(row[0] % 2, row[1] % 2, row.join(','));
+  }
+  assert.deepEqual(table.at(-1), [0, 1, 0]);
+  assert.deepEqual([T.table.parity, T.table.odd, T.table.even], ['홀짝', '홀', '짝']);
+  // 넷째 장: 한 마리씩인 판은 만나는 둘에 따라 세 색이 다 남는다.
+  const last = T.why.merge[3].strips.map((strip) => toItems(strip.steps.at(-1))[0]).sort();
+  assert.deepEqual(last, [0, 1, 2]);
+  for (const strip of T.why.merge[3].strips) assert.ok(strip.note.includes(T.colors[toItems(strip.steps.at(-1))[0]]), strip.note);
+  assert.deepEqual(bruteMerge(merge([1, 1, 1], 0)).ends, [0, 1, 2]);
+});
+
+test('직접 만들기는 7단계다. 예전 번호(6단계)로 적어 둔 직접 만든 판도 하던 판으로 받고, 만들어 낸 판은 단계의 판의 종류와 맞아야 받는다', () => {
+  assert.deepEqual([MAKE_LEVEL, OLD_MAKE_LEVEL], [7, 6]);
+  assert.ok(code.includes("if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && saved.mode === 'maybe' && ['cups', 'colors'].includes(saved.board.kind);"));
+  assert.ok(code.includes('return rung.mode === saved.mode && rung.boards.some((entry) => entry[0] === saved.board.kind);'));
+  assert.equal(rungOf(OLD_MAKE_LEVEL).ask, 'merge');
+  // 셋이 하나로는 직접 만들기에 없다.
+  assert.doesNotMatch(part('id="make-cups"', 'id="make-dandelion"'), /data-kind="merge"/);
 });

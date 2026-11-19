@@ -70,4 +70,41 @@ export function bruteColors(board) {
 }
 
 /** 판의 종류에 맞는 다른 방법 */
-export const bruteOf = (board) => (board.kind === 'cups' ? bruteCups(board) : bruteColors(board));
+export const bruteOf = (board) => (board.kind === 'cups' ? bruteCups(board) : board.kind === 'merge' ? bruteMerge(board) : bruteColors(board));
+
+/**
+ * 셋이 하나로 판을 따로 풀어 본다: 방울이 하나하나의 색을 늘어놓은 줄로 적고, 색이 다른 아무 두 마리를 합쳐 본다
+ * (두 마리를 빼고 나머지 색 하나를 줄 끝에 더한다. 풀이 프로그램과 달리 줄의 차례를 그대로 따진다).
+ * @returns {{possible: boolean, min: number|null, ends: number[]}} ends는 더 만날 수 없을 때 남을 수 있는 색들(작은 것부터)
+ */
+export function bruteMerge(board) {
+  const start = board.counts.flatMap((count, color) => Array(count).fill(color));
+  const dist = new Map([[start.join(''), 0]]);
+  const ends = new Set();
+  let found = null;
+  let layer = [start];
+  while (layer.length > 0) {
+    const next = [];
+    for (const list of layer) {
+      const here = dist.get(list.join(''));
+      if (new Set(list).size <= 1) {
+        ends.add(list[0]);
+        if (list[0] === board.target && found === null) found = here;
+        continue;
+      }
+      for (let a = 0; a < list.length; a++) {
+        for (let b = a + 1; b < list.length; b++) {
+          if (list[a] === list[b]) continue;
+          const third = [0, 1, 2].find((color) => color !== list[a] && color !== list[b]);
+          const after = [...list.filter((_, at) => at !== a && at !== b), third];
+          const name = after.join('');
+          if (dist.has(name)) continue;
+          dist.set(name, here + 1);
+          next.push(after);
+        }
+      }
+    }
+    layer = next;
+  }
+  return { possible: found !== null, min: found, ends: [...ends].sort((x, y) => x - y) };
+}

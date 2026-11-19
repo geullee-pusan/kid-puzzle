@@ -6,14 +6,16 @@
 //   컵 뒤집기: 컵을 눌러 고르고(다시 누르면 빠진다), 꼭 k개를 고르면 함께 뒤집힌다(동전 뒤집기와 같다). 모두 바로 서면 끝이다.
 //   세 색 무리: 방울이 하나를 누르고 색이 다른 방울이를 누르면 둘이 만나 둘 다 나머지 한 색이 된다. 모두 한 색이 되면 끝이다.
 //     같은 색을 누르면 만나지 않고 고른 것이 그 방울이로 옮겨 간다. 판 아래에 짧은 사실을 적고, 선생님은 판마다 한 번만 말한다.
+//   셋이 하나로: 누르는 법은 세 색 무리와 같고, 만난 둘이 합쳐져 셋째 색 하나가 된다. 정해진 색만 남으면 끝이다.
+//     다른 색만 남으면 더 만날 수 없다. 판은 끝나지 않고, 선생님이 남은 색과 할 수 있는 일(무르기)을 말한다.
 // 판의 종류(mode)는 단계가 정한다(src/core/cups-ladder.js).
 //   maybe   끝내면 끝난다. 안 되는 판은 "불가능해요"로 답한다(되는 판은 실제로 끝내야 통과한다. 바뀌지 않는 값은 안 되는 판만 가려 준다)
 //   fewest  끝내면 뒤집은 횟수를 견준다. 가장 적은 횟수보다 많으면 "더 줄일 수 있을까요?"라고 묻고 판을 그대로 둔다(2단계)
 // 뒤집은 횟수(만난 횟수)는 지금 길의 길이다(무른 것은 빠진다). 처음으로 되돌리면 0이 된다.
 // "세어서 적어 보기"는 도구다. 처음 모습과 움직일 때마다의 엎어진 컵 수(또는 색마다의 마릿수)를 표로 줄 세운다. 처음 켤 때 힌트 하나를 연 것으로 적는다.
 import T from '../content/cups.json';
-import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf, solveOnce } from '../core/cups-ladder.js';
-import { RANGES, applyMove, checkBoard, checkMove, copyBoard, countsOf, diagnoseImpossible, downCount, invariantRulesOut, isDone, remainders, replay, startItems, whyOpen } from '../core/cups.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf, solveOnce } from '../core/cups-ladder.js';
+import { RANGES, applyMove, checkBoard, checkMove, copyBoard, countsOf, diagnoseImpossible, downCount, invariantRulesOut, isDone, isFolk, isOver, remainders, replay, startItems, whyOpen } from '../core/cups.js';
 import { smallerCups } from '../core/smaller.js';
 import { fill, ordinal } from '../core/text.js';
 import { drawItems, itemsStrip } from '../ui/cups-board.js';
@@ -36,8 +38,12 @@ export function createCups(frame) {
   let draft = null; // 직접 만들기에서 만들던 판(컵 판과 방울이 판의 값을 함께 간직한다)
 
   const itemsOf = (round) => replay(round.board, round.trail).items;
+  /** 그리는 꼴: 컵, 또는 방울이(세 색 무리와 셋이 하나로는 같은 방울이 그림이다) */
+  const art = (kind) => (kind === 'cups' ? 'cups' : 'colors');
   const labelOf = (kind) => (index, value) =>
     kind === 'cups' ? fill(T.cupLabel, { no: ordinal(index + 1), face: T.faces[value ? 'down' : 'up'] }) : fill(T.folkLabel, { no: ordinal(index + 1), face: T.colors[value] });
+  /** 셋이 하나로에서 남길 색의 이름(다른 판에서는 빈 글) */
+  const targetName = (board) => (board.kind === 'merge' ? T.colors[board.target] : '');
   const toCups = (text) => [...text].map(Number);
   /** 판의 종류에 맞는 힌트와 규칙의 이름 */
   const hintKey = (round) => (round.mode === 'fewest' ? 'fewest' : round.board.kind);
@@ -50,11 +56,11 @@ export function createCups(frame) {
     const playing = !round.done;
     const done = isDone(board, items);
     const cups = board.kind === 'cups';
-    drawItems($('cups-board'), { kind: board.kind, items, label: labelOf(board.kind), onTap: playing ? tap : undefined, selected, changed });
+    drawItems($('cups-board'), { kind: art(board.kind), items, label: labelOf(board.kind), onTap: playing ? tap : undefined, selected, changed });
     $('cups-flips-line').hidden = !cups;
     $('cups-meets-line').hidden = cups;
     $(cups ? 'cups-flips' : 'cups-meets').textContent = String(round.trail.length);
-    $('cups-status').textContent = flash ?? (done ? T.status[board.kind] : '');
+    $('cups-status').textContent = flash ?? (done ? T.status[art(board.kind)] : isOver(board, items) ? T.status.over : '');
     $('undo').disabled = !playing || round.trail.length === 0;
     $('reset').disabled = !playing || round.trail.length === 0;
 
@@ -109,7 +115,7 @@ export function createCups(frame) {
       draw();
       return;
     }
-    if (round.board.kind === 'colors' && selected.length === 1 && items[selected[0]] === items[index]) {
+    if (isFolk(round.board) && selected.length === 1 && items[selected[0]] === items[index]) {
       // 같은 색: 만나지 않는다. 고른 것이 이 방울이로 옮겨 간다.
       selected = [index];
       round.sameCount += 1;
@@ -144,7 +150,7 @@ export function createCups(frame) {
     const { round, solution } = frame;
     const { board } = round;
     if (board.kind === 'cups' && move.some((index) => items[index] === 0)) round.upPicked = true;
-    if (board.kind === 'colors') {
+    if (isFolk(board)) {
       const pair = [items[move[0]], items[move[1]]].sort((a, b) => a - b).join('-');
       if (!round.pairs.includes(pair)) round.pairs.push(pair);
     }
@@ -155,6 +161,14 @@ export function createCups(frame) {
     const after = applyMove(board, items, move);
     if (isDone(board, after)) {
       complete(solution);
+      return;
+    }
+    // 셋이 하나로: 다른 색만 남아 더 만날 수 없다. 본 것(남은 색)과 할 수 있는 일을 말한다. 판은 끝나지 않는다.
+    if (isOver(board, after)) {
+      frame.note('over', { color: after[0] });
+      draw();
+      frame.persist();
+      frame.say(fill(T.stuck.merge, { face: T.colors[after[0]] }));
       return;
     }
     // 지나온 모습으로 되돌아왔으면 그 사실을 알려 준다. 말은 한 판에 한 번만 한다.
@@ -286,10 +300,11 @@ export function createCups(frame) {
       return parts;
     }
     if (round.answers.at(-1)?.answer === 'impossible') {
-      parts.push(round.moveCount > 0 ? fill(T.right[`impossible-${kind}-tried`], { k: round.moveCount }) : T.right[`impossible-${kind}-untried`]);
+      const face = targetName(round.board);
+      parts.push(round.moveCount > 0 ? fill(T.right[`impossible-${kind}-tried`], { k: round.moveCount, face }) : fill(T.right[`impossible-${kind}-untried`], { face }));
     } else {
       const back = round.undoCount + round.resetCount;
-      const values = { k: round.trail.length, n: back, face: kind === 'colors' ? T.colors[itemsOf(round)[0]] : '' };
+      const values = { k: round.trail.length, n: back, face: kind !== 'cups' ? T.colors[itemsOf(round)[0]] : '' };
       parts.push(fill(T.right[`${kind}-${back === 0 ? 'clean' : 'back'}`], values));
     }
     if (round.answers.length > 1) parts.push(T.right['after-retry']);
@@ -318,11 +333,13 @@ export function createCups(frame) {
       say: slide.say,
       // 그림은 종이를 펼칠 때 그린다(단추를 보일지 따질 때마다 그리지 않는다).
       get nodes() {
-        const nodes = slide.strips.map((strip) => itemsStrip({ kind, steps: strip.steps.map(toCups), note: strip.note }));
+        const nodes = slide.strips.map((strip) => itemsStrip({ kind: art(kind), steps: strip.steps.map(toCups), note: strip.note }));
         if (slide.table) {
-          const heads = ['', ...T.colors, T.table.head];
+          // 세 색 무리는 3으로 나눈 나머지를, 셋이 하나로는 홀짝을 적는다.
+          const merge = kind === 'merge';
+          const heads = ['', ...T.colors, merge ? T.table.parity : T.table.head];
           const rows = slide.table.map((counts, index) => {
-            const [n, k, f] = remainders(counts);
+            const [n, k, f] = merge ? counts.map((count) => T.table[count % 2 === 1 ? 'odd' : 'even']) : remainders(counts);
             return [index === 0 ? T.notes.start : fill(T.notes.step, { no: index }), ...counts.map(String), fill(T.table.rest, { n, k, f })];
           });
           nodes.push(rowOf([countTable(heads, rows)]));
@@ -337,16 +354,17 @@ export function createCups(frame) {
     const { board } = round;
     const { kind } = board;
     const start = startItems(board);
-    if (!solution.possible) return [{ say: T.solution[`${kind}-impossible`], nodes: [itemsStrip({ kind, steps: [start] })] }];
+    const face = targetName(board);
+    if (!solution.possible) return [{ say: fill(T.solution[`${kind}-impossible`], { face }), nodes: [itemsStrip({ kind: art(kind), steps: [start] })] }];
     const steps = [start];
     for (const move of solution.moves) steps.push(applyMove(board, steps.at(-1), move));
     const strip = {
-      kind,
+      kind: art(kind),
       steps,
       marks: [[], ...solution.moves],
       captions: [T.solution.startLabel, ...solution.moves.map((_, index) => fill(T.solution.stepLabel, { no: index + 1 }))],
     };
-    return [{ say: fill(T.solution[`${kind}-possible`], { k: solution.min }), nodes: [itemsStrip(strip)] }];
+    return [{ say: fill(T.solution[`${kind}-possible`], { k: solution.min, face }), nodes: [itemsStrip(strip)] }];
   }
 
   // ---- 직접 만들기: 컵 판(컵 수, 한 번에 뒤집는 수, 엎어진 컵)이나 방울이 판(색마다의 마릿수)을 정한다. ----
@@ -479,6 +497,13 @@ export function createCups(frame) {
   $('cups-make-play').addEventListener('click', playDraft);
 
   const count = (value) => Number.isInteger(value) && value >= 0;
+  /** 적어 둔 판의 단계가 판의 종류와 맞는가. 직접 만든 판은 지금의 직접 만들기 단계와 예전 번호(6단계)를 모두 받는다 */
+  const levelOk = (saved) => {
+    if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && saved.mode === 'maybe' && ['cups', 'colors'].includes(saved.board.kind);
+    if (!Number.isInteger(saved.level) || saved.level < LADDER[0].level || saved.level > TOP_LEVEL) return false;
+    const rung = rungOf(saved.level);
+    return rung.mode === saved.mode && rung.boards.some((entry) => entry[0] === saved.board.kind);
+  };
 
   return {
     id: FORMAT,
@@ -518,6 +543,7 @@ export function createCups(frame) {
     /** 기기에 적어 둔 하던 판이 이 형식의 판으로 쓸 수 있는 값인가 */
     valid(saved) {
       if (!MODES.includes(saved.mode) || checkBoard(saved.board) !== null) return false;
+      if (!levelOk(saved)) return false;
       if (!replay(saved.board, saved.trail).ok) return false;
       if (![saved.moveCount, saved.undoCount, saved.resetCount, saved.sameCount, saved.loopCount, saved.notesCount].every(count)) return false;
       if (![saved.pairs, saved.completions].every(Array.isArray)) return false;
@@ -545,7 +571,7 @@ export function createCups(frame) {
     ruleLine(round) {
       const { board } = round;
       const ask = round.mode === 'fewest' ? T.asks.fewest : T.asks[board.kind];
-      return [fill(T.rules[board.kind], { k: board.kind === 'cups' ? board.k : 2 }), ask].join(' ');
+      return [fill(T.rules[board.kind], { k: board.kind === 'cups' ? board.k : 2 }), fill(ask, { face: targetName(board) })].join(' ');
     },
     hints: (round) => T.hints[hintKey(round)],
     touched: (round) => round.moveCount > 0 || round.sameCount > 0,
@@ -597,13 +623,13 @@ export function createCups(frame) {
     homeAsk: (level) => T.home.ask[rungOf(level).ask],
     pickLine: () => T.home.pick,
     drawSample(root, board) {
-      drawItems(root, { kind: board.kind, items: startItems(board), small: true });
+      drawItems(root, { kind: art(board.kind), items: startItems(board), small: true });
     },
     drawBlank(root) {
       drawItems(root, { kind: 'cups', items: BLANK, small: true });
     },
     drawResume(root, saved) {
-      drawItems(root, { kind: saved.board.kind, items: replay(saved.board, saved.trail).items, small: true });
+      drawItems(root, { kind: art(saved.board.kind), items: replay(saved.board, saved.trail).items, small: true });
     },
     /** 판 고르기의 그림: 테두리가 있는 것들이 한 번에 함께 움직인다(컵 k개, 만나는 방울이 둘) */
     drawLevelPicture(root, entry) {
@@ -612,8 +638,10 @@ export function createCups(frame) {
         drawItems(root, { kind: 'cups', items: BLANK, small: true });
         return;
       }
-      const board = picture.kind === 'cups' ? { kind: 'cups', n: picture.n, k: picture.k, cups: toCups(picture.cups) } : { kind: 'colors', counts: picture.counts };
-      drawItems(root, { kind: board.kind, items: startItems(board), mark: picture.mark, small: true });
+      let board = { kind: 'colors', counts: picture.counts };
+      if (picture.kind === 'cups') board = { kind: 'cups', n: picture.n, k: picture.k, cups: toCups(picture.cups) };
+      if (picture.kind === 'merge') board = { kind: 'merge', counts: picture.counts, target: picture.target };
+      drawItems(root, { kind: art(board.kind), items: startItems(board), mark: picture.mark, small: true });
     },
     showMake,
     /** 직접 만들기에서 다 만든 판. 아직 풀 수 있는 판이 아니면 null(공책에 남기기가 쓴다) */

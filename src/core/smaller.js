@@ -17,7 +17,7 @@ import { smallBoards as smallLampBoards } from './lamps-ladder.js';
 import { smallBoards as smallMachineBoards } from './machine-ladder.js';
 import { checkBoard as checkMachine } from './machine.js';
 import { checkBoard as checkLamps } from './lamps.js';
-import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
+import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount, forcedColor } from './cups.js';
 import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } from './dandelion.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
 import { boxBoards, oneDayBoards, smallFolkBoards, someBoards, usefulQuestions } from './logic-ladder.js';
@@ -477,7 +477,7 @@ export function smallerRiver(origin, turn = 0) {
 
 /** 작은 컵 판의 컵 수는 원래보다 하나나 둘 적게, 한 번에 뒤집는 수보다는 많게 둔다(모두 한 번에 뒤집는 판은 내지 않는다) */
 export const CUPS_SHRINK = 2;
-/** 작은 방울이 판의 마릿수는 원래보다 하나에서 셋 적게, 셋 아래로는 줄이지 않는다 */
+/** 작은 방울이 판(셋이 하나로도)의 마릿수는 원래보다 하나에서 셋 적게, 셋 아래로는 줄이지 않는다 */
 export const COLORS_SHRINK = 3;
 export const COLORS_FLOOR = 3;
 
@@ -506,9 +506,11 @@ export function smallCupsBoards(board) {
         for (let blue = 0; blue <= size - red; blue++) {
           const counts = [red, blue, size - red - blue];
           if (counts.filter((count) => count > 0).length < 2) continue;
+          // 셋이 하나로는 원래 판처럼 남는 색이 정해진 판만, 같은 색을 남기는 물음으로 낸다.
+          if (board.kind === 'merge' && forcedColor(counts) === null) continue;
           // 원래 판과 마릿수가 가까운 것부터
           const far = counts.reduce((sum, count, color) => sum + Math.abs(count - board.counts[color]), 0);
-          here.push({ far, board: { kind: 'colors', counts } });
+          here.push({ far, board: board.kind === 'merge' ? { kind: 'merge', counts, target: board.target } : { kind: 'colors', counts } });
         }
       }
       here.sort((a, b) => a.far - b.far || a.board.counts.join(',').localeCompare(b.board.counts.join(',')));

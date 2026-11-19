@@ -8,18 +8,24 @@ import { copyBoard, solve } from './cups.js';
 import { createRng, seedFrom } from './rng.js';
 
 /**
- * 사다리. 컵(익숙한 홀짝) → 컵, 가장 적게 → 세 색 무리(3으로 나눈 나머지, 홀짝이 아닌 첫 열쇠) → 세 색 무리, 더 많이 → 섞어서 → 직접 만들기.
+ * 사다리. 컵(익숙한 홀짝) → 컵, 가장 적게 → 세 색 무리(3으로 나눈 나머지, 홀짝이 아닌 첫 열쇠) → 세 색 무리, 더 많이 → 섞어서
+ *   → 셋이 하나로(마릿수 차의 홀짝) → 직접 만들기.
  *   tag     'basic'(기본) | 'applied'(응용) | 'challenge'(도전). 난이도를 알려 주는 표시일 뿐이다
  *   mode    'maybe'(끝내면 끝난다. 안 되는 판은 "불가능해요"로 답한다. 되는 판과 안 되는 판이 섞인다)
  *           | 'fewest'(되도록 적게 뒤집어서 끝낸다. 더 많이 뒤집었으면 "더 줄일 수 있을까요?"라고 묻고 판을 그대로 둔다. 모두 되는 판이다)
  *           | 'make'(아이가 직접 만든다)
- *   ask     처음 화면의 물음 이름: 'cups' | 'fewest' | 'colors' | 'mixed'
- *   boards  판의 차례. 컵은 ['cups', 컵 수, 한 번에 뒤집는 수, 엎어진 컵 수], 방울이는 ['colors', 빨강, 파랑, 노랑]
+ *   ask     처음 화면의 물음 이름: 'cups' | 'fewest' | 'colors' | 'mixed' | 'merge'
+ *   boards  판의 차례. 컵은 ['cups', 컵 수, 한 번에 뒤집는 수, 엎어진 컵 수], 방울이는 ['colors', 빨강, 파랑, 노랑],
+ *           셋이 하나로는 ['merge', 빨강, 파랑, 노랑, 남길 색(0 빨강, 1 파랑, 2 노랑)]
  *
  * 1단계의 첫 판(컵 넷이 모두 엎어진 판, 두 개씩)은 실패할 수 없다. 엎어진 컵이 짝수 개인 동안은 어떻게 뒤집어도 늘 끝낼 수 있다.
  * 처음 만나는 안 되는 판은 가장 쉬운 안 되는 판이다(1단계 셋째 판, 컵 셋 가운데 하나가 엎어진 판). 세 색 무리의 첫 안 되는 판도 가장 작은 판이다(빨강 하나, 파랑 둘).
  * 안 되는 판이 섞이는 단계(1, 3, 4, 5단계)에서는 여섯 판에 둘(셋에 하나)이고, 연달아 나오지 않는다. 처음 만나는 판은 되는 판이다.
  * "가장 적게"는 2단계에서 건다(세 개씩 뒤집기. 한 번에 홀수 개를 뒤집으면 컵 수가 그보다 많은 판은 늘 된다).
+ * 6단계(셋이 하나로)는 2026-11-20에 직접 만들기 앞에 더했다. 직접 만들기는 6단계에서 7단계로 옮겼다.
+ *   어떻게 만나도 마지막에 남는 색이 정해진 판만 낸다(세 마릿수 가운데 홀짝이 혼자 다른 색이 있는 판).
+ *   그래서 되는 판은 어떻게 해도 끝나고, 안 되는 판은 어떻게 해도 다른 색이 남는다. "늘 같은 색이 남는다"를 알아채는 것이 이 단계의 일이다.
+ *   안 되는 판은 셋에 하나이고 연달아 나오지 않는다. 처음 만나는 판은 되는 판이고, 처음 만나는 안 되는 판이 더 작다.
  */
 export const LADDER = [
   {
@@ -90,12 +96,28 @@ export const LADDER = [
       ['colors', 5, 3, 1],
     ],
   },
-  { level: 6, tag: 'challenge', mode: 'make', ask: null },
+  {
+    level: 6,
+    tag: 'challenge',
+    mode: 'maybe',
+    ask: 'merge',
+    boards: [
+      ['merge', 2, 1, 2, 1],
+      ['merge', 3, 2, 2, 2],
+      ['merge', 1, 4, 2, 0],
+      ['merge', 2, 3, 4, 1],
+      ['merge', 4, 2, 3, 0],
+      ['merge', 3, 4, 4, 0],
+    ],
+  },
+  { level: 7, tag: 'challenge', mode: 'make', ask: null },
 ];
 
 /** 판을 내는 맨 위 단계(그 위는 직접 만들기) */
-export const TOP_LEVEL = 5;
-export const MAKE_LEVEL = 6;
+export const TOP_LEVEL = 6;
+export const MAKE_LEVEL = 7;
+/** 예전(2026-11-20 전)의 직접 만들기 단계. 기기에 적어 둔 하던 판과 공책의 직접 만든 판은 이 번호를 가질 수 있다 */
+export const OLD_MAKE_LEVEL = 6;
 
 export function rungOf(level) {
   const rung = LADDER.find((item) => item.level === level);
@@ -128,12 +150,13 @@ export function boardOf(entry, rng) {
     const [, n, k, down] = entry;
     return { kind: 'cups', n, k, cups: placeDown(n, down, rng) };
   }
+  if (entry[0] === 'merge') return { kind: 'merge', counts: entry.slice(1, 4), target: entry[4] };
   return { kind: 'colors', counts: entry.slice(1) };
 }
 
 /**
  * 판 하나를 낸다.
- * @param {number} level 1~5
+ * @param {number} level 1~6
  * @param {number} seed 판 번호(1부터). 차례의 몇 번째 판인지와 컵이 엎어진 자리를 정한다
  * @param {{small?: boolean}} options small: 맨 아래 단계에서 첫 판(가장 작은 판)을 낸다(수준 맞추기에서 쓴다)
  * @returns {{level: number, seed: number, small: boolean, board: object, solution: {possible: boolean, min: number|null, moves: number[][]}}}

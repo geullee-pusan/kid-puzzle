@@ -1,7 +1,7 @@
 // 컵 뒤집기와 세 색 무리: 판, 움직이는 규칙, 풀이 프로그램(너비 우선 탐색), 바뀌지 않는 값, 오답 짐작.
 // 순수 함수만 둔다. 화면에 손대지 않고, 무작위 수와 지금 시각을 쓰지 않는다. 같은 입력은 늘 같은 출력을 낸다.
 //
-// 판은 두 가지다. 한 형식 안에 함께 있다(묶음 "바뀌지 않는 것").
+// 판은 세 가지다. 한 형식 안에 함께 있다(묶음 "바뀌지 않는 것").
 // 가. 컵 뒤집기: { kind: 'cups', n, k, cups }
 //   컵 n개가 한 줄로 놓여 있다. cups는 길이 n인 배열이고 1은 엎어진 컵, 0은 바로 선 컵이다.
 //   한 번에 꼭 k개를 골라 함께 뒤집는다(어느 컵이든 된다). 모두 바로 서면(모두 0) 끝이다.
@@ -13,13 +13,24 @@
 //   (둘은 1 줄고 하나는 2 는다. 2 느는 것은 3으로 나눈 나머지로는 1 주는 것과 같다). 그래서 두 나머지가 같은지는 끝까지 그대로다.
 //   모두 한 색이면 두 색이 0마리라서 두 나머지가 같다. 처음에 세 나머지가 모두 다르면 안 된다.
 //   (규격 안의 모든 판에서, 나머지가 같은 두 색이 있으면 실제로 된다. 테스트가 다른 방법으로 확인한다.)
+// 다. 셋이 하나로: { kind: 'merge', counts, target }
+//   방울이 판과 같이 놓이지만, 색이 다른 둘이 만나면 둘이 합쳐져 나머지 한 색 하나가 된다(모두 수가 하나 준다).
+//   한 색만 남으면 더 만날 수 없어서 끝난다. 남은 색이 target(0 빨강, 1 파랑, 2 노랑)이면 다 한 것이다.
+//   바뀌지 않는 것: 만날 때마다 세 마릿수가 모두 하나씩 늘거나 줄어서, 세 수의 홀짝이 모두 함께 바뀐다.
+//   그래서 두 수의 홀짝이 같은지는 끝까지 그대로다. 한 색만 남으면 남지 않은 두 색은 0마리로 홀짝이 같다.
+//   세 수 가운데 홀짝이 혼자 다른 색이 있으면 어떻게 만나도 마지막에는 그 색만 남는다(남는 색이 정해진 판).
+//   세 수의 홀짝이 모두 같은 판은 차례에 따라 어느 색이든 남을 수 있다(1, 1, 1이면 빨강, 파랑, 노랑이 다 된다).
+//   사다리는 남는 색이 정해진 판만 낸다. 테스트가 다른 방법으로 규격 안의 모든 판을 따져 이것을 확인한다.
 //
 // 모습(items): 길이가 컵 수나 방울이 수인 배열. 컵은 0(바로 섬)과 1(엎어짐), 방울이는 0(빨강), 1(파랑), 2(노랑)다.
+//   셋이 하나로 판은 만날 때마다 배열이 하나 짧아진다(앞 번호의 방울이가 셋째 색이 되고 뒤 번호의 방울이는 빠진다).
 //   방울이는 처음에 빨강들, 파랑들, 노랑들의 차례로 놓인다. 판에는 마릿수만 적는다.
 // 움직임(move): 고른 것들의 번호(작은 것부터). 컵은 k개, 방울이는 둘이다.
 // 지나온 길(trail)은 움직임의 목록이다.
 
-export const KINDS = ['cups', 'colors'];
+export const KINDS = ['cups', 'colors', 'merge'];
+/** 방울이로 놓는 판인가(세 색 무리, 셋이 하나로) */
+export const isFolk = (board) => board.kind === 'colors' || board.kind === 'merge';
 /** 색의 수 */
 export const COLORS = 3;
 /** 판에 놓을 수 있는 수의 범위 */
@@ -45,11 +56,12 @@ export function checkBoard(board) {
     if (board.cups.some((cup) => cup !== 0 && cup !== 1)) return 'bad-cups';
     return null;
   }
-  if (board.kind === 'colors') {
+  if (isFolk(board)) {
     const { counts } = board;
     if (!Array.isArray(counts) || counts.length !== COLORS) return 'bad-counts';
     if (!counts.every((count) => within(count, RANGES.count))) return 'bad-counts';
     if (!within(sum(counts), RANGES.total)) return 'bad-total';
+    if (board.kind === 'merge' && !(Number.isInteger(board.target) && board.target >= 0 && board.target < COLORS)) return 'bad-target';
     return null;
   }
   return 'bad-kind';
@@ -58,6 +70,7 @@ export function checkBoard(board) {
 /** 판을 같은 꼴로 베낀다(기록과 저장에 쓴다) */
 export function copyBoard(board) {
   if (board.kind === 'cups') return { kind: 'cups', n: board.n, k: board.k, cups: board.cups.slice() };
+  if (board.kind === 'merge') return { kind: 'merge', counts: board.counts.slice(), target: board.target };
   return { kind: 'colors', counts: board.counts.slice() };
 }
 
@@ -81,10 +94,16 @@ export function startItems(board) {
   return board.kind === 'cups' ? board.cups.slice() : colorsOf(board.counts);
 }
 
-/** 끝난 모습인가: 컵은 모두 바로 섰는가, 방울이는 모두 한 색인가 */
+/** 끝난 모습인가: 컵은 모두 바로 섰는가, 방울이는 모두 한 색인가, 셋이 하나로는 정해진 색만 남았는가 */
 export function isDone(board, items) {
   if (board.kind === 'cups') return items.every((cup) => cup === 0);
+  if (board.kind === 'merge') return items.length > 0 && items.every((color) => color === board.target);
   return new Set(items).size <= 1;
+}
+
+/** 더 만날 수 없는가(셋이 하나로): 한 색만 남았다 */
+export function isOver(board, items) {
+  return isFolk(board) && new Set(items).size <= 1;
 }
 
 /** 두 색이 만나면 되는 나머지 한 색 */
@@ -116,7 +135,9 @@ export function applyMove(board, items, move) {
   const [a, b] = move;
   const color = thirdColor(items[a], items[b]);
   next[a] = color;
-  next[b] = color;
+  // 셋이 하나로: 둘이 합쳐져 하나가 된다. 앞 번호에 셋째 색이 남고 뒤 번호는 빠진다.
+  if (board.kind === 'merge') next.splice(b, 1);
+  else next[b] = color;
   return next;
 }
 
@@ -194,7 +215,9 @@ const PAIRS = [
 /** 방울이 판: 색마다의 마릿수(모습)마다 너비 우선으로 따지고, 찾은 차례를 방울이 둘씩의 만남으로 옮긴다 */
 function solveColors(board) {
   const key = (counts) => counts.join(',');
-  const done = (counts) => counts.filter((count) => count > 0).length <= 1;
+  const merge = board.kind === 'merge';
+  // 셋이 하나로는 정해진 색만 남아야 끝이다(그 색이 0마리면 끝이 아니다).
+  const done = merge ? (counts) => counts[board.target] > 0 && counts.every((count, color) => color === board.target || count === 0) : (counts) => counts.filter((count) => count > 0).length <= 1;
   const start = board.counts.slice();
   const came = new Map([[key(start), null]]);
   let layer = [start];
@@ -207,7 +230,7 @@ function solveColors(board) {
         const after = counts.slice();
         after[a] -= 1;
         after[b] -= 1;
-        after[thirdColor(a, b)] += 2;
+        after[thirdColor(a, b)] += merge ? 1 : 2;
         if (came.has(key(after))) continue;
         came.set(key(after), { before: counts, pair: [a, b] });
         if (found === null && done(after)) found = after;
@@ -241,6 +264,17 @@ export function solve(board) {
   return board.kind === 'cups' ? solveCups(board) : solveColors(board);
 }
 
+/**
+ * 셋이 하나로: 어떻게 만나도 마지막에 남는 색이 정해져 있으면 그 색, 아니면 null.
+ * 세 마릿수 가운데 홀짝이 혼자 다른 색이 남는다. 세 수의 홀짝이 모두 같으면 정해져 있지 않다.
+ * (풀이 프로그램이 아니라 바뀌지 않는 값으로 셈한다. 테스트가 모든 판을 끝까지 따져 이것이 맞는지 본다.)
+ */
+export function forcedColor(counts) {
+  const odd = counts.map((count) => count % 2);
+  const alone = [0, 1, 2].filter((color) => odd.filter((value) => value === odd[color]).length === 1);
+  return alone.length === 1 ? alone[0] : null;
+}
+
 // ---- 바뀌지 않는 값 ----
 
 /** 세 마릿수를 3으로 나눈 나머지 */
@@ -254,9 +288,14 @@ export function remaindersApart(counts) {
 /**
  * "왜 그럴까?"의 까닭(바뀌지 않는 값)이 이 판이 왜 안 되는지를 말해 주는가.
  * 컵: 한 번에 짝수 개씩 뒤집고 엎어진 컵이 홀수 개인 판. 방울이: 세 나머지가 모두 다른 판.
+ * 셋이 하나로: 정해진 색이 아닌 두 색의 홀짝이 다른 판(끝에는 둘 다 0마리라서 홀짝이 같아야 한다).
  */
 export function invariantRulesOut(board) {
   if (board.kind === 'cups') return board.k % 2 === 0 && downCount(board.cups) % 2 === 1;
+  if (board.kind === 'merge') {
+    const [a, b] = [0, 1, 2].filter((color) => color !== board.target);
+    return board.counts[a] % 2 !== board.counts[b] % 2;
+  }
   return remaindersApart(board.counts);
 }
 
@@ -276,7 +315,7 @@ export function diagnoseImpossible(solution, board, tried = {}) {
   if (!solution.possible) return { correct: true, guess: null };
   if ((tried.moves ?? 0) === 0) return { correct: false, guess: 'impossible-no-try' };
   if (board.kind === 'cups' && tried.upPicked !== true) return { correct: false, guess: 'impossible-only-down' };
-  if (board.kind === 'colors' && (tried.pairs?.length ?? 0) <= 1) return { correct: false, guess: 'impossible-same-pair' };
+  if (isFolk(board) && (tried.pairs?.length ?? 0) <= 1) return { correct: false, guess: 'impossible-same-pair' };
   return { correct: false, guess: 'impossible-other-way' };
 }
 

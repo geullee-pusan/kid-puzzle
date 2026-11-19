@@ -13,6 +13,8 @@ import {
   countsOf,
   diagnoseImpossible,
   downCount,
+  forcedColor,
+  isOver,
   invariantRulesOut,
   isDone,
   remainders,
@@ -23,7 +25,7 @@ import {
   thirdColor,
   whyOpen,
 } from '../src/core/cups.js';
-import { bruteColors, bruteCups } from './helpers/brute-cups.js';
+import { bruteColors, bruteCups, bruteMerge } from './helpers/brute-cups.js';
 
 const cupsBoard = (n, k, mask) => ({ kind: 'cups', n, k, cups: Array.from({ length: n }, (_, index) => (mask >> index) & 1) });
 
@@ -207,4 +209,97 @@ test('"왜 그럴까?"는 판의 종류마다 따로, 그 종류의 안 되는 �
   assert.equal(whyOpen([record({ format: 'coins' })], 'cups'), false, '다른 형식');
   assert.equal(whyOpen([record(), record({ outcome: 'left' })], 'cups'), false, '같은 판의 맨 뒤 기록');
   assert.equal(whyOpen([record({ board: { kind: 'colors' } })], 'colors'), true);
+});
+
+// ---- 셋이 하나로(2026-11-20에 더한 판) ----
+const merge = (counts, target) => ({ kind: 'merge', counts, target });
+
+test('셋이 하나로의 규칙: 색이 다른 둘이 합쳐져 셋째 색 하나가 된다. 정해진 색만 남으면 끝이고, 다른 색만 남으면 더 만날 수 없다', () => {
+  assert.equal(checkBoard(merge([2, 1, 2], 1)), null);
+  assert.equal(checkBoard(merge([2, 1, 2], 3)), 'bad-target');
+  assert.equal(checkBoard({ kind: 'merge', counts: [2, 1, 2] }), 'bad-target');
+  const board = merge([2, 1, 2], 1);
+  const items = startItems(board);
+  assert.deepEqual(items, [0, 0, 1, 2, 2]);
+  assert.equal(checkMove(board, items, [0, 1]), 'same');
+  // 앞 번호의 방울이가 셋째 색이 되고 뒤 번호의 방울이는 빠진다.
+  assert.deepEqual(applyMove(board, items, [0, 3]), [1, 0, 1, 2]);
+  assert.deepEqual(replay(board, [[0, 3], [1, 3]]).items, [1, 1, 1]);
+  assert.equal(isDone(board, [1, 1, 1]), true);
+  assert.equal(isDone(merge([2, 1, 2], 2), [1, 1, 1]), false);
+  assert.equal(isOver(merge([2, 1, 2], 2), [1, 1, 1]), true);
+  assert.equal(isOver(board, [1, 0]), false);
+  const solved = solve(board);
+  assert.deepEqual([solved.possible, solved.min], [true, 2]);
+  assert.equal(solve(merge([3, 2, 2], 2)).possible, false);
+});
+
+test('셋이 하나로: 규격 안의 모든 판에서 마지막에 남을 수 있는 색은 홀짝이 혼자 다른 색 하나뿐이다. 세 수의 홀짝이 모두 같으면 세 색이 다 남을 수 있다', () => {
+  // 다른 방법: 마릿수의 모습을 깊이 우선으로 모두 가 보며, 더 만날 수 없는 모습에서 남은 색을 모은다.
+  const endsOf = (start) => {
+    const seen = new Set();
+    const ends = new Set();
+    const stack = [start];
+    while (stack.length > 0) {
+      const counts = stack.pop();
+      if (seen.has(counts.join(','))) continue;
+      seen.add(counts.join(','));
+      const alive = [0, 1, 2].filter((color) => counts[color] > 0);
+      if (alive.length <= 1) {
+        ends.add(alive[0]);
+        continue;
+      }
+      for (const [a, b] of [[0, 1], [0, 2], [1, 2]]) {
+        if (counts[a] === 0 || counts[b] === 0) continue;
+        const after = counts.slice();
+        after[a] -= 1;
+        after[b] -= 1;
+        after[3 - a - b] += 1;
+        stack.push(after);
+      }
+    }
+    return [...ends].sort();
+  };
+  let forced = 0;
+  let free = 0;
+  for (const { counts } of colorBoards(RANGES.total[1])) {
+    if (counts.filter((count) => count > 0).length < 2) continue;
+    const ends = endsOf(counts);
+    const color = forcedColor(counts);
+    const sameParity = new Set(counts.map((count) => count % 2)).size === 1;
+    if (sameParity) {
+      assert.equal(color, null, counts.join(','));
+      assert.deepEqual(ends, [0, 1, 2], counts.join(','));
+      free += 1;
+    } else {
+      assert.deepEqual(ends, [color], counts.join(','));
+      forced += 1;
+    }
+    // 풀이 프로그램이 되는지 판정한 것과, 바뀌지 않는 값이 안 된다고 가려 준 것이 맞다.
+    for (const target of [0, 1, 2]) {
+      const board = merge(counts, target);
+      const possible = solve(board).possible;
+      assert.equal(possible, ends.includes(target), `${counts.join(',')} → ${target}`);
+      assert.equal(invariantRulesOut(board), !possible, `${counts.join(',')} → ${target}`);
+    }
+  }
+  assert.deepEqual([forced, free], [243, 81]);
+});
+
+test('셋이 하나로: 풀이 프로그램의 가장 적은 횟수는 방울이 줄을 그대로 따지는 다른 방법과 같다(8마리 이하)', () => {
+  let checked = 0;
+  for (const { counts } of colorBoards(8)) {
+    if (counts.filter((count) => count > 0).length < 2) continue;
+    for (const target of [0, 1, 2]) {
+      const board = merge(counts, target);
+      const solved = solve(board);
+      const brute = bruteMerge(board);
+      assert.deepEqual([solved.possible, solved.min], [brute.possible, brute.min], `${counts.join(',')} → ${target}`);
+      if (solved.possible) assert.equal(isDone(board, replay(board, solved.moves).items), true);
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 300);
+  // 오답 짐작은 세 색 무리와 같다.
+  assert.equal(diagnoseImpossible(solve(merge([2, 1, 2], 1)), merge([2, 1, 2], 1), { moves: 2, pairs: ['0-2'] }).guess, 'impossible-same-pair');
 });
