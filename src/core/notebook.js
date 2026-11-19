@@ -91,6 +91,18 @@ export function dropPage(book, key) {
   return book.filter((item) => item.key !== key);
 }
 
+/** 아이가 뺀 묵혀 둔 판의 번호를 몇 개까지 기억하는가 */
+export const MAX_GONE = 120;
+
+/**
+ * 아이가 공책에서 뺀 묵혀 둔 판의 번호 목록에 하나를 더한다(최근 것이 앞, 겹치지 않게, 위 끝을 넘으면 오래된 것부터 잊는다).
+ * 뺀 판은 그 판을 다시 그만두어도 공책에 돌아오지 않는다.
+ */
+export function addGone(gone, roundId) {
+  const list = Array.isArray(gone) ? gone.filter((id) => typeof id === 'string' && id !== roundId) : [];
+  return [roundId, ...list].slice(0, MAX_GONE);
+}
+
 /** 쪽의 이름을 바꾼다. 자리는 그대로다. */
 export function renamePage(book, id, name) {
   return book.map((item) => (item.id === id ? { ...item, name: cleanName(name) } : item));

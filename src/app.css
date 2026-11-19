@@ -560,6 +560,35 @@ a.btn {
   align-self: center;
 }
 
+/* 쪽 아래의 단추들. "빼기"는 작게, 오른쪽 끝에 둔다(잘못 누르지 않게 한 번 더 묻는다) */
+.note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.note-actions .note-drop,
+.note-actions .note-drop-yes {
+  margin-left: auto;
+}
+
+.note-actions .note-drop {
+  color: var(--muted);
+}
+
+.note-drop-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-drop-line {
+  margin: 0;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
 /* "만들기" 목록: 처음 화면 위에 뜨는 작은 목록. 형식마다 빈 판 하나와 이름 */
 .menu {
   position: fixed;

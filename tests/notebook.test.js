@@ -1,7 +1,7 @@
 // 내 공책의 순수 함수: 같은 쪽 가리기, 넣기, 가장 좋은 기록, 이름 다듬기, 깨진 값 걸러 내기.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { MAX_NAME, MAX_PAGES, cleanBook, cleanName, dropPage, pageKey, putPage, renamePage, startOf, validPage, wasStuck } from '../src/core/notebook.js';
+import { MAX_GONE, MAX_NAME, MAX_PAGES, addGone, cleanBook, cleanName, dropPage, pageKey, putPage, renamePage, startOf, validPage, wasStuck } from '../src/core/notebook.js';
 
 const page = (over = {}) => {
   const kind = over.kind ?? 'found';
@@ -104,4 +104,16 @@ test('다시 열 값: 작은 판은 판 번호 없이 보통 판으로 연다', 
   assert.deepEqual(startOf({ level: 3, seed: 7, small: true, custom: false, board }), { level: 3, seed: 7, small: true, custom: false, board });
   assert.deepEqual(startOf({ level: 3, seed: null, small: false, custom: false, side: true, board }), { level: 3, seed: null, small: false, custom: false, board });
   assert.deepEqual(startOf({ level: 6, seed: null, custom: true, board }), { level: 6, seed: null, small: false, custom: true, board });
+});
+
+test('뺀 묵혀 둔 판: 최근 것이 앞, 겹치지 않게, 위 끝을 넘으면 오래된 것부터 잊는다', () => {
+  assert.deepEqual(addGone([], 'r1'), ['r1']);
+  assert.deepEqual(addGone(['r1', 'r2'], 'r2'), ['r2', 'r1']);
+  assert.deepEqual(addGone(null, 'r1'), ['r1']);
+  assert.deepEqual(addGone([3, 'r1'], 'r2'), ['r2', 'r1']);
+  const many = Array.from({ length: MAX_GONE }, (_, i) => `r${i}`);
+  const next = addGone(many, 'new');
+  assert.equal(next.length, MAX_GONE);
+  assert.equal(next[0], 'new');
+  assert.ok(!next.includes(`r${MAX_GONE - 1}`));
 });

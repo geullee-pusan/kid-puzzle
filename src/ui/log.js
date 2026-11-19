@@ -142,6 +142,18 @@ export function saveNotebook(book) {
   return save(NOTEBOOK, book);
 }
 
+// 아이가 공책에서 뺀 묵혀 둔 판의 번호들(그 판이 공책에 다시 들어오지 않게)
+const NOTEBOOK_GONE = 'notebook-gone';
+
+export function loadNotebookGone() {
+  const gone = load(NOTEBOOK_GONE, []);
+  return Array.isArray(gone) ? gone : [];
+}
+
+export function saveNotebookGone(gone) {
+  return save(NOTEBOOK_GONE, gone);
+}
+
 // ---- 설정(선생님 목소리, 처음 만남을 보았는지, 연구소에 와 본 적이 있는지) ----
 
 export function loadPrefs() {

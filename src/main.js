@@ -67,6 +67,7 @@ const flashing = new Map(); // 눈에 띄게 해 둔 것들과, 다시 가라앉
 const homeNext = {}; // 처음 화면에 그려 둔 판(형식마다 하나). "해 보기"를 누르면 이 판이 열린다
 let makeFormat = null; // 직접 만들기 화면에서 만드는 형식
 let madeId = null; // 직접 만들기에서 방금 공책에 남긴 쪽(이름 칸이 이 쪽의 이름을 고친다)
+let notebookFromPlay = false; // 공책을 판을 하던 중에 열었는가(그러면 공책의 나가기가 하던 판으로 돌아간다)
 
 function setScreen(name) {
   screen = name;
@@ -330,6 +331,7 @@ function newRound(formatId, { level, seed, small, custom, board }, more = {}) {
 
 /** 새 판을 연다. 하던 판이 막혔던 판이면 공책에 묵혀 둔다(새 판이 하던 판 자리를 차지하기 때문이다). */
 function startRound(formatId, start, more = {}) {
+  notebookFromPlay = false;
   notebook.keepShelved(readCurrent());
   origin = null;
   round = newRound(formatId, start, more);
@@ -339,6 +341,7 @@ function startRound(formatId, start, more = {}) {
 }
 
 function resumeRound() {
+  notebookFromPlay = false;
   const saved = readCurrent();
   if (!saved) {
     showHome();
@@ -375,6 +378,7 @@ function showPlay(line) {
   // 작은 판에서는 "나가기" 자리에 "원래 판으로"가 있고, 제목에 작은 판임이 보인다.
   $('leave').hidden = round.side;
   $('side-back').hidden = !round.side;
+  $('play-notebook').hidden = round.side || round.done;
   $('where-format').textContent = F.T.title;
   $('where-title').textContent = round.side
     ? C.side.title
@@ -587,6 +591,7 @@ function finish(outcome) {
   round.endedAt = new Date().toISOString();
   F.ended();
   log.saveRecord(toRecord(outcome));
+  $('play-notebook').hidden = true;
   const side = round.side;
   if (side) {
     // 작은 판을 끝까지 했다. 원래 판에 적어 둔다(다음에 여는 작은 판은 그다음 차례다). 하던 판은 여전히 원래 판이다.
@@ -768,6 +773,37 @@ function pressFound() {
   talkers.play.say(result.existed ? C.notebook['found-again'] : C.notebook.found);
 }
 
+// ---- 판을 하던 중에 공책 보기: 판은 멈춰 두고 적어 둔다. 공책에서 다른 판을 열면 그 판이 하던 판 자리를 차지한다. ----
+function openNotebookFromPlay() {
+  if (!round || round.side || round.done) return;
+  closeSheet();
+  note('notebook', { on: true });
+  stopClock();
+  persist();
+  log.saveRecord({ ...toRecord('left'), endedAt: new Date().toISOString() });
+  log.flush();
+  notebookFromPlay = true;
+  notebook.show({ fromPlay: true });
+}
+
+function openNotebookFromHome() {
+  notebookFromPlay = false;
+  notebook.show();
+}
+
+/** 공책의 나가기: 판을 하던 중에 열었으면 하던 판으로, 아니면 처음 화면으로 */
+function leaveNotebook() {
+  const back = notebookFromPlay && round && !round.done && !round.side;
+  notebookFromPlay = false;
+  if (!back) {
+    showHome();
+    return;
+  }
+  showPlay(C.notebook['back-line']);
+  note('notebook', { on: false });
+  persist();
+}
+
 // ---- 직접 만들기 화면: 형식마다 만드는 칸이 따로 있다. ----
 function openMake(formatId) {
   setScreen('make');
@@ -849,8 +885,9 @@ $('make-menu').addEventListener('click', (event) => {
   if (event.target === $('make-menu')) showMakeMenu(false);
 });
 $('continue').addEventListener('click', resumeRound);
-$('notebook-open').addEventListener('click', () => notebook.show());
-$('notebook-leave').addEventListener('click', showHome);
+$('notebook-open').addEventListener('click', openNotebookFromHome);
+$('play-notebook').addEventListener('click', openNotebookFromPlay);
+$('notebook-leave').addEventListener('click', leaveNotebook);
 $('found').addEventListener('click', pressFound);
 $('make-keep').addEventListener('click', keepMade);
 // 이름은 다 쓰고 나면(칸을 떠나거나 글자판의 들이기를 누르면) 고친다.
