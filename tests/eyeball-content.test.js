@@ -109,7 +109,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules['side-hidden'], /□는 가려진 숫자예요\./);
   for (const key of ['side', 'side-hidden']) assert.match(T.rules[key], /큰지, 작은지, 알 수 없는지 골라요\.$/, key);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 20);
+  assert.equal(guides.length, 21);
   assert.ok(sentenceCount(guides[19]) <= 3, guides[19]);
   assert.match(guides[19], /^모눈을 눌러 둥근 덩어리를 놓아 얼룩을 만들어요\./);
 });
@@ -231,8 +231,8 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   // 카드는 똑같이 섞이게 자르기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="split-title"') < html.indexOf('id="eyeball-title"'));
   assert.ok(html.indexOf('id="eyeball-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 똑같이 섞이게 자르기 다음)
-  assert.match(read('src/main.js'), /split: createSplit\(frame\), eyeball: createEyeball\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 똑같이 섞이게 자르기 다음)
+  assert.match(read('src/main.js'), /split: createSplit\(frame\), eyeball: createEyeball\(frame\), /);
   assert.match(read('src/check-main.js'), /\['eyeball', '눈대중'\]/);
   // 무르기와 되돌리기는 덮기에만 있다
   assert.match(code, /const other = frame\.round\?\.mode !== 'cover';\s*\$\('undo'\)\.hidden = other;\s*\$\('reset'\)\.hidden = other;/);

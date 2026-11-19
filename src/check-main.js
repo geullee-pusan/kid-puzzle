@@ -54,6 +54,7 @@ function drawCounts() {
     ['machine', '규칙 기계와 규칙이 깨지는 판'],
     ['split', '똑같이 섞이게 자르기'],
     ['eyeball', '눈대중'],
+    ['cutpaste', '자르고 붙이기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

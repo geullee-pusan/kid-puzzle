@@ -30,6 +30,8 @@ import { checkBoard as checkRooms } from './rooms.js';
 import { smallBoards as smallSplitBoards } from './split-ladder.js';
 import { smallBoards as smallEyeBoards } from './eyeball-ladder.js';
 import { checkBoard as checkEyeball, solve as solveEyeball } from './eyeball.js';
+import { smallBoards as smallCutBoards } from './cutpaste-ladder.js';
+import { checkBoard as checkCutpaste, solve as solveCutpaste } from './cutpaste.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -693,4 +695,16 @@ export function smallerEyeball(origin, turn = 0) {
   return wrap(pickByTurn(smallEyeBoards(origin), solveEyeball(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball };
+// ---- 자르고 붙이기: 칸이 적은 도형, 조각 넷의 그림자, 빵이나 사람이 적은 나누기 ----
+
+/**
+ * 원래 판보다 작은 판을 낸다(src/core/cutpaste-ladder.js의 smallBoards). 잘라 옮겨 네모는 칸이 3분의 2 이하이고 자르는 수가 같은 되는 도형,
+ * 가짜 그림자는 조각 넷의 그림자(채울 수 없는 그림자에서 왔으면 채울 수 있는 그림자부터 번갈아), 나누기는 빵이나 사람이 적은 판이다.
+ * 더 줄일 수 없으면 null이다.
+ */
+export function smallerCutpaste(origin, turn = 0) {
+  if (!origin.board || checkCutpaste(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallCutBoards(origin), solveCutpaste(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste };
