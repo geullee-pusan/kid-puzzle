@@ -1017,13 +1017,20 @@
             <h2>이 판의 조각</h2>
             <div class="tile-piece-line"><div id="tile-piece"></div><strong id="tile-piece-name"></strong></div>
             <p class="pad-note">조각은 얼마든지 쓸 수 있고, 돌려 놓아도 돼요.</p>
+            <p id="tile-flip-note" class="pad-note" hidden>네 칸 조각은 뒤집어 놓아도 돼요.</p>
             <p class="pad-note">칸을 따라 그으면 조각이 놓여요. 칸을 하나씩 눌러도 돼요. 놓인 조각을 누르면 빠져요.</p>
             <div id="tile-cover" class="choices">
               <p class="pad-note">빈칸을 모두 덮으면 끝나요.</p>
             </div>
             <div id="tile-either" class="choices" hidden>
+              <p id="tile-wall-note" class="pad-note" hidden>끝에서 끝까지 곧게 이어진 금이 없게 다 덮으면 끝나요.</p>
               <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="tile-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <!-- 되는 자리 고르기: 처음 누른 칸이 빠진다. 다른 칸을 빼려면 이 단추를 누른다 -->
+            <div id="tile-pick" class="choices" hidden>
+              <p class="pad-note">처음 누른 칸이 빠져요. 남은 칸을 모두 덮으면 끝나요.</p>
+              <button id="tile-repick" class="btn huge" type="button">다른 칸 빼기</button>
             </div>
           </div>
 

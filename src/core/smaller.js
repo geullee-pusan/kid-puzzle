@@ -32,7 +32,7 @@ import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap } from './swap.js';
 import { solveOnce as solveSwapOnce } from './swap-ladder.js';
 import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
-import { MIN_SIZE, checkBoard as checkTile, deadCells, solve as solveTile, xyOf } from './tile.js';
+import { MIN_SIZE, PIECES, checkBoard as checkTile, deadCells, solve as solveTile, solveWall as solveTileWall, xyOf } from './tile.js';
 import { famousShape, plainBridges, randomBridges, randomFigure, randomTwin, tooPlain } from './trace-ladder.js';
 import { checkFigure, fixesOf, solve as solveTrace } from './trace.js';
 import { smallBoards as smallUntangleBoards } from './untangle-ladder.js';
@@ -299,9 +299,48 @@ function holeDistance(shell, holes, targets) {
   return Math.min(gap(holes[0], targets[0]) + gap(holes[1], targets[1]), gap(holes[0], targets[1]) + gap(holes[1], targets[0]));
 }
 
+/**
+ * 빠진 칸이 없는 네모 판(네 칸 조각 덮기, 금 없는 벽)의 작은 판: 가로와 세로가 원래 판보다 크지 않고 칸이 더 적은 판.
+ * 가장 작은 판부터 줄 세우고(작은 판일수록 본 것을 원래 판에 가져가기 쉽다), 되는 판과 안 되는 판으로 갈라 차례로 낸다.
+ * 칸 수만으로 갈리는 판(조각의 칸 수로 나누어떨어지지 않는 판)은 내지 않는다.
+ */
+function smallerPlain(board, works, possible, turn) {
+  const size = PIECES[board.piece];
+  const lists = { yes: [], no: [] };
+  const sizes = [];
+  for (let w = MIN_SIZE; w <= board.w; w++) {
+    for (let h = MIN_SIZE; h <= board.h; h++) if (w * h < board.w * board.h && (w * h) % size === 0) sizes.push([w, h]);
+  }
+  // 칸이 적은 판부터, 같으면 원래 판과 꼴이 닮은 판(가로와 세로의 차이가 원래 판과 가까운 판)부터
+  const shape = board.w - board.h;
+  sizes.sort((a, b) => a[0] * a[1] - b[0] * b[1] || Math.abs(a[0] - a[1] - shape) - Math.abs(b[0] - b[1] - shape) || a[0] - b[0]);
+  for (const [w, h] of sizes) {
+    const small = { w, h, piece: board.piece, holes: [] };
+    const result = works(small);
+    if (result === true) lists.yes.push(small);
+    else if (result === false) lists.no.push(small);
+  }
+  return wrap(pickByTurn(lists, possible, turn));
+}
+
 export function smallerTile(origin, turn = 0) {
   const { board } = origin;
   if (checkTile(board) !== null || board.holes.length > TILE_MAX_HOLES) return null;
+  // 금 없는 벽: 도미노, 빠진 칸이 없는 작은 네모 판
+  if (origin.mode === 'wall') {
+    const works = (item) => solveTileWall(item).possible;
+    return smallerPlain(board, works, works(board), turn);
+  }
+  // 되는 자리 고르기: 한 단 작은 정사각형 판(늘 되는 자리가 있다). 4×4가 가장 작은 판이다
+  if (origin.mode === 'pick') {
+    const side = TILE_DOWN[board.w];
+    return side && board.w === board.h ? { board: { w: side, h: side, piece: board.piece, holes: [] } } : null;
+  }
+  // 네 칸 조각: 같은 조각, 빠진 칸이 없는 작은 네모 판
+  if (PIECES[board.piece] === 4 && board.holes.length === 0) {
+    const works = (item) => solveTile(item).possible;
+    return smallerPlain(board, works, works(board), turn);
+  }
   const solution = solveTile(board);
   if (solution.possible === null) return null;
   const { piece } = board;

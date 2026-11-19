@@ -3,20 +3,27 @@
 //
 // 판(board): { w, h, piece, holes }
 //   w, h    가로와 세로의 칸 수
-//   piece   덮는 조각. 'domino'(두 칸) | 'bar'(일자 세 칸) | 'ell'(ㄱ자 세 칸). 한 판에는 한 가지 조각만 쓴다
+//   piece   덮는 조각. 'domino'(두 칸) | 'bar'(일자 세 칸) | 'ell'(ㄱ자 세 칸)
+//           | 네 칸 조각 'square'(네모) | 'long'(일자) | 'tee'(ㅗ자) | 'bend'(ㄱ자) | 'zig'(번개). 한 판에는 한 가지 조각만 쓴다
 //   holes   빠진 칸의 번호들(작은 것부터). 칸 번호는 왼쪽 위가 0이고 오른쪽으로, 그다음 아래 줄로 센다(번호 = 세로 × w + 가로)
 //
-// 놓은 조각 하나는 그 조각이 덮는 칸 번호들이다(작은 것부터). 조각은 돌려 놓아도 된다.
+// 놓은 조각 하나는 그 조각이 덮는 칸 번호들이다(작은 것부터). 조각은 돌려 놓아도 되고, 네 칸 조각은 뒤집어 놓아도 된다.
+// 금 없는 벽(도미노로 네모 판을 덮되 판의 끝에서 끝까지 곧게 가는 금이 없게)을 따지는 함수도 여기에 둔다(faultLines, solveWall).
 // 지나온 길(trail)은 한 일의 목록이다: { op: 'place' | 'remove', cells }. 처음부터 따라가면 지금 놓인 조각들이 나온다.
+import { orientationsOf } from './block.js';
 import { createRng } from './rng.js';
 
 /** 판의 가로와 세로의 아래 끝과 위 끝(직접 만들기에서 고를 수 있는 크기) */
 export const MIN_SIZE = 3;
 export const MAX_SIZE = 8;
 
-/** 조각과 그 칸 수 */
-export const PIECES = { domino: 2, bar: 3, ell: 3 };
-export const PIECE_IDS = ['domino', 'bar', 'ell'];
+/** 조각과 그 칸 수. 네 칸 조각 다섯은 조각 못 들어가게 막기(src/core/block.js)와 같은 모양이다 */
+export const PIECES = { domino: 2, bar: 3, ell: 3, square: 4, long: 4, tee: 4, bend: 4, zig: 4 };
+export const PIECE_IDS = ['domino', 'bar', 'ell', 'square', 'long', 'tee', 'bend', 'zig'];
+/** 네 칸 조각들(2026-11-20에 더했다) */
+export const FOUR_PIECES = ['square', 'long', 'tee', 'bend', 'zig'];
+/** "왜 그럴까?"가 있는 조각. ㄱ자 세 칸은 일부러 까닭을 남겨 둔 판이고, 네 칸 조각에는 없다 */
+export const WHY_PIECES = ['domino', 'bar'];
 
 /**
  * 판에 입히는 무늬.
@@ -85,9 +92,13 @@ export function colorCounts(board, pattern, placed = []) {
   return counts;
 }
 
+/** 네 칸 조각마다 돌리고 뒤집은 모양들(칸의 가로, 세로를 이어 쓴 열쇠) */
+const FOUR_KEYS = new Map(FOUR_PIECES.map((piece) => [piece, new Set(orientationsOf(piece).map((cells) => cells.join(' ')))]));
+
 /**
  * 칸들이 어느 조각의 모양인지 본다. 어느 조각도 아니면 null.
  * 두 칸이 이웃하면 도미노, 세 칸이 한 줄로 나란하면 일자, 세 칸이 두 칸짜리 네모 안에 있으면 ㄱ자다.
+ * 네 칸은 돌리고 뒤집은 모양을 모두 견줘서 어느 네 칸 조각인지 가린다.
  */
 export function shapeOf(board, cells) {
   if (!Array.isArray(cells) || new Set(cells).size !== cells.length) return null;
@@ -98,6 +109,15 @@ export function shapeOf(board, cells) {
   const wide = Math.max(...xs) - Math.min(...xs) + 1;
   const tall = Math.max(...ys) - Math.min(...ys) + 1;
   if (cells.length === 2) return (wide === 2 && tall === 1) || (wide === 1 && tall === 2) ? 'domino' : null;
+  if (cells.length === 4) {
+    const left = Math.min(...xs);
+    const top = Math.min(...ys);
+    const key = spots
+      .map(([x, y]) => [x - left, y - top])
+      .sort((p, q) => p[1] - q[1] || p[0] - q[0])
+      .join(' ');
+    return FOUR_PIECES.find((piece) => FOUR_KEYS.get(piece).has(key)) ?? null;
+  }
   if (cells.length !== 3) return null;
   if ((wide === 3 && tall === 1) || (wide === 1 && tall === 3)) return 'bar';
   if (wide === 2 && tall === 2) return 'ell';
@@ -127,7 +147,11 @@ export function placeProblem(board, placed, cells) {
   return shapeOf(board, cells) === board.piece ? null : 'shape';
 }
 
-/** 조각의 모양들: 맨 처음 칸(가장 작은 번호의 칸)에서 본 나머지 칸의 자리(가로, 세로) */
+/**
+ * 조각의 모양들: 맨 처음 칸(가장 작은 번호의 칸)에서 본 나머지 칸의 자리(가로, 세로).
+ * 네 칸 조각은 돌리고 뒤집은 모양(orientationsOf)에서 만든다. 그 모양의 칸은 위에서 아래, 왼쪽에서 오른쪽 차례라서 첫 칸이 맨 처음 칸이다.
+ */
+const fourShapes = (piece) => orientationsOf(piece).map((cells) => cells.slice(1).map(([x, y]) => [x - cells[0][0], y - cells[0][1]]));
 const SHAPES = {
   domino: [
     [[1, 0]],
@@ -143,7 +167,15 @@ const SHAPES = {
     [[0, 1], [1, 1]],
     [[-1, 1], [0, 1]],
   ],
+  ...Object.fromEntries(FOUR_PIECES.map((piece) => [piece, fourShapes(piece)])),
 };
+
+/** 조각이 맨 처음 칸에서 가장 멀리 닿는 칸까지의 번호 차(풀이 프로그램이 같은 모습을 알아보는 데 쓴다) */
+function reachOf(board) {
+  let far = 0;
+  for (const shape of SHAPES[board.piece]) for (const [dx, dy] of shape) far = Math.max(far, dy * board.w + dx);
+  return far;
+}
 
 /** 그 칸을 맨 처음 칸으로 하는 조각 자리들(판 안에 들어가는 것만). 빠진 칸과 덮인 칸은 따지지 않는다 */
 function shapesFrom(board, cell) {
@@ -290,7 +322,8 @@ export function solve(board, { limit = SOLVE_LIMIT, filters = true } = {}) {
   }
   const taken = takenOf(board);
   const total = taken.length;
-  const reach = 2 * board.w;
+  // 세 칸까지의 조각은 두 줄 아래까지만 닿는다. 일자 네 칸은 세 줄 아래까지 닿는다.
+  const reach = Math.max(2 * board.w, reachOf(board));
   const failed = new Set();
   const tiling = [];
   let steps = 0;
@@ -360,6 +393,108 @@ export function randomFillRate(board, { trials = 200, seed = 1 } = {}) {
   return done / trials;
 }
 
+// ---- 금 없는 벽 ----
+
+/**
+ * 금: 판의 한 끝에서 반대쪽 끝까지 칸 사이를 곧게 지나는 선 가운데, 어느 조각도 가로지르지 않는 것들.
+ * 세로 금({ dir: 'v', at })은 왼쪽에서 at번째 칸과 그다음 칸 사이에, 가로 금({ dir: 'h', at })은 위에서 at번째 줄과 그다음 줄 사이에 있다.
+ * 조각은 한 덩어리라서, 금의 양쪽에 칸이 있는 조각은 그 금을 가로지른다(금의 양쪽에 이웃한 두 칸이 있다).
+ * 다 덮은 판에서 쓴다. 덜 덮은 판에서는 아직 조각이 없는 곳의 선도 금으로 센다.
+ * @returns {{dir: string, at: number}[]} 세로 금(왼쪽부터), 가로 금(위부터)의 차례
+ */
+export function faultLines(board, placed) {
+  const crossV = new Uint8Array(board.w);
+  const crossH = new Uint8Array(board.h);
+  for (const cells of placed) {
+    const spots = cells.map((cell) => xyOf(board, cell));
+    for (const [x, y] of spots) {
+      if (spots.some(([ox, oy]) => oy === y && ox === x + 1)) crossV[x + 1] = 1;
+      if (spots.some(([ox, oy]) => ox === x && oy === y + 1)) crossH[y + 1] = 1;
+    }
+  }
+  const lines = [];
+  for (let at = 1; at < board.w; at++) if (!crossV[at]) lines.push({ dir: 'v', at });
+  for (let at = 1; at < board.h; at++) if (!crossH[at]) lines.push({ dir: 'h', at });
+  return lines;
+}
+
+/**
+ * 금 없는 벽의 풀이 프로그램: 도미노로 판을 다 덮되 금이 하나도 없는 방법 하나를 찾거나, 없다는 것을 가린다.
+ * solve와 같은 되짚기 탐색(맨 처음 빈칸을 덮는 방법을 차례로)이다. 금이 있는지 이렇게 따진다.
+ *   가로 금: 맨 처음 빈칸이 어느 줄에 왔으면 그 위의 가로 금은 모두 정해졌다(그 금을 가로지를 세운 도미노는 이미 놓였다). 금이 남았으면 그 갈래는 안 된다.
+ *   세로 금: 다 덮은 뒤에 따진다. 지금까지 가로지른 세로 금을 모습에 함께 적어서, 같은 모습을 두 번 따지지 않는다.
+ * @param {object} board 도미노 판(빠진 칸이 없는 네모 판에서 쓴다)
+ * @param {{limit?: number}} options limit: 따져 보는 걸음 수의 위 끝
+ * @returns {{possible: boolean|null, tiling: number[][]|null, reason: string, steps: number}} solve와 같은 꼴. reason은 'tiled' | 'count' | 'search' | 'limit'
+ */
+export function solveWall(board, { limit = SOLVE_LIMIT } = {}) {
+  const taken = takenOf(board);
+  const total = taken.length;
+  const { w, h } = board;
+  if ((total - board.holes.length) % 2 !== 0) return { possible: false, tiling: null, reason: 'count', steps: 0 };
+  const reach = 2 * w;
+  const crossV = new Int32Array(w); // 세로 금마다 가로지른 눕힌 도미노의 수
+  const crossH = new Int32Array(h); // 가로 금마다 가로지른 세운 도미노의 수
+  let crossedV = 0; // 가로지른 세로 금(비트)
+  const allV = (2 ** w - 1) & ~1; // 세로 금 1 ~ w-1
+  const failed = new Set();
+  const tiling = [];
+  let steps = 0;
+  let over = false;
+
+  const linesOk = (row) => {
+    for (let at = 1; at <= Math.min(row, h - 1); at++) if (crossH[at] === 0) return false;
+    return true;
+  };
+  const put = (cells, delta) => {
+    const [a, b] = cells;
+    if (b === a + 1) {
+      const at = (a % w) + 1;
+      crossV[at] += delta;
+      if (crossV[at] > 0) crossedV |= 1 << at;
+      else crossedV &= ~(1 << at);
+    } else crossH[Math.floor(a / w) + 1] += delta;
+    for (const cell of cells) taken[cell] = delta > 0 ? 1 : 0;
+  };
+
+  const search = (from) => {
+    let first = from;
+    while (first < total && taken[first]) first += 1;
+    if (first === total) return linesOk(h) && crossedV === allV;
+    if (!linesOk(Math.floor(first / w))) return false;
+    steps += 1;
+    if (steps > limit) {
+      over = true;
+      return false;
+    }
+    let key = first;
+    for (let offset = 1; offset <= reach; offset++) {
+      const cell = first + offset;
+      key = key * 2 + (cell >= total || taken[cell] ? 1 : 0);
+    }
+    key = key * 256 + crossedV;
+    if (failed.has(key)) return false;
+    const [x, y] = xyOf(board, first);
+    const options = [];
+    if (x + 1 < w && !taken[first + 1]) options.push([first, first + 1]);
+    if (y + 1 < h && !taken[first + w]) options.push([first, first + w]);
+    for (const cells of options) {
+      put(cells, 1);
+      tiling.push(cells);
+      if (search(first + 1)) return true;
+      tiling.pop();
+      put(cells, -1);
+      if (over) return false;
+    }
+    failed.add(key);
+    return false;
+  };
+
+  if (search(0)) return { possible: true, tiling: tiling.map(sorted), reason: 'tiled', steps };
+  if (over) return { possible: null, tiling: null, reason: 'limit', steps };
+  return { possible: false, tiling: null, reason: 'search', steps };
+}
+
 /**
  * "불가능해요"라고 답했을 때의 판정과 짐작.
  * @param {{possible: boolean|null}} solution 풀이 프로그램의 결과
@@ -383,16 +518,17 @@ export function diagnoseImpossible(solution, tried = {}) {
  * 풀이 프로그램도 끝까지 따져 보지 못한 판에서도 열지 않는다. 되는 판에서는 이야기로 다시 볼 수 있다.
  */
 export function whyFits(piece, solution) {
-  if (piece === 'ell' || !solution) return false;
+  if (!WHY_PIECES.includes(piece) || !solution) return false;
   return solution.possible === true || (solution.possible === false && solution.reason === 'color');
 }
 
 /**
  * 그 조각의 "왜 그럴까?"를 열어도 되는가. 그 조각으로 덮는 안 되는 판(만들어 낸 판)을 한 번 끝까지 만난 뒤에 열린다. 작은 판(곁판)은 세지 않는다.
- * ㄱ자 세 칸에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판).
+ * ㄱ자 세 칸과 네 칸 조각에는 "왜 그럴까?"가 없다(ㄱ자 세 칸은 일부러 까닭을 남겨 둔 판이다).
+ * 금 없는 벽(도미노)의 안 되는 판은 까닭이 바둑판 무늬가 아니라서 세지 않는다.
  */
 export function whyOpen(records, piece) {
-  if (piece === 'ell' || !Array.isArray(records)) return false;
+  if (!WHY_PIECES.includes(piece) || !Array.isArray(records)) return false;
   return records.some(
     (record) =>
       record &&
@@ -400,6 +536,7 @@ export function whyOpen(records, piece) {
       record.format === 'tile' &&
       record.custom !== true &&
       record.side !== true &&
+      record.mode !== 'wall' &&
       record.board?.piece === piece &&
       record.solution?.possible === false &&
       (record.outcome === 'solved' || record.outcome === 'solution'),

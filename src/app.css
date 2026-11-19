@@ -1767,6 +1767,18 @@ div.coin {
   stroke-linecap: round;
 }
 
+.tile-ring.on-hole {
+  stroke: #fff;
+}
+
+/* 금 없는 벽에서 짚는 금: 판의 끝에서 끝까지 굵은 점선 */
+.tile-fault {
+  stroke: #c2255c;
+  stroke-width: 12;
+  stroke-dasharray: 22 10;
+  stroke-linecap: round;
+}
+
 .tile-cell-group:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: -3px;

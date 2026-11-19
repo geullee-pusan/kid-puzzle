@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { fill, ordinal, sentenceCount } from '../src/core/text.js';
-import { LADDER, MAKE_LEVEL, generateBoard, possibleHoles, rungOf } from '../src/core/tile-ladder.js';
-import { MAX_SIZE, MIN_SIZE, PATTERNS, PIECE_IDS, checkBoard, colorCounts, colorOf, deadCells, isStuck, placementsOf, replay, shapeOf, solve, whyOpen, xyOf } from '../src/core/tile.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, generateBoard, possibleHoles, rungOf } from '../src/core/tile-ladder.js';
+import { FOUR_PIECES, MAX_SIZE, MIN_SIZE, PATTERNS, PIECE_IDS, checkBoard, colorCounts, colorOf, deadCells, faultLines, isStuck, placementsOf, replay, shapeOf, solve, whyOpen, xyOf } from '../src/core/tile.js';
 import { loopOf } from './helpers/brute-tile.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,11 +19,13 @@ const T = JSON.parse(read('src/content/tile.json'));
 const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 
-const RULE_KEYS = ['cover', 'domino', 'bar', 'ell'];
+const RULE_KEYS = ['cover', 'domino', 'bar', 'ell', ...FOUR_PIECES, 'pick', 'wall'];
 const GUESS_KEYS = ['impossible-no-try', 'impossible-other-start'];
 const STUCK_KEYS = ['plain', 'same', 'same-start'];
-const STATUS_KEYS = ['stuck', 'done', 'more-1', 'more-2', 'few', 'shape-bar', 'shape-ell', 'cannot'];
-const RIGHT_KEYS = ['covered-clean', 'covered-back', 'covered-stuck', 'impossible-tried', 'impossible-some', 'impossible-untried', 'ell-no-reason', 'after-retry', 'why-invite'];
+const STATUS_KEYS = ['stuck', 'done', 'more-1', 'more-2', 'more-3', 'few', 'few-4', 'shape-bar', 'shape-ell', ...FOUR_PIECES.map((piece) => `shape-${piece}`), 'cannot', 'pick', 'pick-first', 'fault'];
+const RIGHT_KEYS = ['covered-clean', 'covered-back', 'covered-stuck', 'impossible-tried', 'impossible-some', 'impossible-untried', 'ell-no-reason', 'after-retry', 'why-invite', 'pick-first', 'pick-later', 'wall-clean', 'wall-after', 'wall-impossible-tried', 'wall-impossible-some', 'wall-impossible-untried'];
+/** 힌트의 묶음: 세 칸까지의 조각마다, 되는 자리 고르기, 네 칸 조각(다섯 조각이 함께), 금 없는 벽 */
+const HINT_KEYS = ['domino', 'bar', 'ell', 'pick', 'four', 'wall'];
 const WHY_PIECES = ['domino', 'bar'];
 
 /** 대본의 모든 글(값)을 길과 함께 모은다. 설명(_로 시작하는 것)과 그림의 값(조각, 무늬의 이름)은 뺀다. */
@@ -60,12 +62,16 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
   for (const [path, text] of strings) assert.ok(text.trim().length > 0, path);
   assert.equal(T.title, '조각 덮기');
   assert.deepEqual(Object.keys(T.pieces), PIECE_IDS);
-  assert.deepEqual(Object.values(T.pieces), ['도미노', '일자 세 칸', 'ㄱ자 세 칸']);
+  assert.deepEqual(Object.values(T.pieces), ['도미노', '일자 세 칸', 'ㄱ자 세 칸', '네모 네 칸', '일자 네 칸', 'ㅗ자 네 칸', 'ㄱ자 네 칸', '번개 네 칸']);
+  // 네 칸 조각의 이름은 조각 못 들어가게 막기와 같다.
+  const B = JSON.parse(read('src/content/block.json'));
+  for (const piece of FOUR_PIECES) assert.equal(T.pieces[piece], B.pieces[piece], piece);
 });
 
-test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·도전이다', () => {
+test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·응용·응용·도전·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(T.levels.slice(4, 7).map((entry) => entry.name), ['되는 자리 고르기', '네 칸 조각 한 가지로 덮기', '금 없는 벽 쌓기']);
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.match(T.levels[0].name, /도미노/);
@@ -79,7 +85,13 @@ test('규칙 설명은 세 문장을 넘지 않고, 조각이 어떤 칸을 덮�
   assert.match(T.rules.cover, /이웃한 두 칸을 덮는 조각/);
   assert.match(T.rules.bar, /한 줄로 나란한 세 칸/);
   assert.match(T.rules.ell, /ㄱ자로 꺾인 세 칸/);
-  for (const key of ['cover', 'domino', 'bar', 'ell']) assert.match(T.rules[key], /빈칸을 모두 덮/, key);
+  for (const key of RULE_KEYS) assert.match(T.rules[key], /빈칸을 모두 덮/, key);
+  for (const piece of FOUR_PIECES) assert.match(T.rules[piece], /네 칸을 덮어요\./, piece);
+  // 되는 자리 고르기는 칸 하나를 먼저 빼고, 금 없는 벽은 금이 없어야 한다는 것을 규칙에서 말한다.
+  assert.match(T.rules.pick, /^판에서 뺄 칸 하나를 눌러요\./);
+  assert.match(T.rules.wall, /한 끝에서 반대쪽 끝까지 곧게 이어진 금이 없어야 해요/);
+  // 네 칸 조각은 뒤집어 놓아도 된다는 것이 답하는 칸에 적혀 있다(그 판에서만 보인다).
+  assert.match(html, /<p id="tile-flip-note" class="pad-note" hidden>네 칸 조각은 뒤집어 놓아도 돼요\.<\/p>/);
   // 조각은 얼마든지 쓸 수 있고 돌려 놓아도 된다는 것, 놓고 들어내는 방법은 답하는 칸에 늘 적혀 있다.
   const pad = visibleText(part('id="tile-pad"', 'id="code-pad"'));
   assert.match(pad, /조각은 얼마든지 쓸 수 있고, 돌려 놓아도 돼요\./);
@@ -99,15 +111,23 @@ test('형식의 첫 단계는 덮기만 하면 된다: 늘 되는 판이고, "�
   // 1단계의 답하는 칸에는 단추가 없다. "불가능해요"는 되는 판과 안 되는 판이 섞이는 단계에만 있다.
   assert.doesNotMatch(part('id="tile-cover"', 'id="tile-either"'), /<button/);
   assert.match(part('id="tile-either"', 'id="code-pad"'), /id="tile-impossible"[^>]*>불가능해요</);
-  for (const key of ['domino', 'bar', 'ell']) assert.match(T.rules[key], /안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요\.$/, key);
+  for (const key of ['domino', 'bar', 'ell', ...FOUR_PIECES, 'wall']) assert.match(T.rules[key], /안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요\.$/, key);
+  // 되는 자리 고르기에는 "불가능해요"가 없다(어느 판에나 되는 자리가 있다). 대신 "다른 칸 빼기"가 있다.
+  assert.doesNotMatch(T.rules.pick, /불가능/);
+  assert.match(part('id="tile-pick"', 'id="code-pad"'), /id="tile-repick"[^>]*>다른 칸 빼기</);
+  assert.doesNotMatch(part('id="tile-pick"', 'id="code-pad"'), /불가능/);
   // 판 아래에는 남은 빈칸의 수를 사실로만 적는다.
   assert.match(html, /남은 빈칸 <strong id="tile-left">0<\/strong>칸/);
   for (let seed = 1; seed <= 40; seed++) assert.equal(generateBoard(1, seed).solution.possible, true);
 });
 
-test('힌트는 조각마다 두 개이고, 하나하나가 질문 한 문장이다', () => {
-  assert.deepEqual(Object.keys(T.hints), PIECE_IDS);
-  for (const piece of PIECE_IDS) {
+test('힌트는 묶음마다 두 개이고, 하나하나가 질문 한 문장이다', () => {
+  assert.deepEqual(Object.keys(T.hints), HINT_KEYS);
+  // 화면 코드: 되는 자리 고르기와 금 없는 벽은 그 판의 힌트를, 네 칸 조각은 함께 쓰는 힌트를 낸다.
+  const code = read('src/formats/tile.js');
+  assert.ok(code.includes("if (round.mode === 'pick' || round.mode === 'wall') return T.hints[round.mode];"));
+  assert.ok(code.includes("return T.hints[FOUR_PIECES.includes(round.board.piece) ? 'four' : round.board.piece];"));
+  for (const piece of HINT_KEYS) {
     const hints = T.hints[piece];
     assert.equal(hints.length, tuningFor('tile').hintCount, piece);
     assert.equal(hints.length, 2, piece);
@@ -120,12 +140,12 @@ test('힌트는 조각마다 두 개이고, 하나하나가 질문 한 문장이
 });
 
 test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어디를 볼지까지만 묻는다. 까닭을 말해 버리지 않는다', () => {
-  for (const piece of PIECE_IDS) {
+  for (const piece of HINT_KEYS) {
     const [first, second] = T.hints[piece];
     // 첫째: 어느 판에서나 쓸 수 있는 일반 질문이다. 판의 어느 곳도 가리키지 않는다.
     assert.doesNotMatch(first, /구석|가장자리|빠진 칸|가운데|둘레/, first);
-    // 둘째: 볼 곳(구석 칸, 빠진 칸의 옆이나 둘레)을 가리킨다.
-    assert.match(second, /구석 칸|빠진 칸/, second);
+    // 둘째: 볼 곳(구석 칸, 빠진 칸의 옆이나 둘레, 금 없는 벽에서는 그을 수 있는 금)을 가리킨다.
+    assert.match(second, piece === 'wall' ? /금/ : /구석 칸|빠진 칸/, second);
     // 답을 말해 버리지 않는다: 무늬, 색, 세어 보라는 말, 요령이 들어 있지 않다.
     for (const hint of [first, second]) {
       assert.doesNotMatch(hint, /무늬|색|세어|바둑판|줄무늬|짝수|홀수|넷으로|때문이에요|해야 해요|하면 돼요/, hint);
@@ -134,6 +154,9 @@ test('힌트는 두 높이다: 첫째는 무엇을 해 볼지만, 둘째는 어�
   assert.match(T.hints.domino[0], /더 작은 판이라면/);
   assert.match(T.hints.bar[0], /아직 한 번도 덮어 보지 않은 칸/);
   assert.match(T.hints.ell[0], /끝나기 바로 전/);
+  for (const key of ['pick', 'four', 'wall']) assert.match(T.hints[key][0], /^더 작은 판이라면/, key);
+  // 되는 자리 고르기의 힌트는 되는 자리(구석, 한가운데)를 가리키지 않는다.
+  for (const hint of T.hints.pick) assert.doesNotMatch(hint, /구석|가운데/, hint);
 });
 
 test('판에 무늬 입히기는 힌트 칸에 있는 도구다. 무엇을 알려 주는지는 말하지 않는다', () => {
@@ -184,6 +207,44 @@ test('막혔을 때 하는 말은 본 것 하나와 할 수 있는 일 하나다
     assert.ok([...T.status[key]].length <= 20, key);
     assert.doesNotMatch(T.status[key], /틀렸|무늬|색/, key);
   }
+  assert.equal(T.status['few-4'], '네 칸을 이어야 해요');
+});
+
+test('되는 자리 고르기: 덮을 수 없는 칸을 고르면 그 판이 덮이지 않는다는 사실과 할 수 있는 일을 말한다. 틀렸다고 하지 않는다', () => {
+  assert.deepEqual(Object.keys(T.pick), ['wrong', 'again']);
+  for (const key of ['wrong', 'again']) {
+    const [fact, next, ...rest] = sentences(T.pick[key]);
+    assert.equal(rest.length, 0, key);
+    assert.doesNotMatch(T.pick[key], /틀렸|아니에요|땡|안 돼요|무늬|색/, key);
+    assert.match(T.pick[key], /이 칸을 빼면 남은 칸을 다 덮을 수 없어요\./, key);
+    assert.ok(fact && next, key);
+  }
+  // 덮어 보며 확인해도 되고 다른 칸을 빼도 된다(판에서 확인하게 한다). 같은 칸을 또 고르면 그 사실을 알려 준다.
+  assert.match(T.pick.wrong, /덮어 보며 확인해도 되고, 다른 칸을 빼 볼 수도 있어요\.$/);
+  assert.match(T.pick.again, /^아까도 이 칸을 뺐어요\./);
+  // 화면 코드: 고른 칸이 되는 자리가 아니면 그 말을 하고, 판은 그대로 둔다(끝내지 않는다).
+  const code = read('src/formats/tile.js');
+  assert.ok(code.includes("if (!possible) frame.say(T.pick[again ? 'again' : 'wrong']);"));
+  assert.ok(code.includes("const possible = Array.isArray(solution.good) && solution.good.includes(cell);"));
+});
+
+test('금 없는 벽: 다 덮었는데 금이 있으면 그 금을 판에 긋고, 금이 몇 줄인지와 할 수 있는 일을 말한다', () => {
+  assert.deepEqual(Object.keys(T.wall), ['fault', 'fault-same']);
+  assert.equal(fill(T.wall.fault, { n: 2 }), '다 덮었는데 끝에서 끝까지 곧게 이어진 금이 2줄 있어요. 금을 가로지르게 조각을 바꿔 놓아 볼 수 있어요.');
+  for (const key of ['fault', 'fault-same']) {
+    const [fact, next, ...rest] = sentences(fill(T.wall[key], { n: 1 }));
+    assert.equal(rest.length, 0, key);
+    assert.match(fact, /(있어요|생겼어요)\.$/, key);
+    assert.match(next, /볼 수 있어요\.$/, key);
+    assert.doesNotMatch(T.wall[key], /틀렸|아니에요|땡|안 돼요/, key);
+  }
+  // 화면 코드: 금은 다 덮었을 때만 따지고, 금이 있으면 판을 끝내지 않는다. 금은 판에 굵은 점선으로 긋는다.
+  const code = read('src/formats/tile.js');
+  assert.ok(code.includes("const faultsOf = (round, state) => (round.mode === 'wall' && state.left === 0 ? faultLines(round.board, state.placed) : []);"));
+  assert.ok(code.includes("round.answers.push({ t: frame.stamp(), answer: 'covered-fault', correct: false, guess: 'fault' });"));
+  assert.match(read('src/ui/tile-board.js'), /'tile-fault'/);
+  assert.match(read('src/app.css'), /\.tile-fault \{/);
+  assert.match(html, /<p id="tile-wall-note" class="pad-note" hidden>끝에서 끝까지 곧게 이어진 금이 없게 다 덮으면 끝나요\.<\/p>/);
 });
 
 test('틀린 "불가능해요"에 하는 말은 짐작이라고 밝히고, 판에서 해 보게 한다', () => {
@@ -219,8 +280,14 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   assert.equal(fill(T.right['covered-stuck'], { s: 2 }), '중간에 2번 막혔어요.');
   assert.ok(fill(T.right['impossible-tried'], { s: 4 }).includes('4번 막힌 끝에 알아냈어요'));
   // "맞아요"는 답 단추("불가능해요")를 눌러 맞혔을 때만 쓴다. 다 덮어서 끝난 말에는 없다.
-  for (const key of ['impossible-tried', 'impossible-some', 'impossible-untried']) assert.match(T.right[key], /^맞아요\. /, key);
-  for (const key of RIGHT_KEYS.filter((item) => !item.startsWith('impossible-'))) assert.doesNotMatch(T.right[key], /맞아요/, key);
+  for (const key of RIGHT_KEYS.filter((item) => item.includes('impossible-'))) assert.match(T.right[key], /^맞아요\. /, key);
+  for (const key of RIGHT_KEYS.filter((item) => !item.includes('impossible-'))) assert.doesNotMatch(T.right[key], /맞아요/, key);
+  // 되는 자리 고르기는 칸을 몇 번 골라 보았는지, 금 없는 벽은 금이 있는 벽을 몇 번 쌓아 보았는지를 그대로 말한다.
+  assert.equal(fill(T.right['pick-first'], { n: 5 }), '처음 고른 칸을 빼고 조각 5개로 빈틈없이 덮었어요.');
+  assert.equal(fill(T.right['pick-later'], { k: 3, n: 16 }), '칸을 3번 골라 보고, 조각 16개로 빈틈없이 덮었어요.');
+  assert.equal(fill(T.right['wall-clean'], { n: 15 }), '조각 15개로 금 없는 벽을 쌓았어요.');
+  assert.equal(fill(T.right['wall-after'], { k: 2 }), '그 전에 금이 있는 벽을 2번 쌓아 봤어요.');
+  for (const key of ['wall-impossible-tried', 'wall-impossible-some', 'wall-impossible-untried']) assert.match(T.right[key], /^맞아요\. 이 판은 아무리 해도 금 없이 쌓을 수 없어요\./, key);
   // 답을 바꿔서 맞힌 판의 말은 형식 사이에 같은 한 문장이다.
   assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
   assert.match(T.right['impossible-untried'], /한 번도 놓지 않고 알아냈어요/);
@@ -253,7 +320,9 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
     ...Object.values(T.rules),
     ...Object.values(T.stuck),
     ...Object.values(T.play),
-    ...PIECE_IDS.flatMap((piece) => T.hints[piece]),
+    ...HINT_KEYS.flatMap((piece) => T.hints[piece]),
+    ...Object.values(T.pick),
+    ...Object.values(T.wall),
     ...Object.values(T.guess),
     ...Object.values(T.right),
     ...Object.values(T.solution),
@@ -470,11 +539,18 @@ test('판 고르기의 그림: 단계마다 그 단계의 판이고, 그림 속�
       continue;
     }
     assert.equal(checkBoard(picture), null, `${rung.level}단계`);
-    assert.equal(picture.piece, rung.piece, `${rung.level}단계`);
+    if (rung.pieces) assert.ok(rung.pieces.includes(picture.piece), `${rung.level}단계`);
+    else assert.equal(picture.piece, rung.piece, `${rung.level}단계`);
     assert.equal(picture.holes.length, rung.holes, `${rung.level}단계`);
     assert.ok(rung.sizes.some(([w, h]) => w === picture.w && h === picture.h), `${rung.level}단계`);
-    assert.ok(picture.placed.length >= 1, `${rung.level}단계`);
     assert.equal(replay(picture, picture.placed.map(place)).ok, true, `${rung.level}단계의 그림`);
+    // 되는 자리 고르기의 그림은 칸 하나를 누른 모습이다(되는 자리를 짚지 않는다). 다른 단계의 그림에는 조각이 놓여 있다.
+    if (rung.mode === 'pick') {
+      assert.equal(picture.picks.length, 1);
+      assert.ok(!possibleHoles('bar', picture.w, picture.h).includes(picture.picks[0]), '그림이 답을 알려 주지 않는다');
+    } else assert.ok(picture.placed.length >= 1, `${rung.level}단계`);
+    // 금 없는 벽의 그림: 벽돌처럼 엇갈려 놓은 도미노다(아직 다 덮지 않았다).
+    if (rung.mode === 'wall') assert.ok(picture.placed.some((cells) => cells[1] - cells[0] === picture.w), '세운 도미노도 있다');
   }
   // 1단계의 그림은 되는 판이다.
   assert.equal(solve(T.levels[0].picture).possible, true);
@@ -511,6 +587,10 @@ test('index.html: 조각 덮기의 카드, 판, 답하는 칸, 직접 만들기�
     'tile-cover',
     'tile-either',
     'tile-impossible',
+    'tile-pick',
+    'tile-repick',
+    'tile-wall-note',
+    'tile-flip-note',
     'make-tile',
     'tile-make-pieces',
     'tile-make-w',
@@ -561,7 +641,8 @@ test('조각 덮기의 수준 맞추기 값은 임시값이고, 처음 보여 �
   const tuning = tuningFor('tile');
   assert.equal(tuning.startLevel, 1);
   assert.equal(tuning.bottomLevel, 1);
-  assert.equal(tuning.topLevel, 4);
+  assert.equal(tuning.topLevel, 7);
+  assert.equal(tuning.topLevel, LADDER.at(-2).level);
   assert.equal(tuning.hintCount, 2);
   assert.equal(tuning.whyAfter, undefined);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(tuning.expectedSeconds[rung.level] > 0, `${rung.level}단계의 예상 시간`);
@@ -588,9 +669,44 @@ test('힌트 없이 첫 답으로 빠르게 맞힌 판이 이어지면 더 어�
   assert.equal(recommend([clean(), tile({ seconds: tuningFor('tile').expectedSeconds[1] })], 'tile').offerHarder, false, '예상 시간보다 오래 걸린 판');
   const retried = tile({ level: 2, mode: 'either', answers: [{ t: 20, answer: 'impossible', correct: false, guess: 'impossible-no-try' }, { t: 60, answer: 'covered', correct: true, guess: null }], seconds: 60 });
   assert.equal(recommend([tile({ level: 2, mode: 'either' }), retried], 'tile').offerHarder, false, '처음 답이 달랐던 판');
-  // 맨 위 단계에서는 직접 만들기를 가리킨다.
-  const top = () => tile({ level: 4, mode: 'either', board: { w: 4, h: 4, piece: 'bar', holes: [5] }, answers: [{ t: 90, answer: 'impossible', correct: true, guess: null }], seconds: 90, solution: { possible: false, reason: 'color', pieces: null } });
-  assert.deepEqual(recommend([top(), top()], 'tile'), { level: 4, small: false, offerHarder: true, harderLevel: 5, reason: 'fast' });
+  // 4단계 다음은 되는 자리 고르기(5단계)다.
+  const four = () => tile({ level: 4, mode: 'either', board: { w: 4, h: 4, piece: 'bar', holes: [5] }, answers: [{ t: 90, answer: 'impossible', correct: true, guess: null }], seconds: 90, solution: { possible: false, reason: 'color', pieces: null } });
+  assert.deepEqual(recommend([four(), four()], 'tile'), { level: 4, small: false, offerHarder: true, harderLevel: 5, reason: 'fast' });
+  // 되는 자리 고르기는 처음 고른 칸이 되는 자리여야 "한 번에"다(wrongCount는 덮을 수 없는 칸을 고른 수).
+  const pick = (wrongCount) => tile({ level: 5, mode: 'pick', board: { w: 4, h: 4, piece: 'bar', holes: [] }, wrongCount, seconds: 100, solution: { possible: true, reason: 'tiled', pieces: 5 } });
+  assert.equal(recommend([pick(0), pick(0)], 'tile').offerHarder, true);
+  assert.equal(recommend([pick(0), pick(1)], 'tile').offerHarder, false);
+  // 금 없는 벽에서 금이 있게 다 쌓은 판은 첫 답이 맞지 않은 판이다.
+  const wall = (answers) => tile({ level: 7, mode: 'wall', board: { w: 5, h: 6, piece: 'domino', holes: [] }, answers, seconds: 200, solution: { possible: true, reason: 'tiled', pieces: 15 } });
+  const covered = { t: 200, answer: 'covered', correct: true, guess: null };
+  assert.equal(recommend([wall([covered]), wall([{ t: 150, answer: 'covered-fault', correct: false, guess: 'fault' }, covered])], 'tile').offerHarder, false);
+  // 맨 위 단계(7단계)에서는 직접 만들기를 가리킨다.
+  assert.deepEqual(recommend([wall([covered]), wall([covered])], 'tile'), { level: 7, small: false, offerHarder: true, harderLevel: 8, reason: 'fast' });
+});
+
+test('직접 만들기는 8단계다. 예전 번호(5단계)로 적어 둔 직접 만든 판도 하던 판으로 받고, 만들어 낸 판은 단계의 판의 종류와 조각에 맞아야 받는다', () => {
+  const code = read('src/formats/tile.js');
+  assert.deepEqual([OLD_MAKE_LEVEL, MAKE_LEVEL], [5, 8]);
+  assert.ok(code.includes("if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && saved.mode === 'either';"));
+  assert.ok(code.includes('if (rung.mode !== saved.mode) return false;'));
+  assert.ok(code.includes('if (!levelOk(saved) || !pickOk(saved) || !wallOk(saved)) return false;'));
+  // 예전 5단계(직접 만들기)의 번호는 이제 되는 자리 고르기다. 직접 만든 판은 늘 "either"라서 되는 자리 고르기의 판으로 읽히지 않는다.
+  assert.equal(rungOf(OLD_MAKE_LEVEL).mode, 'pick');
+  assert.ok(code.includes("mode: custom ? 'either' : rungOf(level).mode,"));
+  // 직접 만든 판의 기록(예전 번호)은 수준 맞추기에서 세지 않는다.
+  const custom = () => tile({ level: OLD_MAKE_LEVEL, custom: true, outcome: 'left', answers: [], placeCount: 4 });
+  assert.equal(recommend([custom(), custom()], 'tile').reason, 'start');
+});
+
+test('풀이의 글: 되는 자리 고르기는 되는 자리의 수를, 금 없는 벽은 금 없이 쌓을 수 있는지를 말한다', () => {
+  assert.equal(fill(T.solution.pick, { k: 4 }), '둥글게 표시한 4칸 가운데 하나를 빼면 덮을 수 있어요. 한 칸을 빼고 덮은 모습을 보여 줄게요.');
+  assert.equal(fill(T.solution['wall-possible'], { k: 15 }), '조각 15개로 금 없는 벽을 쌓을 수 있어요. 한 가지 방법을 보여 줄게요.');
+  assert.equal(T.solution['wall-impossible'], '이 판은 아무리 해도 금 없이 쌓을 수 없어요.');
+  // 화면 코드: 되는 자리 고르기의 풀이는 되는 자리를 모두 둥글게 짚고 맨 앞 자리를 뺀 덮는 방법을 그린다.
+  const code = read('src/formats/tile.js');
+  assert.ok(code.includes('const view = { w: board.w, h: board.h, holes: [solution.good[0]], placed: solution.tiling ?? [], rings: solution.good };'));
+  // 금 없는 벽에는 "왜 그럴까?"를 열지 않는다(도미노의 이야기는 바둑판 무늬라서 맞지 않는 까닭이 된다).
+  assert.ok(code.includes("if (round.mode === 'wall') return null;"));
 });
 
 test('그만두기가 이어지면 조용히 한 단계 아래를 먼저 보여 준다. 맨 아래에서는 더 작은 판이다', () => {

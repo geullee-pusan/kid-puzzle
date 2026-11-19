@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { createRng, randInt } from '../src/core/rng.js';
 import {
+  FOUR_PIECES,
   MAX_SIZE,
   MIN_SIZE,
   PATTERNS,
@@ -19,6 +20,7 @@ import {
   deadCells,
   diagnoseImpossible,
   emptyCells,
+  faultLines,
   isDone,
   isStuck,
   placeProblem,
@@ -28,11 +30,15 @@ import {
   replay,
   shapeOf,
   solve,
+  solveWall,
   whyFits,
   whyOpen,
   xyOf,
 } from '../src/core/tile.js';
-import { allSpots, bruteCount, bruteFillRate, bruteSubsets, loopOf } from './helpers/brute-tile.js';
+import { FOUR_ORIENTATIONS, allSpots, bruteCount, bruteCover, bruteFillRate, bruteHasFault, bruteSubsets, loopOf } from './helpers/brute-tile.js';
+
+/** 세 칸까지의 조각(처음 만든 세 조각). 네 칸 조각은 아래에서 따로 따진다 */
+const THREE = ['domino', 'bar', 'ell'];
 
 const board = (w, h, piece, holes = []) => ({ w, h, piece, holes });
 const place = (cells) => ({ op: 'place', cells });
@@ -60,17 +66,19 @@ function* smallBoards(max) {
   }
 }
 
-test('판의 규격: 크기 3~8, 조각 세 가지, 빠진 칸은 작은 번호부터 겹치지 않게', () => {
+test('판의 규격: 크기 3~8, 조각 여덟 가지(네 칸 조각 다섯을 더했다), 빠진 칸은 작은 번호부터 겹치지 않게', () => {
   assert.equal(MIN_SIZE, 3);
   assert.equal(MAX_SIZE, 8);
-  assert.deepEqual(PIECE_IDS, ['domino', 'bar', 'ell']);
-  assert.deepEqual(PIECES, { domino: 2, bar: 3, ell: 3 });
+  assert.deepEqual(PIECE_IDS, ['domino', 'bar', 'ell', 'square', 'long', 'tee', 'bend', 'zig']);
+  assert.deepEqual(PIECES, { domino: 2, bar: 3, ell: 3, square: 4, long: 4, tee: 4, bend: 4, zig: 4 });
+  assert.deepEqual(FOUR_PIECES, PIECE_IDS.slice(3));
+  assert.equal(checkBoard(board(4, 5, 'tee', [])), null);
   assert.equal(checkBoard(board(4, 4, 'domino', [0, 15])), null);
   assert.equal(checkBoard(board(8, 3, 'ell', [])), null);
   assert.equal(checkBoard(null), 'no-board');
   assert.equal(checkBoard(board(2, 4, 'domino')), 'bad-size');
   assert.equal(checkBoard(board(4, 9, 'domino')), 'bad-size');
-  assert.equal(checkBoard(board(4, 4, 'square')), 'bad-piece');
+  assert.equal(checkBoard(board(4, 4, 'circle')), 'bad-piece');
   assert.equal(checkBoard({ w: 4, h: 4, piece: 'bar' }), 'bad-holes');
   assert.equal(checkBoard(board(4, 4, 'bar', [3, 3])), 'bad-holes');
   assert.equal(checkBoard(board(4, 4, 'bar', [5, 2])), 'bad-holes');
@@ -92,7 +100,34 @@ test('조각의 모양: 이웃한 두 칸은 도미노, 한 줄로 나란한 세
   assert.equal(shapeOf(item, [0, 1, 6]), null);
   assert.equal(shapeOf(item, [0, 0]), null);
   assert.equal(shapeOf(item, [0, 16]), null);
-  assert.equal(shapeOf(item, [0, 1, 2, 3]), null);
+  assert.equal(shapeOf(item, [0, 1, 2, 3]), 'long', '한 줄로 나란한 네 칸은 일자 네 칸');
+});
+
+test('네 칸 조각의 모양: 돌리고 뒤집은 모양을 모두 같은 조각으로 가린다', () => {
+  const item = board(5, 5, 'tee');
+  assert.equal(shapeOf(item, [0, 1, 5, 6]), 'square');
+  assert.equal(shapeOf(item, [0, 5, 10, 15]), 'long');
+  assert.equal(shapeOf(item, [0, 1, 2, 6]), 'tee');
+  assert.equal(shapeOf(item, [1, 5, 6, 11]), 'tee');
+  assert.equal(shapeOf(item, [0, 5, 10, 11]), 'bend');
+  assert.equal(shapeOf(item, [1, 6, 10, 11]), 'bend', '뒤집은 ㄱ자');
+  assert.equal(shapeOf(item, [1, 2, 5, 6]), 'zig');
+  assert.equal(shapeOf(item, [0, 1, 6, 7]), 'zig', '뒤집은 번개');
+  assert.equal(shapeOf(item, [3, 4, 5, 6]), null, '줄이 바뀌는 칸');
+  assert.equal(shapeOf(item, [0, 1, 7, 8]), null, '떨어진 칸');
+  // 손으로 그린 놓임새(테스트 도우미)마다 같은 조각으로 가린다. 놓임새의 수: 네모 1, 일자 2, ㅗ자 4, ㄱ자 8, 번개 4
+  assert.deepEqual(FOUR_ORIENTATIONS, { square: 1, long: 2, tee: 4, bend: 8, zig: 4 });
+  for (const piece of FOUR_PIECES) {
+    const shell = board(6, 6, piece);
+    const spots = allSpots(shell);
+    assert.ok(spots.length > 0, piece);
+    for (const cells of spots) {
+      assert.equal(shapeOf(shell, cells), piece, `${piece} ${cells}`);
+      // 칸 수가 맞아도 모양이 다르면 다른 조각의 판에는 놓이지 않는다.
+      for (const other of FOUR_PIECES.filter((item2) => item2 !== piece)) assert.equal(placeProblem(board(6, 6, other), [], cells), 'shape', `${piece} → ${other}`);
+    }
+  }
+  assert.equal(placeProblem(board(5, 5, 'tee'), [], [0, 1, 2]), 'few');
 });
 
 test('조각 놓기: 놓을 수 없는 까닭을 가린다', () => {
@@ -122,6 +157,10 @@ test('놓을 수 있는 자리의 수: 빈 판에서는 식으로 셀 수 있고
     }
   }
   const key = (list) => list.map((cells) => cells.slice().sort((a, b) => a - b).join('-')).sort().join(' ');
+  // 네 칸 조각은 빈 판에서도 손으로 그린 놓임새로 만든 목록과 견준다.
+  for (const piece of FOUR_PIECES) {
+    for (let w = MIN_SIZE; w <= MAX_SIZE; w++) for (let h = MIN_SIZE; h <= MAX_SIZE; h++) assert.equal(key(placementsOf(board(w, h, piece))), key(allSpots(board(w, h, piece))), `${piece} ${w}×${h}`);
+  }
   for (const piece of PIECE_IDS) {
     for (const item of [board(5, 4, piece, [3, 11]), board(6, 6, piece, [0, 14, 35]), board(8, 8, piece, [27])]) {
       const found = placementsOf(item);
@@ -211,7 +250,7 @@ test('풀이 프로그램을 다른 방법과 견준다: 가로·세로 5 이하
   let possible = 0;
   let subsets = 0;
   for (const [w, h, holes] of smallBoards(5)) {
-    for (const piece of PIECE_IDS) {
+    for (const piece of THREE) {
       const item = board(w, h, piece, holes);
       const where = `${piece} ${w}×${h} [${holes}]`;
       const ways = bruteCount(item);
@@ -257,7 +296,7 @@ const ONE_HOLE = {
 };
 
 test('한 칸을 뺀 정사각형 판(4, 5, 7, 8): 조각마다 되는 자리를 모든 경우를 따져 구한다', (t) => {
-  for (const piece of PIECE_IDS) {
+  for (const piece of THREE) {
     for (const n of [4, 5, 7, 8]) {
       // 도미노: 칸이 짝수 개인 판(4, 8)은 한 칸을 빼면 홀수 칸이 남아 따질 것이 없다.
       if (piece === 'domino' && n % 2 === 0) {
@@ -274,6 +313,8 @@ test('한 칸을 뺀 정사각형 판(4, 5, 7, 8): 조각마다 되는 자리를
         assert.notEqual(full.possible, null);
         assert.equal(fast.possible, full.possible, `${piece} ${n}×${n} ${spot(item, hole)}`);
         if (n <= 5) assert.equal(bruteCount(item) > 0, full.possible, `${piece} ${n}×${n} ${spot(item, hole)}`);
+        // 일자 세 칸(되는 자리 고르기의 답)은 7×7, 8×8도 빠짐없는 덮기 찾기로 다시 따진다.
+        else if (piece === 'bar') assert.equal(bruteCover(item).tiling !== null, full.possible, `${piece} ${n}×${n} ${spot(item, hole)}`);
         if (full.possible) {
           assertTiling(item, full.tiling, `${piece} ${n}×${n} ${spot(item, hole)}`);
           good.push(spot(item, hole));
@@ -473,10 +514,10 @@ test('걸음 수의 위 끝: 넘으면 "끝까지 따져 보지 못했다"고 �
     const count = randInt(rng, 0, Math.min(10, w * h - 3));
     const holes = new Set();
     while (holes.size < count) holes.add(randInt(rng, 0, w * h - 1));
-    samples.push(board(w, h, PIECE_IDS[randInt(rng, 0, 2)], [...holes].sort((a, b) => a - b)));
+    samples.push(board(w, h, THREE[randInt(rng, 0, 2)], [...holes].sort((a, b) => a - b)));
   }
   // 가장 큰 판에서 빠진 칸이 없거나 한두 개인 판도 모두 넣는다.
-  for (const piece of PIECE_IDS) {
+  for (const piece of THREE) {
     samples.push(board(8, 8, piece, []));
     for (let hole = 0; hole < 64; hole++) samples.push(board(8, 8, piece, [hole]), board(8, 8, piece, [Math.min(hole, 63 - hole), Math.max(hole, 63 - hole)]));
   }
@@ -508,6 +549,10 @@ test('"왜 그럴까?"는 조각마다 따로 열린다: 그 조각의 안 되�
   assert.equal(whyOpen([round('domino', { kind: 'made' })], 'domino'), false);
   // ㄱ자 세 칸에는 "왜 그럴까?"가 없다.
   assert.equal(whyOpen([round('ell'), round('domino'), round('bar')], 'ell'), false);
+  // 네 칸 조각에도 없다. 금 없는 벽(도미노)의 안 되는 판은 까닭이 바둑판 무늬가 아니라서 도미노의 이야기를 열지 않는다.
+  for (const piece of FOUR_PIECES) assert.equal(whyOpen([round(piece)], piece), false, piece);
+  assert.equal(whyOpen([round('domino', { mode: 'wall', board: board(6, 6, 'domino') })], 'domino'), false, '금 없는 벽');
+  assert.equal(whyOpen([round('domino', { mode: 'either' })], 'domino'), true);
 });
 
 test('"왜 그럴까?"의 이야기는 무늬가 까닭인 판에서만 연다: 다른 까닭으로 안 되는 판에 맞지 않는 까닭을 들려주지 않는다', () => {
@@ -527,4 +572,122 @@ test('"왜 그럴까?"의 이야기는 무늬가 까닭인 판에서만 연다: 
   assert.equal(whyFits('ell', solve(board(5, 5, 'ell', [1]))), false);
   assert.equal(whyFits('ell', solve(board(4, 4, 'ell', [0]))), false);
   assert.equal(whyFits('domino', null), false);
+  for (const piece of FOUR_PIECES) assert.equal(whyFits(piece, solve(board(4, 5, piece))), false, piece);
+});
+
+// ---- 네 칸 조각 한 가지로 덮기(6단계) ----
+
+test('네 칸 조각으로 빠진 칸 없는 네모 판(3×3~8×8) 덮기: 풀이 프로그램과 빠짐없는 덮기 찾기가 같다', (t) => {
+  const table = {};
+  for (const piece of FOUR_PIECES) {
+    const yes = [];
+    for (let w = MIN_SIZE; w <= MAX_SIZE; w++) {
+      for (let h = MIN_SIZE; h <= MAX_SIZE; h++) {
+        const item = board(w, h, piece);
+        const where = `${piece} ${w}×${h}`;
+        const full = solve(item, { filters: false });
+        const brute = bruteCover(item);
+        assert.notEqual(full.possible, null, where);
+        assert.equal(full.possible, brute.tiling !== null, where);
+        assert.equal(solve(item).possible, full.possible, where);
+        if (full.possible) {
+          assertTiling(item, full.tiling, where);
+          assertTiling(item, brute.tiling, `다른 방법: ${where}`);
+          yes.push(`${w}×${h}`);
+        }
+        // 칸이 30개 이하인 판은 덮는 방법의 수도 센다.
+        if (w * h <= 30) assert.equal(bruteCount(item) > 0, full.possible, `수 세기: ${where}`);
+      }
+    }
+    table[piece] = yes;
+  }
+  // 풀이 프로그램이 알려 준 것(가로·세로 3~8): 네모는 두 변이 모두 짝수, 일자는 한 변이 4의 배수, ㅗ자는 두 변이 모두 4의 배수,
+  // ㄱ자는 칸 수가 8의 배수, 번개는 어느 판도 안 된다.
+  const sides = [3, 4, 5, 6, 7, 8];
+  const rule = {
+    square: (w, h) => w % 2 === 0 && h % 2 === 0,
+    long: (w, h) => w % 4 === 0 || h % 4 === 0,
+    tee: (w, h) => w % 4 === 0 && h % 4 === 0,
+    bend: (w, h) => (w * h) % 8 === 0,
+    zig: () => false,
+  };
+  for (const piece of FOUR_PIECES) {
+    const expected = sides.flatMap((w) => sides.filter((h) => rule[piece](w, h)).map((h) => `${w}×${h}`));
+    assert.deepEqual(table[piece], expected, piece);
+  }
+  // ㅗ자: 조각 수가 4의 배수여야 하지만 그것만으로는 모자란다(6×8은 조각 12개인데 안 된다).
+  assert.equal(solve(board(6, 8, 'tee')).possible, false);
+  assert.equal(solve(board(6, 8, 'tee')).reason, 'search');
+  for (const piece of FOUR_PIECES) t.diagnostic(`${piece}: 되는 판 ${table[piece].join(', ') || '없음'}`);
+});
+
+test('네 칸 조각: 빠진 칸이 한 개인 5×5 이하의 판도 덮는 방법의 수와 견준다', () => {
+  let checked = 0;
+  for (let w = MIN_SIZE; w <= 5; w++) {
+    for (let h = MIN_SIZE; h <= 5; h++) {
+      for (let hole = 0; hole < w * h; hole++) {
+        for (const piece of FOUR_PIECES) {
+          const item = board(w, h, piece, [hole]);
+          const ways = bruteCount(item);
+          assert.equal(solve(item).possible, ways > 0, `${piece} ${w}×${h} [${hole}]`);
+          assert.equal(solve(item, { filters: false }).possible, ways > 0, `걸러내기 없이: ${piece} ${w}×${h} [${hole}]`);
+          if (ways > 0) assertTiling(item, solve(item).tiling, `${piece} ${w}×${h} [${hole}]`);
+          checked += 1;
+        }
+      }
+    }
+  }
+  assert.equal(checked, 5 * (9 + 12 + 15 + 12 + 16 + 20 + 15 + 20 + 25));
+});
+
+// ---- 금 없는 벽(7단계) ----
+
+test('금: 다 덮은 판에서 어느 조각도 가로지르지 않는 곧은 선을 찾는다', () => {
+  const item = board(4, 4, 'domino');
+  // 눕힌 도미노 여덟 개: 세로 금은 가운데(2번째 칸 뒤)에, 가로 금은 세 줄 사이 모두에 있다.
+  const rows = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 13], [14, 15]];
+  assert.deepEqual(faultLines(item, rows), [{ dir: 'v', at: 2 }, { dir: 'h', at: 1 }, { dir: 'h', at: 2 }, { dir: 'h', at: 3 }]);
+  assert.equal(bruteHasFault(item, rows), true);
+  // 5×6의 금 없는 벽(풀이 프로그램이 찾은 것)에는 금이 없다.
+  const wall = board(5, 6, 'domino');
+  const found = solveWall(wall);
+  assert.equal(found.possible, true);
+  assertTiling(wall, found.tiling, '5×6');
+  assert.deepEqual(faultLines(wall, found.tiling), []);
+  assert.equal(bruteHasFault(wall, found.tiling), false);
+  // 네 칸 조각도 금을 가로지른다(조각은 한 덩어리라서 금의 양쪽에 이웃한 두 칸이 있다).
+  assert.deepEqual(faultLines(board(4, 4, 'tee'), [[0, 1, 2, 5], [3, 6, 7, 11], [4, 8, 9, 12], [10, 13, 14, 15]]), []);
+});
+
+test('금 없는 벽: 풀이 프로그램과 빠짐없는 덮기 찾기(다 덮는 방법을 하나씩 만들어 금이 없는 것을 찾는다)가 같다', (t) => {
+  const yes = [];
+  const counts = [];
+  for (let w = MIN_SIZE; w <= MAX_SIZE; w++) {
+    for (let h = MIN_SIZE; h <= MAX_SIZE; h++) {
+      const item = board(w, h, 'domino');
+      const where = `${w}×${h}`;
+      const found = solveWall(item);
+      assert.notEqual(found.possible, null, where);
+      if ((w * h) % 2 !== 0) {
+        assert.equal(found.reason, 'count', where);
+        continue;
+      }
+      if (found.possible) {
+        assertTiling(item, found.tiling, where);
+        assert.deepEqual(faultLines(item, found.tiling), [], where);
+        assert.equal(bruteHasFault(item, found.tiling), false, where);
+        yes.push(where);
+      }
+      // 칸이 48개를 넘는 판(8×7, 7×8, 8×8)은 덮는 방법이 너무 많아 빠짐없이 따지는 쪽이 느리다. 되는 판이고, 위에서 찾은 벽을 따로 확인했다.
+      if (w * h > 48) continue;
+      const brute = bruteCover(item, (tiling) => !bruteHasFault(item, tiling));
+      assert.equal(brute.tiling !== null, found.possible, where);
+      if (!found.possible) counts.push(`${where} ${brute.covers}가지`);
+    }
+  }
+  // 되는 판: 두 변이 모두 5 이상이고 칸이 짝수 개이며 6×6이 아닌 판. 한 변이 4칸 이하인 판과 6×6은 어떻게 덮어도 금이 생긴다.
+  assert.deepEqual(yes, ['5×6', '5×8', '6×5', '6×7', '6×8', '7×6', '7×8', '8×5', '8×6', '8×7', '8×8']);
+  assert.equal(solveWall(board(6, 6, 'domino')).reason, 'search');
+  t.diagnostic(`금 없이 쌓을 수 있는 판: ${yes.join(', ')}`);
+  t.diagnostic(`안 되는 판에서 다 덮는 방법을 모두 따졌다(모두 금이 있다): ${counts.join(', ')}`);
 });

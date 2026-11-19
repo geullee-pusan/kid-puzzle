@@ -2,7 +2,7 @@
 // 누를 수 있는 판과 보기만 하는 그림을 같은 모양으로 그린다.
 // 색만으로 알리지 않는다. 조각은 굵은 테두리로 하나씩 가르고, 빠진 칸은 어둡게 메우고 빗금을 긋는다.
 // 무늬를 입히면 색마다 칸 가운데에 작은 모양(동그라미, 세모, 네모)도 함께 그린다.
-// 조각이 들어갈 수 없는 빈칸에는 굵은 점선 테두리를 두른다. 글자는 대본에서 받는다.
+// 조각이 들어갈 수 없는 빈칸에는 굵은 점선 테두리를 두른다. 금 없는 벽의 금은 판의 끝에서 끝까지 굵은 점선으로 긋는다. 글자는 대본에서 받는다.
 // 누르는 것은 pointer 이벤트로 받는다. 칸을 따라 그으면 지나는 칸이 눈에 띄고, 손을 떼면 그 칸들을 알려 준다.
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -38,26 +38,42 @@ function markShape(kind, cx, cy, r) {
   return make('polygon', { points: `${cx},${cy - r * 1.15} ${cx + r * 1.1},${cy + r * 0.85} ${cx - r * 1.1},${cy + r * 0.85}` }, 'tile-mark');
 }
 
-/** 조각 하나의 테두리(꼭짓점들). 한 줄로 나란한 칸은 네모, ㄱ자는 여섯 꼭짓점이다 */
+/**
+ * 조각 하나의 테두리(꼭짓점들). 칸들의 둘레를 칸의 금을 따라 한 바퀴 돌고, 꼭짓점마다 안으로 INSET만큼 들인다.
+ * 둘레는 조각의 안쪽이 늘 오른쪽에 오게 돈다(화면에서 세로는 아래로 커진다). 그래서 변마다 오른쪽이 안쪽이고,
+ * 꼭짓점은 들어오는 변과 나가는 변의 안쪽으로 한 번씩 옮기면 된다(튀어나온 꼭짓점이든 꺾여 들어간 꼭짓점이든 같다).
+ * 칸끼리 꼭짓점 하나로만 닿는 조각은 없다(도미노, 세 칸 조각, 네 칸 조각 모두 그렇다).
+ */
 function outlineOf(w, cells) {
-  const spots = cells.map((cell) => [cell % w, Math.floor(cell / w)]);
-  const xs = spots.map((spot) => spot[0]);
-  const ys = spots.map((spot) => spot[1]);
-  const left = Math.min(...xs) * UNIT + INSET;
-  const right = (Math.max(...xs) + 1) * UNIT - INSET;
-  const top = Math.min(...ys) * UNIT + INSET;
-  const bottom = (Math.max(...ys) + 1) * UNIT - INSET;
-  const box = (Math.max(...xs) - Math.min(...xs) + 1) * (Math.max(...ys) - Math.min(...ys) + 1);
-  if (box === cells.length) return [[left, top], [right, top], [right, bottom], [left, bottom]];
-  // ㄱ자: 두 칸짜리 네모에서 한 칸이 빈다. 빈 칸 쪽의 꼭짓점을 안으로 꺾는다.
-  const midX = (Math.min(...xs) + 1) * UNIT;
-  const midY = (Math.min(...ys) + 1) * UNIT;
-  const has = (x, y) => spots.some((spot) => spot[0] === x && spot[1] === y);
-  const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
-  if (!has(x0 + 1, y0)) return [[left, top], [midX - INSET, top], [midX - INSET, midY + INSET], [right, midY + INSET], [right, bottom], [left, bottom]];
-  if (!has(x0, y0)) return [[midX + INSET, top], [right, top], [right, bottom], [left, bottom], [left, midY + INSET], [midX + INSET, midY + INSET]];
-  if (!has(x0 + 1, y0 + 1)) return [[left, top], [right, top], [right, midY - INSET], [midX - INSET, midY - INSET], [midX - INSET, bottom], [left, bottom]];
-  return [[left, top], [right, top], [right, bottom], [midX + INSET, bottom], [midX + INSET, midY - INSET], [left, midY - INSET]];
+  const has = new Set(cells.map((cell) => `${cell % w},${Math.floor(cell / w)}`));
+  const inside = (x, y) => has.has(`${x},${y}`);
+  const next = new Map(); // 둘레의 점 → 그 점에서 나가는 변의 방향
+  for (const cell of cells) {
+    const x = cell % w;
+    const y = Math.floor(cell / w);
+    if (!inside(x, y - 1)) next.set(`${x},${y}`, [1, 0]);
+    if (!inside(x + 1, y)) next.set(`${x + 1},${y}`, [0, 1]);
+    if (!inside(x, y + 1)) next.set(`${x + 1},${y + 1}`, [-1, 0]);
+    if (!inside(x - 1, y)) next.set(`${x},${y + 1}`, [0, -1]);
+  }
+  // 둘레를 한 바퀴 돈다.
+  const start = next.keys().next().value;
+  const path = [];
+  let key = start;
+  do {
+    const [px, py] = key.split(',').map(Number);
+    const way = next.get(key);
+    path.push({ px, py, way });
+    key = `${px + way[0]},${py + way[1]}`;
+  } while (key !== start && path.length <= next.size);
+  // 방향이 바뀌는 점이 꼭짓점이다. 방향 (a, b)인 변의 안쪽(오른쪽)은 (−b, a) 쪽이다.
+  const corners = [];
+  path.forEach(({ px, py, way }, index) => {
+    const before = path[(index + path.length - 1) % path.length].way;
+    if (before[0] === way[0] && before[1] === way[1]) return;
+    corners.push([px * UNIT + (-before[1] - way[1]) * INSET, py * UNIT + (before[0] + way[0]) * INSET]);
+  });
+  return corners;
 }
 
 /** 화면의 자리를 판의 칸 번호로 바꾼다. 판 밖이면 null */
@@ -182,6 +198,7 @@ function boardOf(root) {
  *   dead      조각이 들어갈 수 없는 빈칸들(굵은 점선 테두리)
  *   rings     고리로 짚는 칸들(그림용)
  *   loop      칸들을 차례로 잇는 길(그림용). 맨 끝은 맨 처음으로 이어지고, 빠진 칸에서는 끊긴다
+ *   faults    금 없는 벽에서 짚는 금들({ dir: 'v' | 'h', at }). 판의 끝에서 끝까지 굵은 선을 긋는다
  *   size      조각의 칸 수(긋는 칸의 수는 이것을 넘지 않는다)
  *   label     (칸 번호) → 읽어 줄 이름(누를 수 있는 판에서만)
  *   onStroke  (칸들) → 칸을 따라 긋고 손을 뗐을 때
@@ -191,7 +208,7 @@ function boardOf(root) {
  *   small     작은 그림으로 그린다
  */
 export function drawBoard(root, view) {
-  const { w, h, holes, placed = [], pattern = 'none', picks = [], dead = [], rings = [], loop = null, small = false } = view;
+  const { w, h, holes, placed = [], pattern = 'none', picks = [], dead = [], rings = [], loop = null, faults = [], small = false } = view;
   const live = isLive(view);
   root.className = `tile-board${small ? ' small' : ''}${live ? ' live' : ''}`;
   root.style.setProperty('--w', String(w));
@@ -245,6 +262,12 @@ export function drawBoard(root, view) {
     }
   }
 
+  // 금: 판의 한 끝에서 반대쪽 끝까지 굵은 점선으로 긋는다(색만으로 알리지 않는다).
+  for (const { dir, at } of faults) {
+    const line = dir === 'v' ? { x1: at * UNIT, y1: -EDGE, x2: at * UNIT, y2: h * UNIT + EDGE } : { x1: -EDGE, y1: at * UNIT, x2: w * UNIT + EDGE, y2: at * UNIT };
+    nodes.push(make('line', line, 'tile-fault'));
+  }
+
   for (const cell of dead) {
     nodes.push(make('rect', { x: (cell % w) * UNIT + 9, y: Math.floor(cell / w) * UNIT + 9, width: UNIT - 18, height: UNIT - 18, rx: 10 }, 'tile-dead'));
   }
@@ -252,7 +275,8 @@ export function drawBoard(root, view) {
     nodes.push(make('rect', { x: (cell % w) * UNIT + 5, y: Math.floor(cell / w) * UNIT + 5, width: UNIT - 10, height: UNIT - 10, rx: 12 }, 'tile-pick'));
   }
   for (const cell of rings) {
-    nodes.push(make('circle', { cx: (cell % w) * UNIT + UNIT / 2, cy: Math.floor(cell / w) * UNIT + UNIT / 2, r: 36 }, 'tile-ring'));
+    // 빠진 칸(어둡게 메운 칸) 위의 고리는 밝은 색으로 그린다.
+    nodes.push(make('circle', { cx: (cell % w) * UNIT + UNIT / 2, cy: Math.floor(cell / w) * UNIT + UNIT / 2, r: 36 }, holes.includes(cell) ? 'tile-ring on-hole' : 'tile-ring'));
   }
   if (loop && loop.length > 1) {
     // 길은 빠진 칸에서 끊긴다: 이웃한 두 칸이 모두 남아 있는 곳만 잇는다.
@@ -294,9 +318,21 @@ export function drawLegend(root, view) {
   );
 }
 
+/** 답하는 칸에 그리는 조각의 모양(가로, 세로, 칸 번호) */
+export const PIECE_PICTURES = {
+  domino: { w: 2, h: 1, cells: [0, 1] },
+  bar: { w: 3, h: 1, cells: [0, 1, 2] },
+  ell: { w: 2, h: 2, cells: [0, 2, 3] },
+  square: { w: 2, h: 2, cells: [0, 1, 2, 3] },
+  long: { w: 4, h: 1, cells: [0, 1, 2, 3] },
+  tee: { w: 3, h: 2, cells: [1, 3, 4, 5] },
+  bend: { w: 2, h: 3, cells: [0, 2, 4, 5] },
+  zig: { w: 3, h: 2, cells: [1, 2, 3, 4] },
+};
+
 /** 조각 하나의 모양을 작게 그린다(답하는 칸에서 이 판의 조각을 보여 준다) */
 export function drawPiece(root, piece) {
-  const shape = { domino: { w: 2, h: 1, cells: [0, 1] }, bar: { w: 3, h: 1, cells: [0, 1, 2] }, ell: { w: 2, h: 2, cells: [0, 2, 3] } }[piece];
+  const shape = PIECE_PICTURES[piece];
   const svg = make('svg', { viewBox: `${-EDGE} ${-EDGE} ${shape.w * UNIT + 2 * EDGE} ${shape.h * UNIT + 2 * EDGE}`, 'aria-hidden': 'true' }, 'tile-svg');
   for (const cell of shape.cells) svg.append(make('rect', { x: (cell % shape.w) * UNIT, y: Math.floor(cell / shape.w) * UNIT, width: UNIT, height: UNIT }, 'tile-cell'));
   svg.append(make('polygon', { points: outlineOf(shape.w, shape.cells).map((point) => point.join(',')).join(' ') }, 'tile-piece'));

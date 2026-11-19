@@ -3,8 +3,29 @@
 //   가. 조각 자리의 목록을 앞에서부터 하나씩 "쓴다 / 안 쓴다"로 갈라 모든 부분집합을 따지거나(bruteSubsets),
 //   나. 덮는 방법이 가장 적은 빈칸부터 따지며 덮는 방법의 수를 센다(bruteCount).
 // 칸의 모습은 수 하나(비트)로 적는다. 그래서 칸이 30개 이하인 판에서만 쓴다.
+// 큰 판(64칸까지)은 큰 정수(BigInt)로 칸의 모습을 적는 빠짐없는 덮기 찾기(bruteCover)로 따지고, 금 없는 벽의 금은 bruteHasFault로 따로 센다.
+// 네 칸 조각의 놓임새는 그림으로 손수 적어 두었다(풀이 프로그램의 모양 표를 쓰지 않는다).
 
 const SIZE = { domino: 2, bar: 3, ell: 3 };
+
+/**
+ * 네 칸 조각의 모든 놓임새(돌리고 뒤집은 것)를 손으로 적어 둔 것. 풀이 프로그램(src/core/block.js의 orientationsOf)을 쓰지 않는다.
+ * 그림으로 적었다: 한 줄이 판의 한 줄이고, #이 조각의 칸이다.
+ */
+const FOUR_DRAWN = {
+  square: ['##/##'],
+  long: ['####', '#/#/#/#'],
+  tee: ['###/.#.', '.#./###', '#./##/#.', '.#/##/.#'],
+  bend: ['#./#./##', '.#/.#/##', '##/#./#.', '##/.#/.#', '###/#..', '###/..#', '#../###', '..#/###'],
+  zig: ['.##/##.', '##./.##', '#./##/.#', '.#/##/#.'],
+};
+const FOUR_COORDS = Object.fromEntries(
+  Object.entries(FOUR_DRAWN).map(([piece, drawings]) => [
+    piece,
+    drawings.map((drawing) => drawing.split('/').flatMap((row, y) => [...row].flatMap((mark, x) => (mark === '#' ? [[x, y]] : [])))),
+  ]),
+);
+export const FOUR_ORIENTATIONS = Object.fromEntries(Object.entries(FOUR_COORDS).map(([piece, list]) => [piece, list.length]));
 
 /** 판의 모든 조각 자리. 풀이 프로그램의 모양 표를 쓰지 않고, 칸의 묶음을 좌표로 직접 가린다. */
 export function allSpots(board) {
@@ -12,7 +33,14 @@ export function allSpots(board) {
   const holes = new Set(board.holes);
   const cell = (x, y) => y * w + x;
   const groups = [];
-  if (piece === 'domino' || piece === 'bar') {
+  if (FOUR_COORDS[piece]) {
+    // 네 칸 조각: 손으로 적은 놓임새마다 판 안의 모든 자리
+    for (const shape of FOUR_COORDS[piece]) {
+      const wide = Math.max(...shape.map(([x]) => x)) + 1;
+      const tall = Math.max(...shape.map(([, y]) => y)) + 1;
+      for (let y = 0; y + tall <= h; y++) for (let x = 0; x + wide <= w; x++) groups.push(shape.map(([dx, dy]) => cell(x + dx, y + dy)).sort((a, b) => a - b));
+    }
+  } else if (piece === 'domino' || piece === 'bar') {
     const n = SIZE[piece];
     // 누운 것 먼저, 선 것은 그다음에 넣는다(맨 처음 빈칸의 차례와 다르게).
     for (let y = 0; y < h; y++) for (let x = 0; x + n <= w; x++) groups.push(Array.from({ length: n }, (_, i) => cell(x + i, y)));
@@ -116,6 +144,74 @@ export function bruteFillRate(board) {
     return value;
   };
   return rate(0);
+}
+
+/**
+ * 큰 판(64칸까지)에서 쓰는 빠짐없는 덮기 찾기(exact cover). 풀이 프로그램과 다르게 따진다:
+ * 덮인 칸을 큰 정수(BigInt) 하나로 적고, 덮는 방법이 가장 적은 빈칸을 골라 그 칸을 덮는 자리를 하나씩 해 본다.
+ * 다 덮을 때마다 accept(덮는 방법)를 묻고, true면 그 방법을 내놓고 멈춘다. accept가 없으면 처음 찾은 방법을 내놓는다.
+ * accept가 없을 때만, 끝까지 못 간 덮인 모습을 적어 두고 다시 따지지 않는다(다른 조건을 붙이면 모습만으로는 같은 갈래가 아니다).
+ * @returns {{tiling: number[][]|null, covers: number}} tiling: 찾은 덮는 방법(없으면 null), covers: 그동안 다 덮은 방법의 수
+ */
+export function bruteCover(board, accept = null) {
+  const cells = board.w * board.h;
+  const spots = allSpots(board);
+  const masks = spots.map((list) => list.reduce((mask, item) => mask | (1n << BigInt(item)), 0n));
+  const byCell = Array.from({ length: cells }, () => []);
+  spots.forEach((list, index) => {
+    for (const item of list) byCell[item].push(index);
+  });
+  let full = 0n;
+  for (let item = 0; item < cells; item++) if (!board.holes.includes(item)) full |= 1n << BigInt(item);
+  const dead = new Set();
+  const chosen = [];
+  let covers = 0;
+  const visit = (covered) => {
+    if (covered === full) {
+      covers += 1;
+      return accept === null || accept(chosen.map((index) => spots[index]));
+    }
+    if (accept === null && dead.has(covered)) return false;
+    let best = null;
+    for (let item = 0; item < cells; item++) {
+      const bit = 1n << BigInt(item);
+      if (!(full & bit) || covered & bit) continue;
+      const options = byCell[item].filter((index) => (masks[index] & covered) === 0n);
+      if (best === null || options.length < best.length) best = options;
+      if (options.length === 0) break;
+    }
+    for (const index of best) {
+      chosen.push(index);
+      if (visit(covered | masks[index])) return true;
+      chosen.pop();
+    }
+    if (accept === null) dead.add(covered);
+    return false;
+  };
+  const found = visit(0n);
+  return { tiling: found ? chosen.map((index) => spots[index]) : null, covers };
+}
+
+/**
+ * 다 덮은 판에 금이 있는가: 판의 끝에서 끝까지 곧게 가는 칸 사이의 선 가운데, 양쪽 칸이 한 조각에 들어 있는 곳이 하나도 없는 선.
+ * 풀이 프로그램(faultLines)을 쓰지 않고 칸 번호로 따로 센다.
+ */
+export function bruteHasFault(board, tiling) {
+  const owner = new Map();
+  tiling.forEach((list, index) => {
+    for (const item of list) owner.set(item, index);
+  });
+  for (let x = 1; x < board.w; x++) {
+    let crossed = false;
+    for (let y = 0; y < board.h; y++) if (owner.get(y * board.w + x - 1) === owner.get(y * board.w + x)) crossed = true;
+    if (!crossed) return true;
+  }
+  for (let y = 1; y < board.h; y++) {
+    let crossed = false;
+    for (let x = 0; x < board.w; x++) if (owner.get((y - 1) * board.w + x) === owner.get(y * board.w + x)) crossed = true;
+    if (!crossed) return true;
+  }
+  return false;
 }
 
 /**

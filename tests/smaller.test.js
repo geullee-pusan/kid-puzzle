@@ -28,7 +28,7 @@ import { checkBoard as checkSwap, solve as solveSwap } from '../src/core/swap.js
 import * as taxLadder from '../src/core/tax-ladder.js';
 import { cardsUpTo, checkBoard as checkTax, plainN, solve as solveTax } from '../src/core/tax.js';
 import * as tileLadder from '../src/core/tile-ladder.js';
-import { checkBoard as checkTile, deadCells, solve as solveTile } from '../src/core/tile.js';
+import { checkBoard as checkTile, deadCells, solve as solveTile, solveWall as solveTileWall } from '../src/core/tile.js';
 import * as traceLadder from '../src/core/trace-ladder.js';
 import { checkFigure, fixesOf, isTidy, sideOf, solve as solveTrace } from '../src/core/trace.js';
 
@@ -275,8 +275,14 @@ test('자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 
 test('조각 덮기: 같은 조각, 한 단 작은 판. 뺀 칸의 수가 같고, 구석을 뺀 판은 구석을 뺀 판이 된다', () => {
   assert.deepEqual(TILE_DOWN, { 8: 5, 7: 4, 6: 4, 5: 4 });
   let none = 0;
+  const newer = { pick: 0, four: 0, wall: 0 };
   eachBoard(tileLadder, (board, rung, where) => {
     const origin = { mode: rung.mode, board };
+    // 5~7단계(되는 자리 고르기, 네 칸 조각, 금 없는 벽): 빠진 칸이 없는 판의 작은 판
+    if (rung.level >= 5) {
+      checkNewerTile(origin, rung, where, newer);
+      return;
+    }
     const from = solveTile(board).possible;
     const smallest = board.w === 4 && board.h === 4 && board.piece !== 'domino';
     for (const turn of TURNS) {
@@ -319,7 +325,54 @@ test('조각 덮기: 같은 조각, 한 단 작은 판. 뺀 칸의 수가 같고
   // 되는 판에서 왔는데 한 단 작은 크기에 되는 판이 없으면(5×5에서 두 칸을 뺀 도미노 판) 한 단 더 내려간다.
   const big = smallerTile({ board: { w: 8, h: 8, piece: 'domino', holes: [0, 1] } });
   assert.deepEqual([big.board.w, big.board.h, solveTile(big.board).possible], [4, 4, true]);
+  // 5~7단계에서도 작은 판을 낸 판이 있다.
+  for (const [kind, count] of Object.entries(newer)) assert.ok(count > 0, kind);
+  // 되는 자리 고르기: 8×8 → 5×5 → 4×4, 7×7 → 4×4. 4×4에는 없다.
+  assert.deepEqual(smallerTile({ mode: 'pick', board: { w: 8, h: 8, piece: 'bar', holes: [] } }).board, { w: 5, h: 5, piece: 'bar', holes: [] });
+  assert.deepEqual(smallerTile({ mode: 'pick', board: { w: 7, h: 7, piece: 'bar', holes: [] } }).board, { w: 4, h: 4, piece: 'bar', holes: [] });
+  assert.equal(smallerTile({ mode: 'pick', board: { w: 4, h: 4, piece: 'bar', holes: [] } }), null);
+  // 금 없는 벽: 6×6(안 되는 판)에서는 되는 판 5×6부터, 그다음은 안 되는 판. 가장 작은 되는 판(5×6, 6×5)에는 없다.
+  const six = { mode: 'wall', board: { w: 6, h: 6, piece: 'domino', holes: [] } };
+  assert.deepEqual(smallerTile(six, 0).board, { w: 5, h: 6, piece: 'domino', holes: [] });
+  assert.equal(solveTileWall(smallerTile(six, 1).board).possible, false);
+  assert.equal(smallerTile({ mode: 'wall', board: { w: 5, h: 6, piece: 'domino', holes: [] } }), null);
+  // 네 칸 조각: ㅗ자 6×8(안 되는 판)에서는 되는 판 4×4부터
+  assert.deepEqual(smallerTile({ mode: 'either', board: { w: 6, h: 8, piece: 'tee', holes: [] } }, 0).board, { w: 4, h: 4, piece: 'tee', holes: [] });
 });
+
+/** 5~7단계의 작은 판을 점검한다: 같은 조각, 빠진 칸이 없고, 가로·세로가 크지 않고 칸이 더 적은 판 */
+function checkNewerTile(origin, rung, where, newer) {
+  const { board } = origin;
+  const kind = rung.mode === 'pick' ? 'pick' : rung.mode === 'wall' ? 'wall' : 'four';
+  const works = (item) => (kind === 'wall' ? solveTileWall(item).possible : solveTile(item).possible);
+  const from = kind === 'pick' ? true : works(board);
+  for (const turn of TURNS) {
+    const small = smallerTile(origin, turn);
+    assert.deepEqual(smallerTile(origin, turn), small, `${where}: 같은 판에서는 같은 작은 판`);
+    if (!small) {
+      // 없는 것은 가장 작은 판일 때뿐이다: 되는 자리 고르기의 4×4, 금 없는 벽의 가장 작은 되는 판, 네 칸 조각에서 더 작은 되는 판이 없는 판
+      if (kind === 'pick') assert.deepEqual([board.w, board.h], [4, 4], where);
+      else assert.equal(from, true, `${where}: 안 되는 판에서는 늘 작은 판이 있다`);
+      continue;
+    }
+    if (turn === 0) newer[kind] += 1;
+    assert.equal(checkTile(small.board), null, where);
+    assert.equal(small.board.piece, board.piece, where);
+    assert.deepEqual(small.board.holes, [], where);
+    assert.ok(small.board.w <= board.w && small.board.h <= board.h && small.board.w * small.board.h < board.w * board.h, `${where}: ${board.w}×${board.h} → ${small.board.w}×${small.board.h}`);
+    if (kind === 'pick') {
+      assert.equal(small.board.w, small.board.h, where);
+      assert.ok(tileLadder.possibleHoles('bar', small.board.w, small.board.h).length > 0, where);
+      continue;
+    }
+    // 칸 수만으로 갈리는 판은 내지 않는다.
+    assert.equal((small.board.w * small.board.h) % (kind === 'wall' ? 2 : 4), 0, where);
+    const solved = works(small.board);
+    // 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판이 있으면 그것부터 낸다(번개는 되는 판이 없다).
+    if (from) assert.equal(solved, true, `${where} ${turn}번째`);
+    else if (turn === 0 && board.piece !== 'zig' && !(kind === 'wall' && Math.min(board.w, board.h) <= 4)) assert.equal(solved, true, `${where} 0번째`);
+  }
+}
 
 test('누가 이길까: 같은 게임의 가장 작은 판들을 작은 것부터 차례로 낸다', () => {
   const total = (board) => (board.kind === 'choco' ? board.w * board.h : 'n' in board ? board.n : board.piles.reduce((sum, count) => sum + count, 0));
