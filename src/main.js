@@ -1,5 +1,5 @@
 // 퍼즐 연구소의 틀: 처음 화면(연구소)과, 판 화면에서 모든 형식이 함께 쓰는 부분.
-// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js, 누가 이길까 duel.js, 약수 세금 tax.js, 참말 섬 logic.js, 조각 못 들어가게 막기 block.js, 강 건너기 river.js, 컵 뒤집기와 세 색 무리 cups.js, 민들레와 바람 dandelion.js, 주사위 미로와 길 세기 maze.js, 숨은 규칙 찾기 rulehunt.js, 엉킨 그림 풀기 untangle.js).
+// 형식마다 다른 부분은 src/formats/ 에 있다(동전 뒤집기 coins.js, 한붓그리기 trace.js, 숫자 추리 code.js, 자리 바꾸기 swap.js, 조각 덮기 tile.js, 누가 이길까 duel.js, 약수 세금 tax.js, 참말 섬 logic.js, 조각 못 들어가게 막기 block.js, 강 건너기 river.js, 컵 뒤집기와 세 색 무리 cups.js, 민들레와 바람 dandelion.js, 주사위 미로와 길 세기 maze.js, 숨은 규칙 찾기 rulehunt.js, 엉킨 그림 풀기 untangle.js, 켜고 끄기와 숫자 마술 lamps.js).
 // 처음 만남은 src/meet.js 에, 내 공책은 src/notebook.js 에 있다.
 // 화면에 나오는 글은 모두 대본(src/content/)과 index.html에 있다. 이 파일에는 글을 적지 않는다.
 // 틀이 쓰는 글(처음 화면의 말, 단계 표시, "막혔어요"의 세 고르기, 작은 판의 말, 나가기, 끝난 뒤의 말)은 coins.json에 있는 것을 모든 형식이 함께 쓴다.
@@ -25,6 +25,7 @@ import { createCoins } from './formats/coins.js';
 import { createCups } from './formats/cups.js';
 import { createDandelion } from './formats/dandelion.js';
 import { createDuel } from './formats/duel.js';
+import { createLamps } from './formats/lamps.js';
 import { createLogic } from './formats/logic.js';
 import { createMaze } from './formats/maze.js';
 import { createRiver } from './formats/river.js';
@@ -889,7 +890,7 @@ const frame = {
   },
 };
 // 처음 화면의 카드와 "만들기" 목록은 이 차례대로 놓여 있다(index.html).
-const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame), duel: createDuel(frame), tax: createTax(frame), logic: createLogic(frame), block: createBlock(frame), river: createRiver(frame), cups: createCups(frame), dandelion: createDandelion(frame), maze: createMaze(frame), rulehunt: createRulehunt(frame), untangle: createUntangle(frame) };
+const formats = { coins: createCoins(frame), trace: createTrace(frame), code: createCode(frame), swap: createSwap(frame), tile: createTile(frame), duel: createDuel(frame), tax: createTax(frame), logic: createLogic(frame), block: createBlock(frame), river: createRiver(frame), cups: createCups(frame), dandelion: createDandelion(frame), maze: createMaze(frame), rulehunt: createRulehunt(frame), untangle: createUntangle(frame), lamps: createLamps(frame) };
 const meet = createMeet(frame);
 const notebook = createNotebook({ $, log, formats: () => formats, setScreen, startRound, resumeSaved });
 

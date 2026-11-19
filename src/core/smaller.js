@@ -13,6 +13,8 @@ import { allCodes, checkBoard as checkCode, solveTable } from './code.js';
 import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
 import { placeDown, solveOnce as solveCups } from './cups-ladder.js';
+import { smallBoards as smallLampBoards } from './lamps-ladder.js';
+import { checkBoard as checkLamps } from './lamps.js';
 import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
 import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } from './dandelion.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
@@ -495,4 +497,17 @@ export function smallerUntangle(origin, turn = 0) {
   return wrap(pickByTurn(lists, possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle };
+// ---- 켜고 끄기와 숫자 마술: 불(카드)이 하나 적은 판, 두 자리 숫자 마술 ----
+
+/**
+ * 적힌 수 판은 가장 큰 불을 빼고(불 셋까지) 남은 불로 되는 적힌 수를 둔다. 어디까지 될까와 불 하나 더 달기는 가장 큰 불을 뺀다(불 둘까지).
+ * 카드는 한 장씩 뺀다(석 장까지). 세 자리 숫자 마술은 두 자리로 한다. 원래 판에 가까운 것(불이 많은 것)부터 차례로 낸다. 그런 판이 없으면 null이다.
+ * 이 형식에는 안 되는 판이 없다(모든 판이 끝까지 할 수 있는 판이다).
+ */
+export function smallerLamps(origin, turn = 0) {
+  if (!origin.board || checkLamps(origin.board) !== null) return null;
+  const list = smallLampBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps };

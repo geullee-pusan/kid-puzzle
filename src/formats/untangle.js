@@ -587,7 +587,7 @@ export function createUntangle(frame) {
       $('untangle-count').hidden = !on;
       $('untangle-loop').hidden = !on;
       if (on) {
-        // 이 형식은 틀의 형식 목록에서 맨 뒤라, 앞의 형식이 감춰 둔 무르기와 되돌리기를 여기서 다시 보이게 한다.
+        // 앞의 형식이 감춰 둔 무르기와 되돌리기를 여기서 다시 보이게 한다(뒤의 켜고 끄기와 숫자 마술은 켜질 때 다시 감춘다).
         $('undo').hidden = false;
         $('reset').hidden = false;
       }

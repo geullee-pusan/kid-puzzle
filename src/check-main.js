@@ -49,6 +49,7 @@ function drawCounts() {
     ['maze', '주사위 미로와 길 세기'],
     ['rulehunt', '숨은 규칙 찾기'],
     ['untangle', '엉킨 그림 풀기'],
+    ['lamps', '켜고 끄기와 숫자 마술'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

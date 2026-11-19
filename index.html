@@ -219,6 +219,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="lamps-title">
+            <h2 id="lamps-title">켜고 끄기와 숫자 마술</h2>
+            <div class="door-picture"><div id="home-lamps-sample"></div></div>
+            <p id="home-lamps-ask" class="door-ask">켠 불로 적힌 수를 만들 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-lamps-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-lamps-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -282,6 +292,9 @@
               </li>
               <li>
                 <button id="home-untangle-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-untangle-blank"></span></span><span class="menu-name">엉킨 그림 풀기</span></button>
+              </li>
+              <li>
+                <button id="home-lamps-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-lamps-blank"></span></span><span class="menu-name">켜고 끄기와 숫자 마술</span></button>
               </li>
             </ul>
           </div>
@@ -397,6 +410,8 @@
             <div id="dandelion-board" hidden></div>
             <!-- 주사위 미로: 세모꼴로 놓인 갈림길과 맨 아래 출구. 실험 판에서는 출구 아래에 손님 막대가 쌓인다. 세는 판에서는 칸마다 자물쇠가 있다 -->
             <div id="maze-board" hidden></div>
+            <!-- 켜고 끄기와 숫자 마술: 수가 적힌 불의 줄과 켠 불의 합, 1부터 놓인 수의 줄. 또는 마음 읽기 카드, 또는 선생님의 쪽지와 세로셈 -->
+            <div id="lamps-board" hidden></div>
             <!-- 숨은 규칙 찾기: 수 판(1부터 끝 수까지, 한 줄에 열 칸. 누르면 묻는다) 또는 세 수 판(물어본 세 수를 돼요와 안 돼요 두 줄로) -->
             <div id="rulehunt-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
@@ -413,6 +428,11 @@
             </div>
           </div>
           <div class="board-foot">
+            <!-- 켜고 끄기와 숫자 마술: 윗줄에 방금 만든 수(또는 할 일), 불 하나 더 달기에서는 그 아래에 지금까지 가장 멀리 간 불. 몇 번 켰는지는 적지 않는다 -->
+            <span id="lamps-count" class="count tile-count block-count" hidden>
+              <span id="lamps-status" class="tile-status" aria-live="polite"></span>
+              <span id="lamps-best-line" class="block-numbers" hidden><span>가장 멀리 간 불: <strong id="lamps-best"></strong></span></span>
+            </span>
             <!-- 참말 섬: 따라가 보기가 켜져 있으면 맞지 않는 말이 몇 개인지를 판 아래에 글로 알린다 -->
             <span id="logic-foot" class="count tile-count" hidden>
               <span id="logic-status" class="tile-status" aria-live="polite"></span>
@@ -511,6 +531,53 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 켜고 끄기와 숫자 마술: 판의 종류마다 아래 상자 가운데 몇을 보인다. 불은 판에서 누른다.
+               숫자판은 새 불의 수, 선생님의 수, 마술에서 고른 수와 계산한 답을 넣을 때 쓴다 -->
+          <div id="lamps-pad" class="pad" hidden>
+            <div id="lamps-switch-box" class="choices">
+              <h2>불을 켜고 꺼요</h2>
+              <p class="pad-note">불을 누르면 켜지고, 다시 누르면 꺼져요.</p>
+              <button id="lamps-off" class="btn" type="button">불 모두 끄기</button>
+            </div>
+            <div id="lamps-claim-box" class="choices" hidden>
+              <p class="pad-note">처음으로 만들 수 없는 수를 찾았으면, 줄에서 그 수를 누르고 이 단추를 눌러요.</p>
+              <button id="lamps-cannot" class="btn good huge" type="button" disabled>못 만들어요</button>
+            </div>
+            <div id="lamps-trick-box" class="choices" hidden>
+              <h2>마음속의 수가 적힌 카드</h2>
+              <p class="pad-note">카드를 누르면 표시되고, 다시 누르면 지워져요.</p>
+              <button id="lamps-picked" class="btn good huge" type="button" disabled>다 골랐어요</button>
+            </div>
+            <div id="lamps-confirm-box" class="choices" hidden>
+              <h2>선생님이 맞혔나요?</h2>
+              <button id="lamps-yes" class="btn good huge" type="button">맞아요</button>
+              <button id="lamps-no" class="btn huge" type="button">다른 수예요</button>
+            </div>
+            <div id="lamps-entry-box" class="choices" hidden>
+              <h2 id="lamps-entry-title"></h2>
+              <div id="lamps-typed-line" class="answer-line"><strong id="lamps-typed" class="answer-box" aria-live="polite"></strong></div>
+              <div id="lamps-keys" class="keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="lamps-try" class="btn good huge" type="button" hidden>달아 보기</button>
+              <button id="lamps-guess" class="btn good huge" type="button" hidden>맞혀 보기</button>
+              <button id="lamps-choose" class="btn good huge" type="button" hidden>이 수로 할래요</button>
+              <button id="lamps-calc" class="btn good huge" type="button" hidden>계산했어요</button>
+              <button id="lamps-help" class="btn" type="button" hidden>선생님이 계산해 주세요</button>
+            </div>
+            <button id="lamps-open" class="btn good huge" type="button" hidden>쪽지 펴 보기</button>
+          </div>
+
           <!-- 주사위 미로: 실험은 출구 고르기와 손님 보내기, 세는 판은 고른 칸의 물음과 숫자판과 "열어 보기",
                칠하는 판은 칠하기와 수 넣기 가운데 고르는 단추와 "다 칠했어요". 막힌 갈림길이 있는 판에서는 손님도 보내 볼 수 있다 -->
           <div id="maze-pad" class="pad" hidden>
@@ -1600,6 +1667,57 @@
             <p id="untangle-make-result" class="make-result" aria-live="polite"></p>
             <div id="untangle-make-picture" class="untangle-make-picture"></div>
             <button id="untangle-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-lamps" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="불 정하기">
+          <div id="lamps-make-tabs" class="segment">
+            <button class="btn" type="button" data-tab="lamps">불 달기</button>
+            <button class="btn" type="button" data-tab="magic">숫자 마술</button>
+          </div>
+          <div id="lamps-make-lamps-box" class="choices">
+            <strong id="lamps-make-count" class="make-count"></strong>
+            <h2>달 불의 수</h2>
+            <div class="stepper">
+              <button id="lamps-make-fewer" class="btn" type="button" aria-label="수 줄이기">−</button>
+              <strong id="lamps-make-value"></strong>
+              <button id="lamps-make-more" class="btn" type="button" aria-label="수 늘리기">+</button>
+            </div>
+            <button id="lamps-make-add" class="btn wide" type="button">이 불 달기</button>
+            <p class="pad-note">달아 둔 불을 누르면 빠져요.</p>
+            <button id="lamps-make-clear" class="btn wide" type="button">불 모두 빼기</button>
+          </div>
+          <div id="lamps-make-magic-box" class="choices" hidden>
+            <h2>마술에 쓸 수</h2>
+            <div class="answer-line"><strong id="lamps-make-typed" class="answer-box" aria-live="polite"></strong></div>
+            <div id="lamps-make-keys" class="keys">
+              <button class="btn key" type="button" data-n="1">1</button>
+              <button class="btn key" type="button" data-n="2">2</button>
+              <button class="btn key" type="button" data-n="3">3</button>
+              <button class="btn key" type="button" data-n="4">4</button>
+              <button class="btn key" type="button" data-n="5">5</button>
+              <button class="btn key" type="button" data-n="6">6</button>
+              <button class="btn key" type="button" data-n="7">7</button>
+              <button class="btn key" type="button" data-n="8">8</button>
+              <button class="btn key" type="button" data-n="9">9</button>
+              <button class="btn key" type="button" data-n="0">0</button>
+              <button class="btn key word" type="button" data-n="erase">지우기</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 불">
+          <p class="rule">불을 골라 달면 선생님이 1부터 어디까지 만들 수 있는지 알려 줘요. 숫자 마술은 아무 수로나 해 볼 수 있어요. 두 배씩이 아닌 불로도 빈 곳 없이 멀리 갈 수 있을까요?</p>
+          <div class="board-area"><div id="lamps-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="lamps-make-solve" class="btn primary huge" type="button">선생님, 알려 주세요</button>
+            <p id="lamps-make-result" class="make-result" aria-live="polite"></p>
+            <button id="lamps-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

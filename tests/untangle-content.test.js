@@ -120,7 +120,7 @@ test('규칙 설명은 세 문장 안이고, 점을 끌어 옮기는 것과 겹�
   // 형식이 판의 종류(이야기 판은 옷과 다리)로 규칙 글을 고른다.
   assert.match(code, /return round\.board\.bridges > 0 \? `\$\{kind\}-bridge` : kind;/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 15);
+  assert.equal(guides.length, 16);
   assert.ok(sentenceCount(guides[14]) <= 3, guides[14]);
   assert.match(guides[14], /아무리 옮겨도 안 풀리는 그림도 만들 수 있을까요\?$/);
 });
@@ -342,10 +342,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(part('id="untangle-maybe"', 'id="untangle-record"'), /id="untangle-impossible"[^>]*>불가능해요</);
   assert.match(part('id="untangle-loop"', 'id="code-left"'), /id="untangle-loop"[^>]*hidden>고리 하나 보기</);
   assert.equal(T.tool.off, '고리 하나 보기');
-  // 틀이 형식을 안다(형식 목록의 맨 뒤).
-  assert.match(read('src/main.js'), /rulehunt: createRulehunt\(frame\), untangle: createUntangle\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 숨은 규칙 찾기 다음).
+  assert.match(read('src/main.js'), /rulehunt: createRulehunt\(frame\), untangle: createUntangle\(frame\), /);
   assert.match(read('src/check-main.js'), /\['untangle', '엉킨 그림 풀기'\]/);
-  // 형식 목록의 맨 뒤라서, 켜질 때 앞의 형식이 감춰 둔 무르기와 되돌리기를 보이게 한다.
+  // 켜질 때 앞의 형식이 감춰 둔 무르기와 되돌리기를 보이게 한다(뒤의 켜고 끄기와 숫자 마술이 켜질 때 다시 감춘다).
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);
   // 지난 기록은 틀이 건네주는 것으로 본다. 점은 손가락으로 끈다(pointer 이벤트).
   assert.doesNotMatch(code, /log\.allRecords\(\)/);

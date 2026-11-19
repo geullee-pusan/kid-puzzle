@@ -301,7 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열여섯 장이라 가로 1280px에서 넉 장씩 네 줄에 꼭 맞는다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 퍼즐 만들기).
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열일곱 장이라 가로 1280px에서 넉 장씩 다섯 줄이다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 퍼즐 만들기 한 장).
+   (카드가 열여섯 장일 때는 네 줄에 꼭 맞았다.)
    (카드가 열다섯 장일 때는 넷째 줄에 세 장이었다.)
    (카드가 열네 장일 때는 넷째 줄에 두 장이었다.)
    (카드가 열세 장일 때는 넷째 줄에 퍼즐 만들기 카드 한 장이었다.)
@@ -5498,3 +5499,667 @@ button.rh-cell:focus-visible {
   height: 180px;
 }
 
+
+/* ---- 켜고 끄기와 숫자 마술 ----
+   색만으로 알리지 않는다: 켠 불은 빛살(점선 고리)이 둘린 채운 동그라미, 꺼진 불은 빈 동그라미, 만든 수는 동그라미, 만들 수 없는 수는 빗금 한 줄,
+   처음으로 만들 수 없는 수는 두 겹 테두리, 고른 수와 누른 카드는 굵은 테두리, 선생님의 수가 있는 카드는 두 겹 테두리, 다시 볼 자리는 점선 네모 */
+.board-area > #lamps-board {
+  align-self: stretch;
+  display: flex;
+  align-items: safe center;
+  justify-content: safe center;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.lp-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* 불은 한 줄에 놓는다. 불이 많으면(여섯) 판 자리의 가로에 맞춰 조금 작아진다 */
+.lp-lamps {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.lp-lamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 16px 6px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.lp-lamp {
+  cursor: pointer;
+}
+
+button.lp-lamp:focus-visible {
+  outline: 3px solid var(--gold);
+}
+
+.lp-bulb {
+  position: relative;
+  width: min(64px, 10cqw);
+  height: min(64px, 10cqw);
+  border: 4px solid #868e96;
+  border-radius: 50%;
+  background: #f1f3f5;
+}
+
+/* 켠 불: 채운 동그라미와 둘레의 빛살 */
+.lp-lamp.on .lp-bulb {
+  border-color: #d9480f;
+  background: #ffd43b;
+  box-shadow: 0 0 18px 6px rgba(252, 196, 25, 0.55);
+}
+
+.lp-lamp.on .lp-bulb::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border: 4px dotted #e67700;
+  border-radius: 50%;
+}
+
+/* 새로 단 불과 아직 달지 않은 자리 */
+.lp-lamp.fresh .lp-value {
+  padding: 0 8px;
+  border: 3px solid var(--bar);
+  border-radius: 8px;
+}
+
+.lp-lamp.slot .lp-bulb {
+  border-style: dashed;
+  background: #fff;
+}
+
+.lp-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.lp-lamps.many {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.lp-lamps.many .lp-lamp {
+  min-width: 38px;
+  padding: 10px 0 4px;
+}
+
+.lp-lamps.many .lp-bulb {
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
+}
+
+.lp-lamps.many .lp-lamp.on .lp-bulb::before {
+  inset: -8px;
+  border-width: 3px;
+}
+
+.lp-lamps.many .lp-value {
+  font-size: 18px;
+}
+
+/* 켠 불의 합 */
+.lp-sum {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.lp-sum-label {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.lp-sum-value {
+  min-width: 2ch;
+  font-size: 48px;
+  line-height: 1;
+  text-align: center;
+}
+
+.lp-sum.small .lp-sum-label {
+  font-size: 18px;
+}
+
+.lp-sum.small .lp-sum-value {
+  font-size: 30px;
+}
+
+/* 1부터 놓인 수의 줄: 칸의 크기는 판 자리의 가로와 세로(절반)에 맞추고 56px을 넘지 않는다 */
+.lp-strip {
+  --gap: 6px;
+  --cell: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((48cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)), 56px);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: var(--gap);
+  justify-content: center;
+}
+
+.lp-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.lp-cell {
+  cursor: pointer;
+}
+
+button.lp-cell:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.lp-n {
+  position: relative;
+  z-index: 1;
+}
+
+/* 만든 수(만들 수 있는 수): 동그라미 */
+.lp-cell.made {
+  background: #ebfbee;
+}
+
+.lp-cell.made::before {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  border: 3px solid var(--good);
+  border-radius: 50%;
+}
+
+/* 만들 수 없는 수: 빗금 한 줄 */
+.lp-cell.cannot {
+  background: #f1f3f5;
+  color: var(--muted);
+}
+
+.lp-cell.cannot::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  border-top: 3px solid #495057;
+  transform: rotate(-40deg);
+}
+
+/* 처음으로 만들 수 없는 수: 두 겹 테두리 */
+.lp-cell.gap {
+  outline: 6px double #d9480f;
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+/* 고른 수, 방금 만든 수: 굵은 테두리 */
+.lp-cell.picked,
+.lp-cell.fresh {
+  border: 4px solid var(--bar);
+}
+
+.lp-cell.picked {
+  background: #fff9db;
+}
+
+/* 그 수를 만드는 방법의 수(둘 이상일 때) */
+.lp-ways {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  z-index: 3;
+  min-width: 24px;
+  padding: 0 4px;
+  border-radius: 12px;
+  background: var(--bar);
+  color: #fff;
+  font-size: 18px;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* 적힌 수: 만든 것은 동그라미 */
+.lp-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.lp-target {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 76px;
+  height: 68px;
+  padding: 0 10px;
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.lp-target.made {
+  background: #ebfbee;
+}
+
+.lp-target.made::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 4px solid var(--good);
+  border-radius: 50%;
+}
+
+.lp-target.fresh {
+  border: 4px solid var(--bar);
+}
+
+/* 마음 읽기 카드 */
+.lp-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  /* 선생님의 수가 있는 카드의 두 겹 테두리가 판 자리에 잘리지 않게 */
+  padding: 10px;
+}
+
+.lp-cards.five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 8px;
+  border: 3px solid #adb5bd;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  touch-action: manipulation;
+}
+
+button.lp-card {
+  cursor: pointer;
+}
+
+button.lp-card:focus-visible {
+  outline: 3px solid var(--gold);
+}
+
+.lp-card.picked {
+  border: 6px solid var(--bar);
+  background: #fff9db;
+}
+
+.lp-card.marked {
+  outline: 7px double #d9480f;
+  outline-offset: 2px;
+  background: #fff4e6;
+}
+
+.lp-card-title {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+/* 카드의 수: 두 줄로 나란히(두 자리 수가 붙어 보이지 않게) */
+.lp-card-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 8px;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+.lp-cards.five .lp-card-numbers {
+  gap: 0 4px;
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.lp-card-n.mark {
+  border: 3px solid var(--good);
+  border-radius: 50%;
+}
+
+/* 숫자 마술: 선생님의 쪽지와 세로셈 */
+.lp-magic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
+.lp-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 190px;
+  padding: 14px 10px;
+  border: 3px solid #b08900;
+  border-radius: 6px;
+  background: #fff9db;
+  box-shadow: 4px 4px 0 #e9d8a6;
+  text-align: center;
+}
+
+.lp-note-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.lp-note-value {
+  font-size: 46px;
+  line-height: 1.1;
+}
+
+.lp-note:not(.open) .lp-note-value {
+  width: 100px;
+  border: 3px dashed #b08900;
+  border-radius: 8px;
+  color: #b08900;
+}
+
+.lp-note.open {
+  border-width: 5px;
+}
+
+.lp-note-sealed {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.lp-work {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.lp-picked {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.lp-picked-label {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.lp-picked-value {
+  min-width: 4ch;
+  font-size: 36px;
+  text-align: center;
+}
+
+.lp-picked.live .lp-picked-value {
+  border-bottom: 3px dashed var(--bar);
+}
+
+.lp-column {
+  display: inline-grid;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-column-row {
+  display: grid;
+  grid-template-columns: 36px repeat(4, 38px);
+}
+
+.lp-sign,
+.lp-digit {
+  height: 44px;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 44px;
+  text-align: center;
+}
+
+.lp-column-bar {
+  height: 4px;
+  margin-left: 36px;
+  background: var(--ink);
+}
+
+.lp-column-row.lp-row-answer.live .lp-digit {
+  border-bottom: 3px dashed var(--bar);
+}
+
+.lp-digit.look {
+  outline: 4px dashed #d9480f;
+  outline-offset: -2px;
+  border-radius: 6px;
+  background: #fff4e6;
+}
+
+.lp-digit.sum {
+  height: 28px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.lp-column.small .lp-column-row {
+  grid-template-columns: 24px repeat(4, 24px);
+}
+
+.lp-column.small .lp-sign,
+.lp-column.small .lp-digit {
+  height: 30px;
+  font-size: 22px;
+  line-height: 30px;
+}
+
+.lp-column.small .lp-column-bar {
+  height: 3px;
+  margin-left: 24px;
+}
+
+.lp-chain {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.lp-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.lp-figure .lp-strip {
+  --gap: 4px;
+  --cell: 34px;
+}
+
+.lp-figure .lp-cards {
+  width: min(100%, 560px);
+}
+
+.lp-figure .strip-note {
+  text-align: center;
+}
+
+/* 직접 만들기의 판 */
+.lp-make .lp-strip {
+  --cell: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((60cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)), 52px);
+}
+
+/* 작은 그림(처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책): 글자를 적지 않고 모양만 그린다 */
+.lp-play.small {
+  gap: 6px;
+}
+
+.lp-play.small .lp-lamps,
+.lp-play.small .lp-targets {
+  gap: 6px;
+}
+
+.lp-play.small .lp-lamp {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.lp-play.small .lp-bulb {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.lp-play.small .lp-lamp.on .lp-bulb {
+  box-shadow: none;
+}
+
+.lp-play.small .lp-lamp.on .lp-bulb::before {
+  inset: -5px;
+  border-width: 2px;
+}
+
+.lp-play.small .lp-value,
+.lp-play.small .lp-n,
+.lp-play.small .lp-ways,
+.lp-play.small .lp-card-numbers,
+.lp-play.small .lp-card-title,
+.lp-play.small .lp-note-title,
+.lp-play.small .lp-note-sealed {
+  display: none;
+}
+
+.lp-play.small .lp-strip {
+  --gap: 2px;
+  --cell: 9px;
+}
+
+.lp-play.small .lp-cell {
+  border-width: 1px;
+  border-radius: 2px;
+}
+
+.lp-play.small .lp-cell::before {
+  inset: 0;
+  border-width: 2px;
+}
+
+.lp-play.small .lp-target {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 4px;
+}
+
+.lp-play.small .lp-target.made::before {
+  inset: 0;
+  border-width: 2px;
+}
+
+.lp-play.small .lp-cards {
+  grid-template-columns: repeat(5, 22px);
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+}
+
+.lp-play.small .lp-card {
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  border-width: 2px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(#fff 0 5px, #ced4da 5px 6px);
+}
+
+.lp-play.small .lp-note {
+  width: 44px;
+  padding: 4px;
+  gap: 0;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 #e9d8a6;
+}
+
+.lp-play.small .lp-note-value {
+  width: auto;
+  border: 0;
+  font-size: 24px;
+}
+
+/* 처음 화면의 카드와 판 고르기의 그림은 칸이 넓어서 조금 크게 그린다 */
+.door-picture .lp-play.small .lp-bulb,
+.level-picture .lp-play.small .lp-bulb {
+  width: 24px;
+  height: 24px;
+}
+
+.door-picture .lp-play.small .lp-note,
+.level-picture .lp-play.small .lp-note {
+  width: 64px;
+}
+
+/* 카드가 다섯 장이면 칸이 좁아서 이름이 한 줄에 들어가게 줄인다 */
+.lp-card-title {
+  white-space: nowrap;
+}
+
+.lp-cards.five .lp-card {
+  padding: 8px 4px;
+}
+
+.lp-cards.five .lp-card-title {
+  font-size: 19px;
+}
