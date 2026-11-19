@@ -6,11 +6,36 @@
 //   guess    컴퓨터가 숨긴 암호를 추측해서 알아낸다. 추측마다 두 수를 듣는다(1~3단계)
 //   table    추측과 답이 적힌 표만 보고 암호를 넣는다(4단계, 직접 만든 표)
 //   referee  역할 바꾸기. 아이가 암호를 정하고 컴퓨터가 추측한다. 아이가 두 수를 넣어 준다(5단계)
+//   place    자리만 알려 주는 표. 표만 보고 알아내기와 같고, 줄마다 자리가 맞는 것의 수만 적혀 있다(6단계)
+//   cards    카드 세 장 맞히기. 숨긴 카드 묶음을 카드 세 장을 골라 물어서 알아낸다. 몇 장이 들어 있는지만 듣는다(7단계)
+//   lie      한 번 거짓말하는 표. 줄 가운데 딱 하나가 거짓인 표에서 암호를 넣는다(8단계)
 // 추측은 틀린 답이 아니다. 두 수만 알려 주고 아무 말도 덧붙이지 않는다.
 // 암호일 수 없는 추측(지금까지의 답과 맞지 않는 추측)을 냈는지는 기록에만 남긴다.
 import T from '../content/code.json';
-import { LADDER, MAKE_DIGITS, MAKE_LENGTH, MAKE_LEVEL, MAKE_MAX_ROWS, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/code-ladder.js';
-import { allCodes, checkBoard, checkCode, checkRows, diagnoseReply, diagnoseTable, filterCodes, fitsAll, judge, nextGuess, solveTable, trailOf } from '../core/code.js';
+import { LADDER, MAKE_DIGITS, MAKE_LENGTH, MAKE_LEVEL, MAKE_MAX_ROWS, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/code-ladder.js';
+import {
+  ASK_MODES,
+  TABLE_MODES,
+  allCodes,
+  checkBoard,
+  checkCode,
+  checkRows,
+  copyRow,
+  diagnoseLie,
+  diagnoseReply,
+  diagnoseTable,
+  fieldsOf,
+  filterCodes,
+  fitsAll,
+  isLieTable,
+  nextGuess,
+  replyOf,
+  solveLie,
+  solveTable,
+  sortSet,
+  trailOf,
+  universe,
+} from '../core/code.js';
 import { smallerCode } from '../core/smaller.js';
 import { fill, ordinal } from '../core/text.js';
 import { codeCard, drawMemo, drawMini, drawPicker, drawSlots, drawTable } from '../ui/code-board.js';
@@ -35,52 +60,77 @@ export function createCode(frame) {
   const countText = (n) => fill(T.count, { n });
   const rangeOf = (board) => ({ low: board.digits[0], high: board.digits.at(-1), n: board.length });
   const slotsOf = (text, length, blank = '') => Array.from({ length }, (_, index) => text[index] ?? blank);
-  const copyRows = (rows) => rows.map((row) => ({ guess: row.guess, hit: row.hit, place: row.place }));
+  const copyRows = (rows) => rows.map(copyRow);
+  /** 표만 보고 암호를 넣는 판인가(표, 자리만 알려 주는 표, 한 번 거짓말하는 표) */
+  const tabled = (mode) => TABLE_MODES.includes(mode);
+  /** 아이가 물어서 알아내는 판인가(추측해서 알아내기, 카드 맞히기) */
+  const asking = (mode) => ASK_MODES.includes(mode);
   const copyBoard = (board) => {
     const copy = { mode: board.mode, length: board.length, digits: board.digits };
-    if (board.mode === 'guess') copy.secret = board.secret;
-    if (board.mode === 'table') copy.rows = copyRows(board.rows);
+    if (asking(board.mode)) copy.secret = board.secret;
+    if (tabled(board.mode)) copy.rows = copyRows(board.rows);
     return copy;
   };
-  /** 지금까지의 답과 모두 맞는 후보 */
-  const candidatesOf = (round) => filterCodes(allCodes(round.board.length, round.board.digits), round.rows);
-  /** 지금 숫자판으로 넣는 것: 'guess'(추측) | 'table'(암호) | 'secret'(내 암호 정하기) | 'reply'(두 수 알려 주기) */
+  /** 메모판의 줄 수: 자리마다 한 줄, 카드 맞히기는 카드 한 줄 */
+  const memoRowsOf = (board) => (board.mode === 'cards' ? 1 : board.length);
+  /** 지금까지의 답과 모두 맞는 후보(카드 맞히기는 카드 묶음) */
+  const candidatesOf = (round) => filterCodes(universe(round.mode, round.board.length, round.board.digits), round.rows);
+  /**
+   * 지금 숫자판으로 넣는 것: 'guess'(추측) | 'cards'(물어볼 카드) | 'table'(암호) | 'secret'(내 암호 정하기) | 'reply'(두 수 알려 주기)
+   */
   function phaseOf(round) {
-    if (round.mode !== 'referee') return round.mode;
-    return round.secret === null ? 'secret' : 'reply';
+    if (round.mode === 'referee') return round.secret === null ? 'secret' : 'reply';
+    return tabled(round.mode) ? 'table' : round.mode;
   }
   /** 이 판의 암호. 역할 바꾸기에서는 아이가 정한 암호다(아직 안 정했으면 null). */
   function secretOf(round, solution) {
     if (round.mode === 'referee') return round.secret;
-    return round.mode === 'table' ? solution.secret : round.board.secret;
+    return tabled(round.mode) ? solution.secret : round.board.secret;
   }
+  /** 암호(카드 맞히기는 숨은 카드)를 적는 줄의 이름 */
+  const answerLabel = (mode) => (mode === 'cards' ? T.cardsRow : T.answerRow);
 
   // ---- 표 ----
-  const plainRow = (row, index, left) => ({
+  /** 판의 종류에 맞는 머리글과 답의 칸 */
+  const headsOf = (mode) => ({ ...T.heads, ...(T.headsBy[mode] ?? {}) });
+  const tableView = (mode, rows, showLeft) => ({ heads: headsOf(mode), cols: fieldsOf(mode), rows, showLeft });
+  const plainRow = (row, index, left, mode = 'table') => ({
     no: String(index + 1),
     guess: row.guess,
-    hit: countText(row.hit),
-    place: countText(row.place),
+    hit: row.hit === undefined ? '' : fill(mode === 'cards' ? T.cardCount : T.count, { n: row.hit }),
+    place: row.place === undefined ? '' : countText(row.place),
     left: left === undefined ? '' : countText(left),
   });
   const labelRow = (label, code) => ({ kind: 'label', no: label, guess: code });
+  /** 작은 그림에 적는 줄의 답(짧은 것, 하던 판에 적는 것) */
+  function lineOf(mode, row, kind) {
+    const lines = T.lines[mode];
+    if (lines) return fill(lines[kind], { hit: row.hit, place: row.place });
+    return fill(kind === 'short' ? T.shortLine : T.rowLine, { hit: row.hit, place: row.place });
+  }
+  /** 틀린 답을 넣었을 때 견줘 볼 줄들(예전에 적어 둔 판에는 row 하나만 있다) */
+  const flaggedRows = (flag) => (flag ? (Array.isArray(flag.rows) ? flag.rows : [flag.row]) : []);
 
   /** 판에 그릴 줄들 */
   function boardRows(round, solution, showLeft) {
     const rows = [];
+    const { mode } = round;
     if (showLeft) rows.push({ kind: 'start', no: T.startRow, left: countText(solution.start) });
-    if (round.mode === 'table') {
+    if (tabled(mode)) {
+      const marked = round.done ? [] : flaggedRows(round.flag);
       round.board.rows.forEach((row, index) => {
-        const line = plainRow(row, index, solution.trail[index]);
-        const flagged = !round.done && round.flag?.row === index;
-        rows.push(flagged ? { ...line, kind: 'flagged', flag: T.flag } : line);
-        if (flagged) rows.push(labelRow(T.attemptRow, round.flag.code));
+        const line = plainRow(row, index, solution.trail?.[index], mode);
+        if (marked.includes(index)) {
+          // 어긋난 줄 바로 아래에 넣은 암호를 적어 위아래로 나란히 볼 수 있게 한다.
+          rows.push({ ...line, kind: 'flagged', flag: T.flag }, labelRow(T.attemptRow, round.flag.code));
+        } else if (round.done && mode === 'lie' && index === solution.lie) rows.push({ ...line, kind: 'flagged', flag: T.lieMark });
+        else rows.push(line);
       });
       if (round.done) rows.push(labelRow(T.answerRow, solution.secret));
       return rows;
     }
     if (round.mode === 'referee' && round.secret !== null) rows.push(labelRow(T.secretRow, round.secret));
-    round.rows.forEach((row, index) => rows.push(plainRow(row, index, row.left)));
+    round.rows.forEach((row, index) => rows.push(plainRow(row, index, row.left, mode)));
     if (round.mode === 'referee' && round.pending !== null) {
       // 답이 어긋났을 때는 암호를 추측 바로 위에 한 번 더 적어, 위아래로 나란히 견줘 볼 수 있게 한다.
       if (round.compare && round.rows.length > 0) rows.push(labelRow(T.secretRow, round.secret));
@@ -88,16 +138,19 @@ export function createCode(frame) {
       rows.push(round.compare ? { ...line, kind: 'flagged', flag: T.flag } : { ...line, kind: 'pending' });
     }
     // 그만두고 풀이를 본 판에는 암호를 적어 둔다(맞힌 판은 마지막 추측이 암호다).
-    if (round.mode === 'guess' && round.done && round.rows.at(-1)?.guess !== round.board.secret) rows.push(labelRow(T.answerRow, round.board.secret));
+    if (asking(round.mode) && round.done && round.rows.at(-1)?.guess !== round.board.secret) rows.push(labelRow(answerLabel(round.mode), round.board.secret));
     return rows;
   }
+
+  /** index.html에 적어 둔 메모판의 안내 글(카드 맞히기에서 바꿨다가 되돌린다) */
+  const memoNote = $('code-memo-note').textContent;
 
   function drawBoard() {
     const { round, solution } = frame;
     const referee = round.mode === 'referee';
-    // 역할 바꾸기에서는 남은 후보 수가 줄어드는 것을 늘 보여 준다.
-    const showLeft = referee || round.leftOn;
-    $('code-left').hidden = referee;
+    // 역할 바꾸기에서는 남은 후보 수가 줄어드는 것을 늘 보여 준다. 한 번 거짓말하는 표에는 남은 후보 수가 없다(어느 줄이 거짓인지 모른다).
+    const showLeft = referee || (round.leftOn && round.mode !== 'lie');
+    $('code-left').hidden = referee || round.mode === 'lie';
     $('code-left').setAttribute('aria-pressed', String(round.leftOn));
     $('code-memo-open').hidden = referee;
     $('code-memo-open').setAttribute('aria-pressed', String(round.memoOn));
@@ -105,13 +158,17 @@ export function createCode(frame) {
     $('code-memo').hidden = !memoOn;
     // 메모판이 열려 있으면 표의 줄을 낮게 그려 자리를 나눈다. 표는 메모판의 자리를 정한 뒤에 그려야 맨 아래 줄이 보인다.
     $('code-board').classList.toggle('with-memo', memoOn);
-    drawTable($('code-table'), { heads: T.heads, rows: boardRows(round, solution, showLeft), showLeft, follow: true });
+    drawTable($('code-table'), { ...tableView(round.mode, boardRows(round, solution, showLeft), showLeft), follow: true });
     if (memoOn) {
+      // 카드 맞히기의 메모판은 카드 한 줄이다(자리가 없다).
+      const cards = round.mode === 'cards';
+      const names = cards ? [T.cardsMemo] : T.positions.slice(0, round.board.length);
+      $('code-memo-note').textContent = cards ? T.cardsMemoNote : memoNote;
       drawMemo($('code-memo-rows'), {
-        positions: T.positions.slice(0, round.board.length),
+        positions: names,
         digits: round.board.digits,
         struck: round.memo,
-        label: (at, digit) => fill(T.memoChip, { pos: T.positions[at], digit }),
+        label: (at, digit) => fill(T.memoChip, { pos: names[at], digit }),
         onTap: round.done ? undefined : tapMemo,
       });
     }
@@ -160,7 +217,10 @@ export function createCode(frame) {
     if (round.done || $('code-pad').hidden || phaseOf(round) === 'reply') return;
     const { length, digits } = round.board;
     if (key === 'erase') typed = typed.slice(0, -1);
-    else if (digits.includes(key) && !typed.includes(key) && typed.length < length) typed += key;
+    else if (digits.includes(key) && !typed.includes(key) && typed.length < length) {
+      // 카드 맞히기는 차례가 없으므로 고른 카드를 작은 것부터 늘어놓는다.
+      typed = round.mode === 'cards' ? sortSet(typed + key) : typed + key;
+    }
     drawPad();
   }
 
@@ -170,41 +230,53 @@ export function createCode(frame) {
     const code = typed;
     typed = '';
     const phase = phaseOf(round);
-    if (phase === 'guess') makeGuess(code);
+    if (phase === 'guess' || phase === 'cards') makeGuess(code);
     else if (phase === 'table') tryCode(code);
     else if (phase === 'secret') setSecret(code);
   }
 
-  /** 1~3단계: 추측을 내고 두 수를 듣는다. 틀린 답이 아니므로 두 수만 알려 준다. */
-  function makeGuess(code) {
+  /**
+   * 1~3단계: 추측을 내고 두 수를 듣는다. 틀린 답이 아니므로 두 수만 알려 준다.
+   * 7단계(카드 맞히기): 카드 세 장을 골라 묻고, 그 가운데 숨은 카드가 몇 장인지만 듣는다.
+   */
+  function makeGuess(typedCode) {
     const { round } = frame;
+    const cards = round.mode === 'cards';
+    const code = cards ? sortSet(typedCode) : typedCode;
     const before = candidatesOf(round);
-    const result = judge(code, round.board.secret);
-    const row = { guess: code, hit: result.hit, place: result.place };
+    const reply = replyOf(round.mode, code, round.board.secret);
+    const row = { guess: code, ...reply };
     const consistent = before.includes(code);
     const left = filterCodes(before, [row]).length;
     round.rows.push({ ...row, left, consistent });
     if (!consistent) round.inconsistentCount += 1;
-    frame.note('guess', { code, hit: row.hit, place: row.place, left, consistent });
-    if (row.place === round.board.length) {
-      // 암호를 알아낸 추측이 이 판의 답이다.
+    frame.note('guess', { code, ...reply, left, consistent });
+    if (code === round.board.secret) {
+      // 암호(숨은 카드 묶음)를 알아낸 추측이 이 판의 답이다.
       round.answers.push({ t: frame.stamp(), answer: code, correct: true, guess: null });
       frame.finish('solved');
       return;
     }
     frame.persist();
     draw();
-    frame.say(fill(T.play.reply, { hit: row.hit, place: row.place }));
+    frame.say(cards ? fill(T.play.cards, { hit: row.hit }) : fill(T.play.reply, { hit: row.hit, place: row.place }));
   }
 
-  /** 4단계: 표와 모두 맞는 암호를 넣는다. 어긋나면 어긋나는 첫 줄을 가리킨다. */
+  /**
+   * 4·6단계: 표와 모두 맞는 암호를 넣는다. 어긋나면 어긋나는 첫 줄을 가리킨다.
+   * 8단계(한 번 거짓말하는 표): 딱 한 줄만 어긋나는 암호를 넣는다. 거짓인 줄이 둘 이상이 되면 앞의 두 줄을 가리킨다.
+   */
   function tryCode(code) {
     const { round } = frame;
-    const result = diagnoseTable(code, round.board.rows);
-    const row = result.row === null ? null : result.row + 1;
+    const lie = round.mode === 'lie';
+    const result = lie ? diagnoseLie(code, round.board.rows) : diagnoseTable(code, round.board.rows);
+    const marked = lie ? result.rows : result.row === null ? [] : [result.row];
+    const row = marked.length === 0 ? null : marked[0] + 1;
     round.tries.push(code);
-    round.answers.push({ t: frame.stamp(), answer: code, correct: result.correct, guess: result.guess, row });
-    frame.note('answer', { answer: code, correct: result.correct, guess: result.guess, row });
+    const answer = { t: frame.stamp(), answer: code, correct: result.correct, guess: result.guess, row };
+    if (lie) answer.rows = marked.map((at) => at + 1);
+    round.answers.push(answer);
+    frame.note('answer', { answer: code, correct: result.correct, guess: result.guess, row, ...(lie ? { rows: answer.rows } : {}) });
     if (result.correct) {
       round.flag = null;
       frame.finish('solved');
@@ -212,10 +284,10 @@ export function createCode(frame) {
     }
     // 틀린 답: 깎이는 것도, 채점 표시도 없다. 어긋나는 줄 아래에 넣은 암호를 적어 직접 견줘 보게 한다.
     round.wrongCount += 1;
-    round.flag = { row: result.row, code };
+    round.flag = marked.length === 0 ? null : lie ? { row: marked[0], rows: marked, code } : { row: marked[0], code };
     frame.persist();
     draw();
-    frame.say(fill(T.guess['table-row'], { no: ordinal(row) }));
+    frame.say(lie ? T.guess[result.guess] : fill(T.guess['table-row'], { no: ordinal(row) }));
   }
 
   /** 5단계: 아이가 암호를 정하면 컴퓨터가 첫 추측을 낸다. */
@@ -319,7 +391,7 @@ export function createCode(frame) {
     round.leftOn = !round.leftOn;
     if (!round.done && !round.leftShown) {
       round.leftShown = true;
-      frame.note('left', { left: round.mode === 'table' ? solution.trail.at(-1) : (round.rows.at(-1)?.left ?? solution.start) });
+      frame.note('left', { left: tabled(round.mode) ? solution.trail.at(-1) : (round.rows.at(-1)?.left ?? solution.start) });
     }
     drawBoard();
     frame.persist();
@@ -330,7 +402,12 @@ export function createCode(frame) {
   function rightLine(round, solution) {
     const parts = [];
     if (round.mode === 'guess') parts.push(fill(T.right['guess-found'], { n: ordinal(round.rows.length) }));
-    else if (round.mode === 'table') parts.push(round.tries.length === 1 ? T.right['table-first'] : fill(T.right['table-tries'], { n: round.tries.length }));
+    else if (round.mode === 'cards') parts.push(fill(T.right['cards-found'], { n: ordinal(round.rows.length) }));
+    else if (round.mode === 'lie') {
+      // 거짓인 줄이 몇 번째였는지 말한다.
+      const no = ordinal(solution.lie + 1);
+      parts.push(round.tries.length === 1 ? fill(T.right['lie-first'], { no }) : fill(T.right['lie-tries'], { no, n: round.tries.length }));
+    } else if (tabled(round.mode)) parts.push(round.tries.length === 1 ? T.right['table-first'] : fill(T.right['table-tries'], { n: round.tries.length }));
     else {
       parts.push(fill(T.right['referee-found'], { n: ordinal(round.rows.length) }));
       // 후보가 하나 남은 뒤에 그 하나를 낸 마지막 추측은 수가 그대로라서 한 번만 말한다.
@@ -353,24 +430,35 @@ export function createCode(frame) {
   }
 
   /** 줄들과 줄마다 남은 후보 수를 표로 만든다. */
-  function trailTable(rows, start, counts) {
-    return {
-      heads: T.heads,
-      showLeft: true,
-      rows: [{ kind: 'start', no: T.startRow, left: countText(start) }, ...rows.map((row, index) => plainRow(row, index, counts[index]))],
-    };
+  function trailTable(rows, start, counts, mode = 'table') {
+    return tableView(mode, [{ kind: 'start', no: T.startRow, left: countText(start) }, ...rows.map((row, index) => plainRow(row, index, counts[index], mode))], true);
   }
 
-  /** 풀이: 암호와, 추측마다 남은 후보 수가 어떻게 줄었는지를 표로 보여 준다. */
+  /** 한 번 거짓말하는 표의 풀이: 거짓인 줄에 표시를 붙인다(남은 후보 수는 없다). */
+  function lieTable(rows, lie) {
+    return tableView(
+      'lie',
+      rows.map((row, index) => (index === lie ? { ...plainRow(row, index), kind: 'flagged', flag: T.lieMark } : plainRow(row, index))),
+      false,
+    );
+  }
+
+  /** 아직 한 줄도 없을 때 하는 말(표를 가리키지 않는다) */
+  const NONE_SAY = { guess: 'guess-none', cards: 'cards-none', referee: 'referee-unanswered' };
+
+  /** 풀이: 암호와, 추측마다 남은 후보 수가 어떻게 줄었는지를 표로 보여 준다. 한 번 거짓말하는 표는 거짓인 줄을 보여 준다. */
   function solutionPages(round, solution) {
     const secret = secretOf(round, solution);
     if (secret === null) return [{ say: T.solution['referee-none'], nodes: [] }];
-    const rows = round.mode === 'table' ? round.board.rows : round.rows;
-    const counts = round.mode === 'table' ? solution.trail : round.rows.map((row) => row.left);
-    const view = { answer: { label: round.mode === 'referee' ? T.secretRow : T.answerRow, code: secret } };
-    if (rows.length > 0) view.table = trailTable(rows, solution.start, counts);
+    const table = tabled(round.mode);
+    const rows = table ? round.board.rows : round.rows;
+    const counts = table ? solution.trail : round.rows.map((row) => row.left);
+    const label = round.mode === 'referee' ? T.secretRow : answerLabel(round.mode);
+    const view = { answer: { label, code: secret } };
+    if (round.mode === 'lie') view.table = lieTable(rows, solution.lie);
+    else if (rows.length > 0) view.table = trailTable(rows, solution.start, counts, round.mode);
     // 아직 한 줄도 없으면 표를 그리지 않는다. 그때는 표를 가리키지 않는 말을 한다.
-    const say = rows.length > 0 || round.mode === 'table' ? T.solution[round.mode] : T.solution[round.mode === 'guess' ? 'guess-none' : 'referee-unanswered'];
+    const say = rows.length > 0 || table ? T.solution[round.mode] : T.solution[NONE_SAY[round.mode]];
     return [{ say, nodes: [rowOf([codeCard(view)])] }];
   }
 
@@ -491,6 +579,15 @@ export function createCode(frame) {
     if (board) frame.startRound(FORMAT, { level: MAKE_LEVEL, seed: null, small: false, custom: true, board });
   }
 
+  /**
+   * 적어 둔 하던 판의 단계가 판과 맞는가. 만들어 낸 판은 그 단계의 판의 종류여야 한다.
+   * 직접 만든 표는 지금의 직접 만들기 단계(9단계)와, 6~8단계를 더하기 전의 직접 만들기 단계(6단계)를 모두 받는다.
+   */
+  const levelOk = (saved) => {
+    if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && saved.mode === 'table';
+    return Number.isInteger(saved.level) && saved.level >= LADDER[0].level && saved.level <= TOP_LEVEL && rungOf(saved.level).mode === saved.mode;
+  };
+
   // ---- 단추 잇기 ----
   const numberOf = (event) => {
     const text = event.target.closest('button')?.dataset.n;
@@ -558,7 +655,7 @@ export function createCode(frame) {
         compare: false, // 암호와 추측을 나란히 보여 주는 중인가
         tries: [], // 표만 보고 알아내기에서 넣어 본 암호들
         flag: null, // 그때 어긋난 줄과 넣은 암호 { row, code }
-        memo: Array.from({ length: board.length }, () => ''), // 메모판에서 자리마다 지운 숫자들
+        memo: Array.from({ length: memoRowsOf(board) }, () => ''), // 메모판에서 자리마다 지운 숫자들(카드 맞히기는 한 줄)
         memoOn: false, // 메모판이 보이는 중인가
         memoUsed: false,
         memoCount: 0,
@@ -571,22 +668,25 @@ export function createCode(frame) {
     },
     solve(round) {
       const { board } = round;
-      if (board.mode === 'table') return { possible: true, ...solveTable(board.length, board.digits, board.rows) };
-      return { possible: true, secret: board.secret ?? null, start: allCodes(board.length, board.digits).length };
+      if (board.mode === 'lie') return { possible: true, ...solveLie(board.length, board.digits, board.rows) };
+      if (tabled(board.mode)) return { possible: true, ...solveTable(board.length, board.digits, board.rows) };
+      return { possible: true, secret: board.secret ?? null, start: universe(board.mode, board.length, board.digits).length };
     },
     /** 기기에 적어 둔 하던 판이 이 형식의 판으로 쓸 수 있는 값인가 */
     valid(saved) {
-      if (checkBoard(saved.board) !== null || saved.mode !== saved.board.mode) return false;
+      if (checkBoard(saved.board) !== null || saved.mode !== saved.board.mode || !levelOk(saved)) return false;
       const { length, digits } = saved.board;
-      if (checkRows(saved.rows, length, digits) !== null || !Array.isArray(saved.tries) || !Array.isArray(saved.wrongReplies)) return false;
-      if (!Array.isArray(saved.memo) || saved.memo.length !== length || !saved.memo.every((item) => typeof item === 'string')) return false;
-      if (saved.mode === 'table') {
-        if (solveTable(length, digits, saved.board.rows).count !== 1) return false;
+      if (checkRows(saved.rows, length, digits, saved.mode) !== null || !Array.isArray(saved.tries) || !Array.isArray(saved.wrongReplies)) return false;
+      if (!Array.isArray(saved.memo) || saved.memo.length !== memoRowsOf(saved.board) || !saved.memo.every((item) => typeof item === 'string')) return false;
+      if (tabled(saved.mode)) {
+        const { rows } = saved.board;
+        if (saved.mode === 'lie' ? !isLieTable(length, digits, rows) : solveTable(length, digits, rows).count !== 1) return false;
         const flag = saved.flag;
-        if (flag !== null && (!flag || !Number.isInteger(flag.row) || !saved.board.rows[flag.row] || checkCode(flag.code, length, digits) !== null)) return false;
-        return true;
+        if (flag === null) return true;
+        if (!flag || !Number.isInteger(flag.row) || !rows[flag.row] || checkCode(flag.code, length, digits) !== null) return false;
+        return flag.rows === undefined || (Array.isArray(flag.rows) && flag.rows.every((at) => Number.isInteger(at) && rows[at] !== undefined));
       }
-      if (saved.mode === 'guess') return fitsAll(saved.board.secret, saved.rows);
+      if (asking(saved.mode)) return fitsAll(saved.board.secret, saved.rows);
       // 역할 바꾸기: 암호를 정했으면 늘 추측 하나가 답을 기다리고, 적힌 답은 모두 암호와 맞는다.
       if (saved.secret === null) return saved.pending === null && saved.rows.length === 0;
       return checkCode(saved.secret, length, digits) === null && checkCode(saved.pending, length, digits) === null && fitsAll(saved.secret, saved.rows);
@@ -612,16 +712,20 @@ export function createCode(frame) {
     hints: (round) => T.hints[round.mode],
     touched: (round) => round.rows.length > 0 || round.tries.length > 0 || round.secret !== null || round.memoUsed,
     /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
-    view: (round) => ({ rows: round.rows.map((row) => ({ guess: row.guess, hit: row.hit, place: row.place })), tries: round.tries.length, pending: round.pending }),
-    /** 이 판보다 작은 판: 숫자 1~4로 만든 두 자리 암호(표, 역할 바꾸기도 두 자리) */
+    view: (round) => ({ rows: round.rows.map(copyRow), tries: round.tries.length, pending: round.pending }),
+    /** 이 판보다 작은 판: 숫자 1~4로 만든 두 자리 암호(표, 역할 바꾸기도 두 자리). 카드 맞히기는 카드 1~5 가운데 두 장 */
     smaller: (round, turn) => smallerCode({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
-      const table = round.mode === 'table';
-      const counts = table ? solution.trail : round.rows.map((row) => row.left);
+      const table = tabled(round.mode);
+      // 한 번 거짓말하는 표에는 줄마다 남은 후보 수가 없다(어느 줄이 거짓인지 모른다).
+      const counts = table ? (solution.trail ?? []) : round.rows.map((row) => row.left);
+      const solved = { possible: true, secret: secretOf(round, solution), start: solution.start };
+      // 한 번 거짓말하는 표는 거짓인 줄(0부터)을 함께 적는다.
+      if (round.mode === 'lie') solved.lie = solution.lie;
       return {
         mode: round.mode,
         board: copyBoard(round.board),
-        solution: { possible: true, secret: secretOf(round, solution), start: solution.start },
+        solution: solved,
         // 추측과 두 수의 차례. 표만 보고 알아내기에서는 주어진 표의 줄들이다.
         guesses: table ? copyRows(round.board.rows) : round.rows,
         // 추측마다 남은 후보 수(맨 앞은 처음 후보 수)
@@ -629,7 +733,7 @@ export function createCode(frame) {
         // 낸 추측의 수. 표만 보고 알아내기에서는 넣어 본 암호의 수, 역할 바꾸기에서는 컴퓨터가 낸 추측의 수다.
         guessCount: table ? round.tries.length : round.rows.length + (round.pending === null ? 0 : 1),
         inconsistentCount: round.inconsistentCount,
-        wrongCount: round.mode === 'guess' ? null : round.wrongCount,
+        wrongCount: asking(round.mode) ? null : round.wrongCount,
         tries: round.tries,
         wrongReplies: round.wrongReplies,
         memoUsed: round.memoUsed,
@@ -676,8 +780,8 @@ export function createCode(frame) {
     pickLine: () => T.home.pick,
     /** 다음 판: 숨은 암호의 칸과 쓸 수 있는 숫자, 또는 표의 앞쪽 줄들 */
     drawSample(root, board) {
-      if (board.mode === 'table') {
-        const rows = board.rows.slice(0, MINI_ROWS).map((row) => ({ chars: [...row.guess], line: fill(T.shortLine, { hit: row.hit, place: row.place }) }));
+      if (tabled(board.mode)) {
+        const rows = board.rows.slice(0, MINI_ROWS).map((row) => ({ chars: [...row.guess], line: lineOf(board.mode, row, 'short') }));
         drawMini(root, { rows, more: board.rows.length > MINI_ROWS ? T.more : '' });
       } else if (board.mode === 'referee') drawMini(root, { rows: [{ label: T.secretRow, chars: slotsOf('', board.length) }], strip: board.digits });
       else drawMini(root, { rows: [{ chars: slotsOf('', board.length, T.hidden) }], strip: board.digits });
@@ -688,15 +792,19 @@ export function createCode(frame) {
     /** 하던 판: 표의 마지막 줄을 작게 보여 준다. */
     drawResume(root, saved) {
       const { length } = saved.board;
-      const last = saved.mode === 'table' ? saved.board.rows.at(-1) : saved.rows.at(-1);
-      if (last) drawMini(root, { rows: [{ chars: [...last.guess], line: fill(T.rowLine, { hit: last.hit, place: last.place }) }] });
+      const last = tabled(saved.mode) ? saved.board.rows.at(-1) : saved.rows.at(-1);
+      if (last) drawMini(root, { rows: [{ chars: [...last.guess], line: lineOf(saved.mode, last, 'row') }] });
       else if (saved.mode === 'referee') drawMini(root, { rows: [{ label: T.secretRow, chars: slotsOf(saved.secret ?? '', length) }] });
       else drawMini(root, { rows: [{ chars: slotsOf('', length, T.hidden) }] });
     },
     /** 판 고르기의 그림: 단계마다 하는 일을 작은 그림으로 보여 준다. */
     drawLevelPicture(root, entry) {
       const picture = entry.picture;
-      if (picture.row) drawMini(root, { rows: [{ chars: [...picture.row.guess], line: fill(T.shortLine, { hit: picture.row.hit, place: picture.row.place }) }] });
+      const { mode } = rungOf(entry.level);
+      // 한 번 거짓말하는 표: 두 줄 가운데 거짓인 줄에 표시를 붙인다. 카드 맞히기: 고른 카드 세 장과 숨은 카드의 수
+      if (picture.rows) drawMini(root, { rows: picture.rows.map((row, index) => ({ label: index === picture.lie ? T.lieMark : '', chars: [...row.guess], line: lineOf(mode, row, 'short') })) });
+      else if (picture.cards) drawMini(root, { rows: [{ chars: [...picture.cards], line: lineOf(mode, { hit: picture.hit }, 'short') }] });
+      else if (picture.row) drawMini(root, { rows: [{ chars: [...picture.row.guess], line: lineOf(mode, picture.row, 'short') }] });
       else if (picture.shown) drawMini(root, { rows: [{ label: T.secretRow, chars: [...picture.shown] }] });
       else if (picture.blank) drawMini(root, { rows: [{ chars: slotsOf('', picture.blank), line: fill(T.shortLine, { hit: T.hidden, place: T.hidden }) }] });
       else drawMini(root, { rows: [{ chars: slotsOf('', picture.hidden, T.hidden) }] });

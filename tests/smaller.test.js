@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import * as codeLadder from '../src/core/code-ladder.js';
 import { allCodes, checkBoard as checkCode, isLean, solveTable } from '../src/core/code.js';
+import { bruteMatches, bruteOneLie, bruteSets } from './helpers/brute-code.js';
 import { checkBoard as checkCoins, headCount, solve as solveCoins } from '../src/core/coins.js';
 import * as duelLadder from '../src/core/duel-ladder.js';
 import { checkBoard as checkDuel, gameOf, movesOf, smallBoards, solve as solveDuel, startState } from '../src/core/duel.js';
@@ -19,7 +20,7 @@ import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } 
 import { bruteDays, bruteUsefulAt, bruteWorlds } from './helpers/brute-logic.js';
 import * as blockLadder from '../src/core/block-ladder.js';
 import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from '../src/core/block.js';
-import { BLOCK_SHRINK, BRIDGE_COUNTS, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, TWIN_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import { BLOCK_SHRINK, BRIDGE_COUNTS, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CARDS, SMALL_CODE, SMALL_LIE_ROWS, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, TWIN_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
 import * as riverLadder from '../src/core/river-ladder.js';
 import { castOf as riverCast, checkBoard as checkRiver } from '../src/core/river.js';
 import * as swapLadder from '../src/core/swap-ladder.js';
@@ -170,29 +171,46 @@ test('한붓그리기: 점이 넷이나 다섯인 그림. 시작점 고르기와
   assert.equal(smallerTrace({ mode: 'draw', board: { points: [], edges: [] } }), null);
 });
 
-test('숫자 추리: 숫자 1~4로 만든 두 자리 암호. 표는 답이 꼭 하나이고 군더더기 줄이 없다', () => {
+test('숫자 추리: 숫자 1~4로 만든 두 자리 암호. 표는 답이 꼭 하나이고 군더더기 줄이 없다. 카드 맞히기는 카드 1~5 가운데 두 장', () => {
   const { length, digits, rows } = SMALL_CODE;
   assert.deepEqual([length, digits], [2, '1234']);
+  assert.deepEqual([SMALL_CARDS, SMALL_LIE_ROWS], ['12345', [3, 4]]);
+  const seen = new Set();
   eachBoard(codeLadder, (board, rung, where) => {
     const origin = { mode: rung.mode, board };
+    seen.add(board.mode);
     const found = TURNS.map((turn) => {
       const small = smallerCode(origin, turn);
       assert.ok(small, where);
       assert.equal(checkCode(small.board), null, where);
-      assert.deepEqual([small.board.mode, small.board.length, small.board.digits], [board.mode, length, digits], where);
+      const smallDigits = board.mode === 'cards' ? SMALL_CARDS : digits;
+      assert.deepEqual([small.board.mode, small.board.length, small.board.digits], [board.mode, length, smallDigits], where);
       assert.ok(small.board.length < board.length && small.board.digits.length <= board.digits.length, where);
       if (board.mode === 'guess') assert.ok(allCodes(length, digits).includes(small.board.secret), where);
-      if (board.mode === 'table') {
+      // 카드 맞히기: 카드 1~5 가운데 두 장(작은 것부터 이은 묶음)
+      if (board.mode === 'cards') assert.ok(bruteSets(2, SMALL_CARDS).includes(small.board.secret), where);
+      if (board.mode === 'table' || board.mode === 'place') {
+        // 자리만 알려 주는 표의 작은 판도 줄마다 자리가 맞는 것의 수만 적는다.
+        for (const row of small.board.rows) assert.deepEqual(Object.keys(row).sort(), board.mode === 'place' ? ['guess', 'place'] : ['guess', 'hit', 'place'], where);
         assert.ok(small.board.rows.length >= rows[0] && small.board.rows.length <= rows[1], `${where}: ${small.board.rows.length}줄`);
         assert.equal(solveTable(length, digits, small.board.rows).count, 1, `${where}: 답이 하나가 아니에요`);
+        assert.equal(bruteMatches(length, digits, small.board.rows).length, 1, `${where}: 다른 방법으로 세어도 답이 하나`);
         assert.equal(isLean(length, digits, small.board.rows), true, `${where}: 군더더기 줄`);
+      }
+      if (board.mode === 'lie') {
+        // 한 번 거짓말하는 표의 작은 판: 딱 한 줄만 어긋나는 암호가 꼭 하나이고, 모든 줄과 맞는 암호는 없다(다른 방법으로 센다).
+        const one = bruteOneLie(length, digits, small.board.rows);
+        assert.equal(one.answers.length, 1, where);
+        assert.equal(one.honest, 0, where);
+        assert.ok(small.board.rows.length >= SMALL_LIE_ROWS[0] && small.board.rows.length <= SMALL_LIE_ROWS[1], where);
       }
       assert.deepEqual(smallerCode(origin, turn), small, `${where}: 같은 판에서는 같은 작은 판`);
       return small.board;
     });
-    // 추측해서 알아내는 판: 이어서 여는 작은 판의 암호는 서로 다르다.
-    if (board.mode === 'guess') assert.equal(new Set(found.map((item) => item.secret)).size, TURNS.length, where);
+    // 물어서 알아내는 판: 이어서 여는 작은 판의 암호는 서로 다르다.
+    if (board.mode === 'guess' || board.mode === 'cards') assert.equal(new Set(found.map((item) => item.secret)).size, TURNS.length, where);
   });
+  assert.deepEqual([...seen].sort(), ['cards', 'guess', 'lie', 'place', 'referee', 'table']);
   // 이미 두 자리인 판(작은 판)에는 더 작은 판이 없다.
   assert.equal(smallerCode({ mode: 'guess', board: { mode: 'guess', length: 2, digits: '1234', secret: '31' } }), null);
   assert.equal(smallerCode({ mode: 'guess', board: { mode: 'guess', length: 3, digits: '123456' } }), null);

@@ -9,8 +9,8 @@
 //   - 한 번에 끝나는 판은 피한다. 더 줄일 수 없으면 가장 작은 뜻 있는 판을 낸다.
 //   - 원래 판이 이미 가장 작은 판이면 null을 낸다.
 import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from './block.js';
-import { allCodes, checkBoard as checkCode, solveTable } from './code.js';
-import { makeTable } from './code-ladder.js';
+import { checkBoard as checkCode, isLieTable, solveLie, solveTable, universe } from './code.js';
+import { makeLie, makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
 import { placeDown, solveOnce as solveCups } from './cups-ladder.js';
 import { smallBoards as smallLampBoards } from './lamps-ladder.js';
@@ -176,8 +176,12 @@ export function smallerTrace(origin, turn = 0) {
 const wrap = (board) => (board ? { board } : null);
 
 // ---- 숫자 추리: 숫자 1~4로 만든 두 자리 암호. 표만 보고 알아내기는 두 자리 표, 역할 바꾸기는 두 자리 ----
+// 자리만 알려 주는 표와 한 번 거짓말하는 표도 두 자리 표, 카드 세 장 맞히기는 카드 1~5 가운데 두 장이다.
 
 export const SMALL_CODE = { length: 2, digits: '1234', rows: [2, 3] };
+/** 한 번 거짓말하는 표의 작은 판의 줄 수, 카드 맞히기의 작은 판의 카드(임시) */
+export const SMALL_LIE_ROWS = [3, 4];
+export const SMALL_CARDS = '12345';
 
 export function smallerCode(origin, turn = 0) {
   const { board } = origin;
@@ -186,14 +190,20 @@ export function smallerCode(origin, turn = 0) {
   if (board.length <= length) return null;
   const { mode } = board;
   if (mode === 'referee') return { board: { mode, length, digits } };
-  if (mode === 'guess') {
-    // 암호는 원래 판마다 정해 둔 차례로 돈다. 그래서 이어서 여는 두 판의 암호는 늘 다르다.
-    const secrets = shuffled(createRng(seedFrom('code-smaller', JSON.stringify(board))), allCodes(length, digits));
-    return { board: { mode, length, digits, secret: secrets[turn % secrets.length] } };
+  if (mode === 'guess' || mode === 'cards') {
+    // 암호(카드 묶음)는 원래 판마다 정해 둔 차례로 돈다. 그래서 이어서 여는 두 판의 암호는 늘 다르다.
+    const cards = mode === 'cards' ? SMALL_CARDS : digits;
+    const secrets = shuffled(createRng(seedFrom('code-smaller', JSON.stringify(board))), universe(mode, length, cards));
+    return { board: { mode, length, digits: cards, secret: secrets[turn % secrets.length] } };
   }
   const rng = createRng(seedFrom('code-smaller', JSON.stringify(board), turn));
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
-    const made = makeTable(rng, length, digits, rows);
+    if (mode === 'lie') {
+      const made = makeLie(rng, length, digits, SMALL_LIE_ROWS);
+      if (made && isLieTable(length, digits, made.rows) && solveLie(length, digits, made.rows).secret === made.secret) return { board: { mode, length, digits, rows: made.rows } };
+      continue;
+    }
+    const made = makeTable(rng, length, digits, rows, mode);
     if (!made) continue;
     // 풀이 프로그램으로 다시 확인한다: 모든 후보를 따져서 답이 꼭 하나다.
     const solved = solveTable(length, digits, made.rows);

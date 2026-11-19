@@ -3,25 +3,39 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  ASK_MODES,
   MODES,
+  TABLE_MODES,
   allCodes,
+  allSets,
   checkBoard,
   checkCode,
   checkDigits,
   checkRows,
+  checkSet,
+  copyRow,
+  diagnoseLie,
   diagnoseReply,
   diagnoseTable,
+  falseRows,
+  fieldsOf,
   filterCodes,
   firstMismatch,
   fits,
   fitsAll,
   isLean,
+  isLieTable,
   judge,
   nextGuess,
   playComputer,
+  replyOf,
+  solveLie,
   solveTable,
+  sortSet,
   trailOf,
+  universe,
 } from '../src/core/code.js';
+import { bruteOneLie, bruteScore, bruteSets } from './helpers/brute-code.js';
 
 const SIX = '123456';
 const TEN = '0123456789';
@@ -278,7 +292,24 @@ test('표의 줄과 판 점검', () => {
   assert.equal(checkRows([{ guess: '123', hit: 1, place: -1 }], 3, SIX), 'reply');
   assert.equal(checkRows([{ guess: '123', hit: 1.5, place: 0 }], 3, SIX), 'reply');
 
-  assert.deepEqual(MODES, ['guess', 'table', 'referee']);
+  assert.deepEqual(MODES, ['guess', 'table', 'referee', 'place', 'cards', 'lie']);
+  assert.deepEqual(TABLE_MODES, ['table', 'place', 'lie']);
+  assert.deepEqual(ASK_MODES, ['guess', 'cards']);
+  // 판의 종류가 알려 주는 수만 적혀 있어야 한다.
+  assert.equal(checkRows([{ guess: '123', place: 1 }], 3, SIX, 'place'), null);
+  assert.equal(checkRows([{ guess: '123', hit: 1, place: 1 }], 3, SIX, 'place'), 'reply');
+  assert.equal(checkRows([{ guess: '123' }], 3, SIX, 'place'), 'reply');
+  assert.equal(checkRows([{ guess: '123', place: 1 }], 3, SIX, 'table'), 'reply');
+  assert.equal(checkRows([{ guess: '135', hit: 2 }], 3, '123456789', 'cards'), null);
+  assert.equal(checkRows([{ guess: '531', hit: 2 }], 3, '123456789', 'cards'), 'guess', '카드 묶음은 작은 것부터');
+  assert.equal(checkRows([{ guess: '135', hit: 2, place: 0 }], 3, '123456789', 'cards'), 'reply');
+  assert.equal(checkBoard({ mode: 'place', length: 3, digits: SIX, rows: [{ guess: '123', place: 0 }] }), null);
+  assert.equal(checkBoard({ mode: 'place', length: 3, digits: SIX, rows: [{ guess: '123', hit: 1, place: 0 }] }), 'reply');
+  assert.equal(checkBoard({ mode: 'lie', length: 3, digits: SIX, rows: [{ guess: '123', hit: 1, place: 0 }] }), null);
+  assert.equal(checkBoard({ mode: 'lie', length: 3, digits: SIX, rows: [] }), 'rows');
+  assert.equal(checkBoard({ mode: 'cards', length: 3, digits: '123456789', secret: '159' }), null);
+  assert.equal(checkBoard({ mode: 'cards', length: 3, digits: '123456789', secret: '951' }), 'order');
+  assert.equal(checkBoard({ mode: 'cards', length: 3, digits: '123456789', secret: '150' }), 'digit');
   assert.equal(checkBoard({ mode: 'guess', length: 3, digits: SIX, secret: '465' }), null);
   assert.equal(checkBoard({ mode: 'guess', length: 3, digits: SIX, secret: '467' }), 'digit');
   assert.equal(checkBoard({ mode: 'guess', length: 3, digits: SIX }), 'length');
@@ -302,4 +333,83 @@ test('오답 짐작: 역할 바꾸기에서 넣은 두 수. 처음에는 견줘 
   assert.deepEqual(diagnoseReply('325', '352', { hit: 3, place: 0 }, 1), { correct: false, guess: 'referee-place' });
   // 둘 다 어긋나면 먼저 들어 있는 숫자의 수를 짚는다(한 번에 하나만).
   assert.deepEqual(diagnoseReply('325', '352', { hit: 1, place: 0 }, 3), { correct: false, guess: 'referee-hit' });
+});
+
+test('한쪽만 알려 주는 답: 자리만(place), 들어 있는 카드의 수만(cards). 줄에 적힌 수만 견준다', () => {
+  assert.deepEqual(fieldsOf('guess'), ['hit', 'place']);
+  assert.deepEqual(fieldsOf('table'), ['hit', 'place']);
+  assert.deepEqual(fieldsOf('lie'), ['hit', 'place']);
+  assert.deepEqual(fieldsOf('place'), ['place']);
+  assert.deepEqual(fieldsOf('cards'), ['hit']);
+  assert.deepEqual(replyOf('place', '325', '352'), { place: 1 });
+  assert.deepEqual(replyOf('cards', '235', '359'), { hit: 2 });
+  assert.deepEqual(replyOf('table', '325', '352'), { hit: 3, place: 1 });
+  // 자리만 적힌 줄은 들어 있는 숫자의 수를 보지 않는다.
+  assert.ok(fits('352', { guess: '325', place: 1 }));
+  assert.ok(fits('312', { guess: '325', place: 1 }));
+  assert.ok(!fits('352', { guess: '325', place: 0 }));
+  // 카드 묶음: 차례가 없으므로 들어 있는 카드의 수만 뜻이 있다.
+  assert.ok(fits('359', { guess: '235', hit: 2 }));
+  assert.ok(!fits('359', { guess: '235', hit: 1 }));
+  // 모든 짝에서 다른 방법으로 센 것과 같다.
+  for (const guess of allCodes(3, SIX)) {
+    for (const secret of allCodes(3, SIX)) {
+      const other = bruteScore(guess, secret);
+      assert.equal(fits(secret, { guess, place: other.place }), true);
+      assert.equal(fits(secret, { guess, place: (other.place + 1) % 4 }), false);
+    }
+  }
+  assert.deepEqual(copyRow({ guess: '123', place: 1, left: 9 }), { guess: '123', place: 1 });
+  assert.deepEqual(copyRow({ guess: '123', hit: 2, place: 1, consistent: true }), { guess: '123', hit: 2, place: 1 });
+});
+
+test('카드 묶음: 1~9에서 세 장은 84가지이고, 다른 방법으로 만든 것과 같다', () => {
+  assert.deepEqual(allSets(3, '123456789'), bruteSets(3, '123456789'));
+  assert.equal(allSets(3, '123456789').length, 84);
+  assert.deepEqual(allSets(2, '12345'), ['12', '13', '14', '15', '23', '24', '25', '34', '35', '45']);
+  assert.deepEqual(universe('cards', 3, '123456789'), allSets(3, '123456789'));
+  assert.deepEqual(universe('guess', 3, SIX), allCodes(3, SIX));
+  assert.equal(sortSet('951'), '159');
+  assert.equal(checkSet('159', 3, '123456789'), null);
+  assert.equal(checkSet('195', 3, '123456789'), 'order');
+  assert.equal(checkSet('115', 3, '123456789'), 'repeat');
+  assert.equal(checkSet('15', 3, '123456789'), 'length');
+  // 카드 맞히기의 남은 후보: 0장이라는 답은 고른 세 장을 통째로 지운다(남은 여섯 장에서 셋, 20가지).
+  assert.equal(trailOf(3, '123456789', [{ guess: '123', hit: 0 }], 'cards').left.length, 20);
+  assert.deepEqual(trailOf(3, '123456789', [{ guess: '123', hit: 0 }], 'cards').left, allSets(3, '456789'));
+});
+
+test('한 번 거짓말하는 표 풀기: 딱 한 줄만 어긋나는 암호를 센다. 다른 방법(줄마다 거짓이라고 쳐 보기)과 같다', () => {
+  // 암호 135: 123은 참(2개, 1개), 456은 거짓(참이라면 1개, 0개)
+  const rows = [
+    { guess: '123', hit: 2, place: 1 },
+    { guess: '456', hit: 0, place: 0 },
+  ];
+  assert.deepEqual(falseRows('135', rows), [1]);
+  assert.deepEqual(falseRows('123', rows), [0]);
+  assert.deepEqual(falseRows('456', rows), [0, 1]);
+  const solved = solveLie(3, SIX, rows);
+  const brute = bruteOneLie(3, SIX, rows);
+  assert.equal(solved.count, brute.answers.length);
+  assert.equal(solved.honest, brute.honest);
+  assert.ok(solved.count > 1, '두 줄로는 답이 여럿이에요');
+  assert.equal(solved.secret, null);
+  assert.equal(isLieTable(3, SIX, rows), false);
+  // 넣은 암호 따지기: 딱 한 줄만 거짓이면 맞는 답, 둘 이상이면 앞의 두 줄을 가리키고, 모두 참이면 그렇다고만 한다.
+  assert.deepEqual(diagnoseLie('135', rows), { correct: true, guess: null, rows: [] });
+  assert.deepEqual(diagnoseLie('654', rows), { correct: false, guess: 'lie-two', rows: [0, 1] });
+  // 이 두 줄과 모두 맞는 암호는 없다(1, 2, 3 가운데 둘만 쓰고 4, 5, 6을 안 쓸 수 없다). 그래서 따로 본다.
+  assert.equal(filterCodes(allCodes(3, SIX), rows).length, 0);
+  assert.deepEqual(diagnoseLie('124', [{ guess: '123', hit: 2, place: 2 }]), { correct: false, guess: 'lie-none', rows: [] });
+  // 무작위로 고른 표 여럿에서 풀이 프로그램과 다른 방법이 같다.
+  const codes = allCodes(3, SIX);
+  for (let index = 0; index < 60; index++) {
+    const picked = [0, 1, 2, 3].map((at) => codes[(index * 37 + at * 53) % codes.length]);
+    const table = picked.map((guess, at) => ({ guess, ...judge(guess, codes[(index * 11 + 5) % codes.length]), ...(at === index % 4 ? { hit: (judge(guess, codes[(index * 11 + 5) % codes.length]).hit + 1) % 4 } : {}) }));
+    const mine = solveLie(3, SIX, table);
+    const other = bruteOneLie(3, SIX, table);
+    assert.equal(mine.count, other.answers.length, String(index));
+    assert.equal(mine.honest, other.honest, String(index));
+    if (mine.count === 1) assert.deepEqual([mine.secret, mine.lie], [other.answers[0].code, other.answers[0].lie]);
+  }
 });

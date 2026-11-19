@@ -45,14 +45,15 @@ export function drawSlots(root, view) {
  *               kind  ''(보통 줄) | 'pending'(답을 기다리는 줄) | 'flagged'(견줘 볼 줄) | 'label'(번호 자리에 이름을 적는 줄)
  *                     | 'start'(처음 후보 수만 적는 줄)
  *               flag  견줘 볼 줄에 붙이는 글자 표시
+ *   cols      답의 칸들(['hit', 'place']가 기본. 한쪽만 알려 주는 판은 그 칸만)
  *   showLeft  남은 후보 수의 칸을 보이는가
  *   follow    그린 뒤 맨 아래 줄(또는 견줘 볼 줄)이 보이게 한다
  */
 export function drawTable(root, view) {
-  const { heads, rows, showLeft = false, follow = false } = view;
+  const { heads, rows, cols = ['hit', 'place'], showLeft = false, follow = false } = view;
   const table = el('table', 'code-table');
   const head = el('tr');
-  for (const key of ['no', 'guess', 'hit', 'place']) {
+  for (const key of ['no', 'guess', ...cols]) {
     const cell = el('th', `col-${key}`, heads[key]);
     cell.scope = 'col';
     head.append(cell);
@@ -74,7 +75,7 @@ export function drawTable(root, view) {
     line.append(first);
     const guess = el('td', 'col-guess');
     if (row.guess) guess.append(digitBoxes([...row.guess]));
-    line.append(guess, el('td', 'col-hit', row.hit ?? ''), el('td', 'col-place', row.place ?? ''));
+    line.append(guess, ...cols.map((key) => el('td', `col-${key}`, row[key] ?? '')));
     if (showLeft) line.append(el('td', 'col-left', row.left ?? ''));
     if (row.kind === 'flagged') focus = line;
     body.append(line);

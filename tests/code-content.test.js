@@ -5,8 +5,8 @@ import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { LADDER, MAKE_DIGITS, MAKE_LEVEL, generateBoard, rungOf } from '../src/core/code-ladder.js';
-import { allCodes, checkCode, filterCodes, judge, trailOf } from '../src/core/code.js';
+import { LADDER, MAKE_DIGITS, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, generateBoard, rungOf } from '../src/core/code-ladder.js';
+import { allCodes, checkCode, checkSet, falseRows, filterCodes, judge, trailOf } from '../src/core/code.js';
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 
@@ -16,11 +16,11 @@ const C = JSON.parse(readFileSync(resolve(ROOT, 'src/content/coins.json'), 'utf8
 const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
 const source = readFileSync(resolve(ROOT, 'src/formats/code.js'), 'utf8');
 
-const MODES = ['guess', 'table', 'referee'];
-const GUESS_KEYS = ['table-row', 'referee-reply', 'referee-hit', 'referee-place'];
-const RIGHT_KEYS = ['guess-found', 'table-first', 'table-tries', 'referee-found', 'referee-trail', 'why-invite'];
-// 화면 글이 아닌 값: 그림의 암호와 숫자 묶음
-const DATA_KEYS = new Set(['guess', 'secret', 'shown', 'digits', 'list']);
+const MODES = ['guess', 'table', 'referee', 'place', 'cards', 'lie'];
+const GUESS_KEYS = ['table-row', 'referee-reply', 'referee-hit', 'referee-place', 'lie-two', 'lie-none'];
+const RIGHT_KEYS = ['guess-found', 'table-first', 'table-tries', 'referee-found', 'referee-trail', 'why-invite', 'cards-found', 'lie-first', 'lie-tries'];
+// 화면 글이 아닌 값: 그림의 암호와 숫자 묶음, 카드 묶음
+const DATA_KEYS = new Set(['guess', 'secret', 'shown', 'digits', 'list', 'cards']);
 
 /** 대본의 모든 글(값)을 길과 함께 모은다. 설명(_로 시작하는 것)과 그림의 암호·숫자 묶음은 뺀다. */
 function allStrings(value, path = '') {
@@ -54,9 +54,10 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
   assert.equal(T.title, '숫자 추리');
 });
 
-test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·도전·도전이다', () => {
+test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·도전·응용·응용·도전·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(T.levels.slice(5, 8).map((entry) => entry.name), ['자리만 알려 주는 표', '카드 세 장 맞히기', '한 번 거짓말하는 표']);
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   // 단계 이름에 적은 자릿수와 숫자가 사다리와 같다.
@@ -72,8 +73,17 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   for (const mode of MODES) {
     const rule = fill(T.rules[mode], range);
     assert.ok(sentenceCount(rule) <= 3, `${mode}: ${rule}`);
-    assert.match(rule, /숫자 0부터 9까지 가운데 서로 다른 숫자 3개/, mode);
+    assert.match(rule, mode === 'cards' ? /숫자 카드 0부터 9까지 가운데 3장/ : /숫자 0부터 9까지 가운데 서로 다른 숫자 3개/, mode);
   }
+  // 자리만 알려 주는 표: 한 수만 적혀 있다고 말한다. 카드 맞히기: 몇 장인지만 알려 주고 차례는 상관없다고 말한다.
+  assert.match(T.rules.place, /자리가 맞는 숫자가 몇 개인지만/);
+  assert.match(T.rules.place, /하나뿐/);
+  assert.match(T.rules.cards, /몇 장인지만 알려 줄게요/);
+  assert.match(T.rules.cards, /차례는 상관없/);
+  assert.match(T.rules.cards, /몇 번이든 물어도 돼요/);
+  // 한 번 거짓말하는 표: 선생님이 처음에 "딱 하나는 거짓"이라고 말한다.
+  assert.match(T.rules.lie, /^이 표의 줄 가운데 딱 하나는 거짓이에요\./);
+  assert.match(T.rules.lie, /딱 한 줄만 거짓이 되는 암호는 하나뿐이에요\.$/);
   // 두 수가 무엇인지 말한다. 맞혀야 하는 횟수를 정하지 않는다.
   assert.match(T.rules.guess, /들어 있는 숫자가 몇 개인지/);
   assert.match(T.rules.guess, /자리도 맞는 것이 몇 개인지/);
@@ -198,15 +208,25 @@ test('풀이의 말은 그려지는 것과 맞는다: 줄이 없으면 표를 �
   assert.equal(T.solution['referee-none'], '아직 암호를 정하지 않았어요. 그래서 선생님도 아직 추측하지 않았어요.');
   assert.match(T.solution.referee, /이렇게 줄었어요/);
   assert.match(source, /if \(rows\.length > 0\) view\.table = /);
-  assert.match(source, /rows\.length > 0 \|\| round\.mode === 'table' \? T\.solution\[round\.mode\] : T\.solution\[round\.mode === 'guess' \? 'guess-none' : 'referee-unanswered'\]/);
+  assert.match(source, /rows\.length > 0 \|\| table \? T\.solution\[round\.mode\] : T\.solution\[NONE_SAY\[round\.mode\]\]/);
+  assert.match(source, /const NONE_SAY = \{ guess: 'guess-none', cards: 'cards-none', referee: 'referee-unanswered' \};/);
   // 표를 가리키는 말("표에", "이렇게")은 줄이 없을 때의 말에 없다.
-  for (const key of ['guess-none', 'referee-unanswered', 'referee-none']) assert.doesNotMatch(T.solution[key], /표에|이렇게/, key);
+  for (const key of ['guess-none', 'cards-none', 'referee-unanswered', 'referee-none']) assert.doesNotMatch(T.solution[key], /표에|이렇게/, key);
+  // 판의 종류마다 풀이의 말이 있다. 한 번 거짓말하는 표의 풀이는 거짓인 줄을 가리킨다.
+  for (const mode of MODES) assert.ok(T.solution[mode], mode);
+  assert.match(T.solution.lie, /거짓인 줄에 표시/);
+  assert.match(source, /if \(round\.mode === 'lie'\) view\.table = lieTable\(rows, solution\.lie\);/);
+  assert.equal(T.lieMark, '거짓');
   // 역할 바꾸기를 시작할 때: 아이가 정한 것은 "내 암호"다.
   assert.match(T.play.secretSet, /^내 암호가 정해졌어요\./);
 });
 
 test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {
   const allowed = new Set(['n', 'no', 'hit', 'place', 'left', 'low', 'high', 'k', 'start', 'trail', 'pos', 'digit']);
+  // 새 단계의 글도 정해진 이름만 쓴다(카드 맞히기의 답은 hit, 자리만 알려 주는 표의 답은 place).
+  assert.equal(fill(T.lines.place.short, { place: 1 }), '자리 1개');
+  assert.equal(fill(T.lines.cards.short, { hit: 2 }), '2장');
+  assert.equal(fill(T.cardCount, { n: 2 }), '2장');
   for (const [path, text] of strings) {
     for (const [, name] of text.matchAll(/\{([^{}]*)\}/g)) assert.ok(allowed.has(name), `${path}: {${name}}`);
   }
@@ -255,9 +275,24 @@ test('판 고르기의 그림: 단계마다 그 단계에서 하는 일에 맞�
   assert.equal(checkCode(sample.row.guess, 3, rungOf(4).digits), null);
   assert.equal(checkCode(sample.secret, 3, rungOf(4).digits), null);
   assert.deepEqual(judge(sample.row.guess, sample.secret), { hit: sample.row.hit, place: sample.row.place });
-  // 5단계: 아이가 정한 암호가 보인다. 6단계: 빈 칸
+  // 5단계: 아이가 정한 암호가 보인다. 9단계(직접 만들기): 빈 칸
   assert.equal(checkCode(picture(5).shown, rungOf(5).length, rungOf(5).digits), null);
-  assert.equal(picture(6).blank, 3);
+  assert.equal(picture(MAKE_LEVEL).blank, 3);
+  // 6단계: 자리가 맞는 것의 수만 적힌 줄 하나. 적어 둔 암호로 매기면 그 수가 나온다.
+  const place = picture(6);
+  assert.equal(checkCode(place.row.guess, 3, rungOf(6).digits), null);
+  assert.equal(checkCode(place.secret, 3, rungOf(6).digits), null);
+  assert.deepEqual(Object.keys(place.row).sort(), ['guess', 'place']);
+  assert.equal(judge(place.row.guess, place.secret).place, place.row.place);
+  // 7단계: 고른 카드 세 장과 숨은 카드의 수. 적어 둔 숨은 카드로 세면 그 수가 나온다.
+  const cards = picture(7);
+  assert.equal(checkSet(cards.cards, 3, rungOf(7).digits), null);
+  assert.equal(checkSet(cards.secret, 3, rungOf(7).digits), null);
+  assert.equal([...cards.cards].filter((ch) => cards.secret.includes(ch)).length, cards.hit);
+  // 8단계: 두 줄 가운데 표시한 줄만 거짓이다(적어 둔 암호로 매기면).
+  const lie = picture(8);
+  for (const row of lie.rows) assert.equal(checkCode(row.guess, 3, rungOf(8).digits), null);
+  assert.deepEqual(falseRows(lie.secret, lie.rows), [lie.lie]);
   assert.equal(T.hidden, '?');
   assert.ok(T.positions.length >= 4, '자리의 이름은 네 자리까지 있다');
 });
@@ -377,7 +412,10 @@ test('index.html: 숫자 추리의 카드, 숫자판, 메모판, 직접 만들�
   const make = html.slice(html.indexOf('id="make-title"'), html.indexOf('id="picker"'));
   for (const id of ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make']) assert.ok(make.includes(`id="${id}"`), id);
   // 대본의 단추 글자
-  for (const key of ['guessTitle', 'guessSubmit', 'tableTitle', 'tableSubmit', 'secretTitle', 'secretSubmit']) assert.ok(T.pad[key], key);
+  for (const key of ['guessTitle', 'guessSubmit', 'tableTitle', 'tableSubmit', 'secretTitle', 'secretSubmit', 'cardsTitle', 'cardsSubmit']) assert.ok(T.pad[key], key);
+  // 메모판의 안내 글: 카드 맞히기에서는 대본의 글로 바꿔 적는다.
+  assert.match(html, /<span id="code-memo-note">그 자리에 오지 않을 것 같은 숫자를 눌러요\. 다시 누르면 돌아와요\.<\/span>/);
+  assert.match(T.cardsMemoNote, /^숨은 카드가 아닐 것 같은 카드를 눌러요\./);
 });
 
 // ---- 수준 맞추기 ----
@@ -407,13 +445,15 @@ test('숫자 추리의 수준 맞추기 값은 임시값이고, 처음 보여 �
   const tuning = tuningFor('code');
   assert.equal(tuning.startLevel, 2);
   assert.equal(tuning.bottomLevel, 1);
-  assert.equal(tuning.topLevel, 5);
+  assert.equal(tuning.topLevel, 8);
+  assert.equal(tuning.topLevel, TOP_LEVEL);
   assert.equal(tuning.hintCount, 2);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(tuning.expectedSeconds[rung.level] > 0, `${rung.level}단계의 예상 시간`);
   // 추측을 내서 알아내는 단계에는 "적은 추측"의 기준이 있다. 단계가 올라가면 기준도 늘어난다.
-  assert.deepEqual(Object.keys(tuning.fastGuesses), ['1', '2', '3']);
+  assert.deepEqual(Object.keys(tuning.fastGuesses), ['1', '2', '3', '7']);
   assert.ok(tuning.fastGuesses[1] < tuning.fastGuesses[2] && tuning.fastGuesses[2] < tuning.fastGuesses[3]);
-  for (const rung of LADDER) assert.equal(rung.level in tuning.fastGuesses, rung.mode === 'guess', `${rung.level}단계`);
+  // 물어서 알아내는 판(추측해서 알아내기와 카드 맞히기)에만 있다.
+  for (const rung of LADDER) assert.equal(rung.level in tuning.fastGuesses, rung.mode === 'guess' || rung.mode === 'cards', `${rung.level}단계`);
   assert.deepEqual(recommend([], 'code'), { level: 2, small: false, offerHarder: false, harderLevel: null, reason: 'start' });
   assert.equal(generateBoard(recommend([], 'code').level, 1).board.mode, 'guess');
   // 다른 형식의 값은 그대로다.
@@ -444,6 +484,17 @@ test('표만 보고 알아내기와 역할 바꾸기는 틀린 답 없이, 예�
     code({ level: 5, mode: 'referee', guessCount: 5, wrongCount: 0, seconds: 100, answers: [1, 2, 3, 4, 5].map((t) => ({ t, answer: '1-0', correct: true, guess: null })), ...overrides });
   assert.deepEqual(recommend([referee(), referee()], 'code'), { level: 5, small: false, offerHarder: true, harderLevel: 6, reason: 'fast' });
   assert.equal(recommend([referee(), referee({ wrongCount: 2 })], 'code').offerHarder, false);
+  // 6·8단계도 표만 보고 알아내는 판처럼 본다. 맨 위(8단계)에서는 직접 만들기(9단계)를 가리킨다.
+  const place = (overrides = {}) => table({ level: 6, mode: 'place', ...overrides });
+  assert.deepEqual(recommend([place(), place()], 'code'), { level: 6, small: false, offerHarder: true, harderLevel: 7, reason: 'fast' });
+  const lie = (overrides = {}) => table({ level: 8, mode: 'lie', seconds: tuningFor('code').expectedSeconds[8] - 1, ...overrides });
+  assert.deepEqual(recommend([lie(), lie()], 'code'), { level: 8, small: false, offerHarder: true, harderLevel: 9, reason: 'fast' });
+  assert.equal(recommend([lie(), lie({ wrongCount: 1, guessCount: 2 })], 'code').offerHarder, false);
+  // 7단계(카드 맞히기)는 물은 횟수를 본다.
+  const few = tuningFor('code').fastGuesses[7];
+  const cards = (guessCount) => code({ level: 7, mode: 'cards', guessCount, seconds: 9999 });
+  assert.equal(recommend([cards(few), cards(few)], 'code').offerHarder, true);
+  assert.equal(recommend([cards(few), cards(few + 1)], 'code').offerHarder, false);
 });
 
 test('그만두기가 이어지면 조용히 한 단계 아래를 먼저 보여 준다. 맨 아래에서는 작은 판이다', () => {
@@ -456,8 +507,10 @@ test('그만두기가 이어지면 조용히 한 단계 아래를 먼저 보여 
   // 들여다보기만 한 판(추측도, 답도, 힌트도 없다)은 세지 않는다. 직접 만든 표도 세지 않는다.
   const peek = () => code({ level: 3, outcome: 'left', answers: [], guessCount: 0 });
   assert.equal(recommend([peek(), peek()], 'code').reason, 'start');
-  const custom = () => code({ level: 6, custom: true, outcome: 'left', answers: [], guessCount: 2 });
+  // 예전의 직접 만들기 단계(6단계)에서 푼 표도 지금의 6단계(자리만 알려 주는 표)로 세지 않는다. 지금의 9단계도 그렇다.
+  const custom = (level = OLD_MAKE_LEVEL) => code({ level, custom: true, outcome: 'left', answers: [], guessCount: 2 });
   assert.equal(recommend([custom(), custom()], 'code').reason, 'start');
+  assert.equal(recommend([custom(MAKE_LEVEL), custom(MAKE_LEVEL)], 'code').reason, 'start');
   // 다른 형식의 기록은 영향을 주지 않는다.
   assert.equal(recommend([quit(3), quit(3)], 'coins').reason, 'start');
   assert.equal(recommend([quit(3), quit(3)], 'trace').reason, 'start');
@@ -474,4 +527,33 @@ test('"왜 그럴까?"는 이 형식의 판을 한 번 끝까지 한 뒤에 열�
   assert.equal(whyUnlocked([code()], 'trace'), false);
   assert.equal(whyUnlocked([{ ...code(), format: 'coins' }], 'coins'), false, '되는 판만 한 동전 뒤집기');
   assert.equal(whyUnlocked([{ ...code(), format: 'coins', solution: { possible: false, min: null } }], 'coins'), true);
+});
+
+test('새 단계의 말: 카드 맞히기는 몇 장인지만 알려 주고, 한 번 거짓말하는 표는 거짓인 줄을 말한다', () => {
+  // 카드 맞히기: 숨은 카드가 몇 장인지만 말하고 다른 말을 덧붙이지 않는다.
+  assert.equal(fill(T.play.cards, { hit: 2 }), '고른 카드 가운데 숨은 카드는 2장이에요.');
+  assert.equal(sentenceCount(T.play.cards), 1);
+  assert.doesNotMatch(T.play.cards, /것 같아요|틀렸|아니에요|맞아요|아쉽|다시/);
+  assert.match(source, /frame\.say\(cards \? fill\(T\.play\.cards, \{ hit: row\.hit \}\) : fill\(T\.play\.reply, \{ hit: row\.hit, place: row\.place \}\)\)/);
+  assert.equal(fill(T.right['cards-found'], { n: ordinal(5) }), '맞아요. 5번째 물음에서 숨은 카드를 모두 찾았어요.');
+  assert.match(source, /fill\(T\.right\['cards-found'\], \{ n: ordinal\(round\.rows\.length\) \}\)/);
+  // 한 번 거짓말하는 표: 맞히면 몇 번째 줄이 거짓이었는지 말한다.
+  assert.equal(fill(T.right['lie-first'], { no: ordinal(1) }), '맞아요. 이 암호라면 거짓인 줄은 첫 번째 줄 하나뿐이에요. 처음 넣은 암호로 찾았어요.');
+  assert.equal(fill(T.right['lie-tries'], { no: ordinal(3), n: 2 }), '맞아요. 이 암호라면 거짓인 줄은 3번째 줄 하나뿐이에요. 2번 넣어 보고 찾았어요.');
+  // 틀린 답: 거짓인 줄이 둘이 되면 그 두 줄에 표시하고, 모두 참이 되면 그렇다고만 한다. 몇 번째 줄인지는 표에 표시로 보인다.
+  assert.match(T.guess['lie-two'], /^이 암호라면 거짓인 줄이 둘이 되는 것 같아요\./);
+  assert.match(T.guess['lie-none'], /^이 암호라면 표의 줄이 모두 참이 되는 것 같아요\./);
+  // 머리글: 자리만 알려 주는 표는 한 칸, 카드 맞히기는 고른 카드와 숨은 카드
+  assert.deepEqual(T.headsBy, { place: { place: '자리가 맞는 것' }, cards: { guess: '고른 카드', hit: '숨은 카드' } });
+  // 카드 맞히기의 메모판은 카드 한 줄이다.
+  assert.match(source, /const memoRowsOf = \(board\) => \(board\.mode === 'cards' \? 1 : board\.length\);/);
+});
+
+test('하던 판: 단계와 판의 종류가 맞아야 받는다. 예전의 직접 만들기 단계(6단계)에 적어 둔 직접 만든 표도 그대로 받는다', () => {
+  assert.match(source, /if \(saved\.custom === true\) return \[MAKE_LEVEL, OLD_MAKE_LEVEL\]\.includes\(saved\.level\) && saved\.mode === 'table';/);
+  assert.match(source, /saved\.level <= TOP_LEVEL && rungOf\(saved\.level\)\.mode === saved\.mode/);
+  assert.match(source, /saved\.mode !== saved\.board\.mode \|\| !levelOk\(saved\)/);
+  assert.equal(OLD_MAKE_LEVEL, 6);
+  assert.equal(rungOf(OLD_MAKE_LEVEL).mode, 'place');
+  assert.equal(generateBoard(OLD_MAKE_LEVEL, 1).board.mode, 'place');
 });
