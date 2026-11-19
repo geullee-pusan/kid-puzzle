@@ -16,7 +16,7 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const frame = read('src/main.js');
 const css = read('src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups'];
 const scripts = FORMATS.map((name) => read(`src/content/${name}.json`));
 const part = (from, to) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
 const side = part('<section class="side" aria-label="힌트">', '</section>');
@@ -58,7 +58,7 @@ test('index.html: 왼쪽 칸 맨 위에 "막혔어요" 단추가 있고, 그 자
   for (const id of ['stuck-rule', 'stuck-next', 'stuck-why']) assert.match(menu, new RegExp(`<button id="${id}" class="btn wide stuck-choice" type="button"></button>`));
   assert.match(frame, /\$\(`stuck-\$\{choice\}`\)\.textContent = C\.stuck\.choices\[choice\];/);
   // 차례: 막혔어요 → 세 고르기 → 더 작은 판으로 → 열린 힌트 카드 → 형식의 도구 단추 → 왜 그럴까?
-  const order = ['id="stuck"', 'id="stuck-menu"', 'id="smaller"', 'id="hints"', 'id="trace-degrees"', 'id="code-left"', 'id="code-memo-open"', 'id="tile-pattern"', 'id="tax-costs"', 'id="block-spots"', 'id="why"'];
+  const order = ['id="stuck"', 'id="stuck-menu"', 'id="smaller"', 'id="hints"', 'id="trace-degrees"', 'id="code-left"', 'id="code-memo-open"', 'id="tile-pattern"', 'id="tax-costs"', 'id="block-spots"', 'id="cups-notes"', 'id="why"'];
   const at = order.map((mark) => side.indexOf(mark));
   assert.ok(at.every((value) => value >= 0), order[at.findIndex((value) => value < 0)]);
   assert.deepEqual(at, at.slice().sort((a, b) => a - b));
@@ -161,5 +161,5 @@ test('하던 판은 그대로 간직한다: 작은 판은 기기에 적어 두�
   // 수준 맞추기와 "왜 그럴까?"와 다음 판 번호는 작은 판의 기록을 빼고 본다.
   assert.match(frame, /const records = \(\) => withoutSide\(log\.allRecords\(\)\);/);
   assert.equal([...frame.matchAll(/log\.allRecords\(\)/g)].length, 1);
-  for (const name of ['code', 'swap', 'tile', 'tax', 'logic', 'block', 'river']) assert.doesNotMatch(read(`src/formats/${name}.js`), /log\.allRecords\(\)/, name);
+  for (const name of ['code', 'swap', 'tile', 'tax', 'logic', 'block', 'river', 'cups']) assert.doesNotMatch(read(`src/formats/${name}.js`), /log\.allRecords\(\)/, name);
 });

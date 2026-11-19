@@ -50,7 +50,7 @@ function visibleText(source) {
   return [...labels, body].join(' ');
 }
 const part = (from, to) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
-const own = [part('id="river-title"', 'id="make-title"'), part('id="river-count"', 'id="block-count"'), part('id="river-pad"', 'id="block-pad"'), part('id="make-river"', '<script')].map(visibleText).join(' ');
+const own = [part('id="river-title"', 'id="cups-title"'), part('id="river-count"', 'id="block-count"'), part('id="river-pad"', 'id="block-pad"'), part('id="make-river"', 'id="make-cups"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const ruleOf = (story, mode) => [fill(T.rules[story], { k: 2 }), T.asks[mode]].join(' ');
 
@@ -98,7 +98,7 @@ test('규칙 설명은 판의 종류마다 있고, 묻는 말까지 세 문장�
   assert.match(code, /const k = board\.kind === 'pets' \? board\.seats - 1 :/);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 10);
+  assert.equal(guides.length, 11);
   assert.ok(sentenceCount(guides[9]) <= 3, guides[9]);
   assert.match(guides[9], /아무리 해도 모두 건널 수 없는 판도 만들 수 있을까요\?$/);
   assert.equal(T.make.intro, '판의 종류를 고르고 수를 정해요. 다 정하면 선생님에게 풀어 보라고 할 수도 있어요.');
@@ -448,7 +448,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.ok(pad.includes('동물을 누르면 배에 타요. 탄 동물을 누르면 내려요.'));
   for (const label of ['← 왼쪽 강가로 보내기', '섬으로 보내기', '오른쪽 강가로 보내기 →', '할머니가 없으면 함께 두면 안 돼요']) assert.ok(pad.includes(label), label);
   // 틀이 형식을 안다.
-  assert.match(read('src/main.js'), /block: createBlock\(frame\), river: createRiver\(frame\) \};/);
+  assert.match(read('src/main.js'), /block: createBlock\(frame\), river: createRiver\(frame\), /);
   assert.match(read('src/check-main.js'), /\['river', '강 건너기'\]/);
 });
 

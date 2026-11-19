@@ -40,7 +40,7 @@
       </main>
     </section>
 
-    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬)와 퍼즐 만들기, 판 고르기.
+    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리)와 퍼즐 만들기, 판 고르기.
          형식을 더할 때는 카드 하나를 "퍼즐 만들기" 앞에 더하고, "만들기" 목록에 단추 하나를 더한다 -->
     <section id="home" class="screen home" hidden>
       <header class="top">
@@ -169,6 +169,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="cups-title">
+            <h2 id="cups-title">컵 뒤집기와 세 색 무리</h2>
+            <div class="door-picture"><div id="home-cups-sample"></div></div>
+            <p id="home-cups-ask" class="door-ask">엎어진 컵을 모두 바로 세울 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-cups-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-cups-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -217,6 +227,9 @@
               </li>
               <li>
                 <button id="home-river-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-river-blank"></span></span><span class="menu-name">강 건너기</span></button>
+              </li>
+              <li>
+                <button id="home-cups-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-cups-blank"></span></span><span class="menu-name">컵 뒤집기와 세 색 무리</span></button>
               </li>
             </ul>
           </div>
@@ -286,6 +299,9 @@
           <button id="logic-follow" class="btn wide" type="button" aria-pressed="false" hidden>따라가 보기 켜기</button>
           <!-- 조각 못 들어가게 막기: 조각이 아직 들어갈 수 있는 자리 하나를 판에 그리고, 남은 자리의 수를 판 아래에 적는 도구 -->
           <button id="block-spots" class="btn wide" type="button" aria-pressed="false" hidden>들어갈 자리 보기</button>
+          <!-- 컵 뒤집기와 세 색 무리: 처음 모습과 움직일 때마다의 엎어진 컵 수(또는 색마다의 마릿수)를 표로 줄 세우는 도구. 무엇이 그대로인지는 말하지 않는다 -->
+          <button id="cups-notes" class="btn wide" type="button" aria-pressed="false" hidden>세어서 적어 보기</button>
+          <div id="cups-notes-table" class="cups-notes" aria-live="polite" hidden></div>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -311,6 +327,8 @@
             <div id="block-board" hidden></div>
             <!-- 강 건너기: 두 강가(와 가운데 섬), 그 사이의 물과 배. 동물을 누르면 배에 타고, 다시 누르면 내린다 -->
             <div id="river-board" hidden></div>
+            <!-- 컵 뒤집기와 세 색 무리: 한 줄로 놓인 컵, 또는 여러 줄로 놓인 방울이. 눌러서 고른다 -->
+            <div id="cups-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
             <div id="code-board" class="code-board" hidden>
               <div id="code-table" class="code-scroll"></div>
@@ -330,6 +348,12 @@
               <span id="logic-status" class="tile-status" aria-live="polite"></span>
             </span>
             <span id="coins-count" class="count">뒤집은 횟수 <strong id="count">0</strong>번</span>
+            <!-- 컵 뒤집기와 세 색 무리: 윗줄에 같은 색을 눌렀는지(또는 끝났는지), 그 아래에 뒤집은 횟수나 만난 횟수 -->
+            <span id="cups-count" class="count tile-count" hidden>
+              <span id="cups-status" class="tile-status" aria-live="polite"></span>
+              <span id="cups-flips-line">뒤집은 횟수 <strong id="cups-flips">0</strong>번</span>
+              <span id="cups-meets-line" hidden>만난 횟수 <strong id="cups-meets">0</strong>번</span>
+            </span>
             <span id="trace-count" class="count" hidden>남은 선 <strong id="trace-left">0</strong>개</span>
             <span id="swap-count" class="count" hidden>움직인 횟수 <strong id="swap-moves">0</strong>번</span>
             <span id="swap-left-count" class="count" hidden>혼자 있는 돌 <strong id="swap-left">0</strong>개</span>
@@ -381,6 +405,22 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 컵 뒤집기와 세 색 무리: 누르는 법, 고른 컵의 수. 가장 적게 뒤집는 판에는 다시 해 볼지 여기까지 할지 고르는 단추가, 안 되는 판이 섞이는 판에는 "불가능해요" 단추가 있다 -->
+          <div id="cups-pad" class="pad" hidden>
+            <p id="cups-howto" class="pad-note"></p>
+            <p id="cups-picked-line" class="pad-note best-line">고른 컵 <strong id="cups-picked">0</strong>개</p>
+            <div id="cups-fewest" class="choices" hidden>
+              <h2>가장 적은 횟수로</h2>
+              <p id="cups-best-line" class="pad-note best-line" hidden>지금까지 가장 적게 <strong id="cups-best"></strong>번</p>
+              <button id="cups-again" class="btn good huge" type="button" hidden>처음부터 다시 해 볼래요</button>
+              <button id="cups-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+            </div>
+            <div id="cups-maybe" class="choices" hidden>
+              <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="cups-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+          </div>
+
           <!-- 강 건너기: 갈 곳마다 배를 보내는 단추. 할머니와 동물들의 판에는 함께 두면 안 되는 짝의 그림이 있다.
                가장 적은 횟수를 묻는 판에는 다시 해 볼지 여기까지 할지 고르는 단추가, 안 되는 판이 섞이는 판에는 "불가능해요" 단추가 있다 -->
           <div id="river-pad" class="pad" hidden>
@@ -1089,6 +1129,65 @@
             <button id="river-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
             <p id="river-make-result" class="make-result" aria-live="polite"></p>
             <button id="river-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-cups" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>판의 종류</h2>
+          <div id="cups-make-kinds" class="segment column">
+            <button class="btn" type="button" data-kind="cups">컵 뒤집기</button>
+            <button class="btn" type="button" data-kind="colors">세 색 무리</button>
+          </div>
+          <div id="cups-make-cups" class="option-group">
+            <h2>컵 수</h2>
+            <div class="stepper">
+              <button id="cups-make-n-fewer" class="btn" type="button" aria-label="컵 하나 줄이기">−</button>
+              <strong id="cups-make-n"></strong>
+              <button id="cups-make-n-more" class="btn" type="button" aria-label="컵 하나 늘리기">＋</button>
+            </div>
+            <h2>한 번에 뒤집는 수</h2>
+            <div class="stepper">
+              <button id="cups-make-k-fewer" class="btn" type="button" aria-label="한 번에 뒤집는 수 줄이기">−</button>
+              <strong id="cups-make-k"></strong>
+              <button id="cups-make-k-more" class="btn" type="button" aria-label="한 번에 뒤집는 수 늘리기">＋</button>
+            </div>
+            <button id="cups-make-all-down" class="btn wide" type="button">모두 엎기</button>
+            <button id="cups-make-all-up" class="btn wide" type="button">모두 바로 세우기</button>
+          </div>
+          <div id="cups-make-colors" class="option-group" hidden>
+            <h2>빨간 방울이</h2>
+            <div class="stepper">
+              <button id="cups-make-c0-fewer" class="btn" type="button" aria-label="빨간 방울이 한 마리 줄이기">−</button>
+              <strong id="cups-make-c0"></strong>
+              <button id="cups-make-c0-more" class="btn" type="button" aria-label="빨간 방울이 한 마리 늘리기">＋</button>
+            </div>
+            <h2>파란 방울이</h2>
+            <div class="stepper">
+              <button id="cups-make-c1-fewer" class="btn" type="button" aria-label="파란 방울이 한 마리 줄이기">−</button>
+              <strong id="cups-make-c1"></strong>
+              <button id="cups-make-c1-more" class="btn" type="button" aria-label="파란 방울이 한 마리 늘리기">＋</button>
+            </div>
+            <h2>노란 방울이</h2>
+            <div class="stepper">
+              <button id="cups-make-c2-fewer" class="btn" type="button" aria-label="노란 방울이 한 마리 줄이기">−</button>
+              <strong id="cups-make-c2"></strong>
+              <button id="cups-make-c2-more" class="btn" type="button" aria-label="노란 방울이 한 마리 늘리기">＋</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">컵이나 방울이로 판을 만들어요. 컵을 누르면 엎거나 세울 수 있어요. 아무리 해도 안 되는 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="cups-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="cups-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="cups-make-result" class="make-result" aria-live="polite"></p>
+            <button id="cups-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

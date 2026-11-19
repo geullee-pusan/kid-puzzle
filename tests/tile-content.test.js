@@ -86,7 +86,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 조각이 어떤 칸을 덮�
   assert.match(pad, /칸을 따라 그으면 조각이 놓여요\. 칸을 하나씩 눌러도 돼요\. 놓인 조각을 누르면 빠져요\./);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 10, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 11, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[4]) <= 3, guides[4]);
   assert.match(guides[4], /덮을 수 없는 판도 만들 수 있을까요\?/);
 });
@@ -284,7 +284,8 @@ test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => 
     assert.doesNotMatch(text, reason, `${path}: ${text}`);
   }
   assert.doesNotMatch(screenText, name);
-  assert.doesNotMatch(screenText, reason);
+  // 컵 뒤집기와 세 색 무리는 형식의 이름에 "세 색"이 들어 있다(조각 덮기의 까닭이 아니다).
+  assert.doesNotMatch(screenText.replace(/컵 뒤집기와 세 색 무리|세 색 무리/g, ''), reason);
   // 두 이야기 모두 같은 이름으로 끝맺는다(같은 생각을 판을 바꿔 다시 쓴다).
   for (const piece of WHY_PIECES) assert.match(T.why[piece].map((slide) => slide.say).join(' '), name, piece);
   // 이름은 까닭을 다 본 뒤에 처음 꺼낸다(뜻밖의 결과 → 그림 → 이름).

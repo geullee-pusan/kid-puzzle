@@ -301,12 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드는 넓은 화면에서 두 칸을 쓴다(셋째 줄에 혼자 놓일 때 물음이 한 줄에 들어가고 그림이 보이게) */
-@media (min-width: 981px) {
-  .panel.door.door-make {
-    grid-column: span 2;
-  }
-}
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열두 장이라 가로 1280px에서 넉 장씩 세 줄에 꼭 맞는다.
+   (카드가 열 장일 때는 셋째 줄에 혼자 놓여서 두 칸을 썼다.) */
 
 .door h2 {
   font-size: 22px;
@@ -4026,4 +4022,227 @@ button.tax-card {
   .panel {
     height: auto;
   }
+}
+
+/* ---- 컵 뒤집기와 세 색 무리: 한 줄로 놓인 컵, 여러 줄로 놓인 방울이 ----
+   색만으로 알리지 않는다. 엎어진 컵은 바닥이 위로 가고 입구가 안 보인다. 바로 선 컵은 위에서 입구 안쪽이 보인다.
+   방울이는 색마다 머리 모양이 다르다(빨강은 뾰족한 귀, 파랑은 둥근 귀, 노랑은 더듬이 하나).
+   고른 것은 굵은 테두리로, 그림에서 함께 움직이는 것은 가는 테두리로 보인다. */
+.cups-board {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 128px));
+  justify-content: center;
+  align-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.cups-board.colors {
+  grid-template-columns: repeat(var(--cols), minmax(0, 92px));
+}
+
+.cups-board.small {
+  grid-template-columns: repeat(var(--cols), minmax(0, 34px));
+  gap: 4px;
+}
+
+.cups-board .cup,
+.cups-board .folk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  font: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.cups-board.small .cup,
+.cups-board.small .folk {
+  padding: 1px;
+  border-width: 2px;
+  border-radius: 8px;
+}
+
+.cups-board.live .cup,
+.cups-board.live .folk {
+  min-height: 64px;
+  border-color: var(--line);
+  background: #f8f9fa;
+  cursor: pointer;
+}
+
+.cups-board .selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px #fff, 0 0 0 9px var(--accent);
+  background: #e7f5ff;
+}
+
+.cups-board .marked {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+.cup-art,
+.folk-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cup-body {
+  fill: #fff4e6;
+  stroke: #343a40;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.cup-band {
+  stroke: #f08c00;
+  stroke-width: 7;
+}
+
+.cup-handle {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.cup-mouth {
+  fill: #5c3a1e;
+  stroke: #343a40;
+  stroke-width: 4;
+}
+
+.cup-foot {
+  fill: #fff4e6;
+  stroke: #343a40;
+  stroke-width: 4;
+}
+
+/* 엎어진 컵: 입구는 바닥에 닿아 안 보이고(몸통 색으로 닫힌다), 위에 막힌 바닥이 있다 */
+.cup-art.down .cup-mouth {
+  fill: #fff4e6;
+}
+
+.cup-art.down .cup-body {
+  fill: #ffe8cc;
+}
+
+.cup.changed .cup-art,
+.folk.changed .folk-art {
+  animation: cups-turn 0.4s ease;
+}
+
+@keyframes cups-turn {
+  from {
+    transform: scale(0.6) rotate(-20deg);
+    opacity: 0.3;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cup.changed .cup-art,
+  .folk.changed .folk-art {
+    animation: none;
+  }
+}
+
+.folk-body {
+  stroke: #343a40;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.folk-0 .folk-body {
+  fill: #ff8787;
+}
+
+.folk-1 .folk-body {
+  fill: #74c0fc;
+}
+
+.folk-2 .folk-body {
+  fill: #ffe066;
+}
+
+.folk-white {
+  fill: #fff;
+}
+
+.folk-ink {
+  fill: #212529;
+}
+
+.folk-line {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+/* 세어서 적어 보기: 왼쪽 칸의 표 */
+.cups-notes {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.cups-notes .swap-table {
+  width: 100%;
+  font-size: 18px;
+}
+
+.cups-notes .swap-table th,
+.cups-notes .swap-table td {
+  padding: 4px 6px;
+}
+
+/* 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책의 작은 그림 */
+.door-picture .cups-board.small,
+.resume .cups-board.small,
+.level .cups-board.small,
+.menu-picture > .cups-board {
+  justify-content: flex-start;
+}
+
+.door-picture .cups-board.small {
+  grid-template-columns: repeat(var(--cols), minmax(0, 44px));
+}
+
+.door-picture .cups-board.small.colors {
+  grid-template-columns: repeat(var(--cols), minmax(0, 36px));
+}
+
+.resume.note-picture .cups-board.small {
+  justify-content: center;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.cups-strip .cups-board.small {
+  grid-template-columns: repeat(var(--cols), 48px);
+}
+
+.cups-strip .cups-board.small.colors {
+  grid-template-columns: repeat(var(--cols), 40px);
+}
+
+/* 판의 방울이: 한 줄에 여섯까지, 남은 것은 다음 줄의 가운데에 놓는다 */
+.cups-board.colors:not(.small) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cups-board.colors:not(.small) > .folk {
+  width: min(92px, calc((100% - 60px) / 6));
 }

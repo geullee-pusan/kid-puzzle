@@ -12,6 +12,8 @@ import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBl
 import { allCodes, checkBoard as checkCode, solveTable } from './code.js';
 import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
+import { placeDown, solveOnce as solveCups } from './cups-ladder.js';
+import { RANGES as CUP_RANGES, checkBoard as checkCups, downCount } from './cups.js';
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
 import { boxBoards, smallFolkBoards } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
@@ -376,4 +378,62 @@ export function smallerRiver(origin, turn = 0) {
   return wrap(pickByTurn(lists, solveRiver(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver };
+// ---- 컵 뒤집기와 세 색 무리: 같은 종류에서 컵이나 방울이를 줄인 판 ----
+
+/** 작은 컵 판의 컵 수는 원래보다 하나나 둘 적게, 한 번에 뒤집는 수보다는 많게 둔다(모두 한 번에 뒤집는 판은 내지 않는다) */
+export const CUPS_SHRINK = 2;
+/** 작은 방울이 판의 마릿수는 원래보다 하나에서 셋 적게, 셋 아래로는 줄이지 않는다 */
+export const COLORS_SHRINK = 3;
+export const COLORS_FLOOR = 3;
+
+/**
+ * 원래 판보다 작은 같은 종류의 판들. 컵 판은 한 번에 뒤집는 수가 같다.
+ * 한 번에 끝나는 되는 판은 뺀다. 원래 판에 가까운 것(컵이나 방울이가 많은 것)부터 줄 세운다.
+ */
+export function smallCupsBoards(board) {
+  const found = [];
+  if (board.kind === 'cups') {
+    const floor = Math.max(CUP_RANGES.n[0], board.k + 1);
+    const want = downCount(board.cups);
+    for (let n = board.n - 1; n >= Math.max(floor, board.n - CUPS_SHRINK); n--) {
+      // 엎어진 컵 수는 원래 판의 수에 가까운 것부터
+      const downs = Array.from({ length: n }, (_, index) => index + 1).sort((a, b) => Math.abs(a - want) - Math.abs(b - want) || b - a);
+      for (const down of downs) {
+        const rng = createRng(seedFrom('cups-smaller', JSON.stringify(board), n, down));
+        found.push({ kind: 'cups', n, k: board.k, cups: placeDown(n, down, rng) });
+      }
+    }
+  } else {
+    const total = board.counts.reduce((sum, count) => sum + count, 0);
+    for (let size = total - 1; size >= Math.max(COLORS_FLOOR, total - COLORS_SHRINK); size--) {
+      const here = [];
+      for (let red = 0; red <= size; red++) {
+        for (let blue = 0; blue <= size - red; blue++) {
+          const counts = [red, blue, size - red - blue];
+          if (counts.filter((count) => count > 0).length < 2) continue;
+          // 원래 판과 마릿수가 가까운 것부터
+          const far = counts.reduce((sum, count, color) => sum + Math.abs(count - board.counts[color]), 0);
+          here.push({ far, board: { kind: 'colors', counts } });
+        }
+      }
+      here.sort((a, b) => a.far - b.far || a.board.counts.join(',').localeCompare(b.board.counts.join(',')));
+      found.push(...here.map((item) => item.board));
+    }
+  }
+  return found.filter((item) => {
+    if (checkCups(item) !== null) return false;
+    const solved = solveCups(item);
+    return solved.possible ? solved.min >= 2 : true;
+  });
+}
+
+export function smallerCups(origin, turn = 0) {
+  if (!origin.board || checkCups(origin.board) !== null) return null;
+  const lists = { yes: [], no: [] };
+  for (const board of smallCupsBoards(origin.board)) lists[solveCups(board).possible ? 'yes' : 'no'].push(board);
+  // 가장 적게 뒤집는 판(모두 되는 판)에서는 되는 판만 낸다.
+  const possible = origin.mode === 'fewest' || solveCups(origin.board).possible;
+  return wrap(pickByTurn(lists, possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups };

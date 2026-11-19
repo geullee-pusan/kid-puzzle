@@ -44,6 +44,7 @@ function drawCounts() {
     ['logic', '참말 섬'],
     ['block', '조각 못 들어가게 막기'],
     ['river', '강 건너기'],
+    ['cups', '컵 뒤집기와 세 색 무리'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
