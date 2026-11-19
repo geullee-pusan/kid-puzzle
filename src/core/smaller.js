@@ -23,6 +23,8 @@ import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
 import { checkBoard as checkMaze, smallBoards as smallMazeBoards } from './maze.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 import { checkBoard as checkRulehunt, smallBoards as smallRuleBoards } from './rulehunt.js';
+import { smallBoards as smallRoomBoards } from './rooms-ladder.js';
+import { checkBoard as checkRooms } from './rooms.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
@@ -510,4 +512,17 @@ export function smallerLamps(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps };
+// ---- 방 한 번씩 돌기: 답의 종류가 같은 더 작은 집 ----
+
+/**
+ * 되는 집이면 더 작은 되는 집, 안 되는 집이면 같은 까닭(색이면 맞지 않는 것까지, 문이 하나뿐인 방, 지나면 나뉘는 방)으로 안 되는 더 작은 집을 낸다.
+ * 이 형식은 "작은 판에서 본 까닭을 큰 판에 쓰기"가 목적이라, 틀의 다른 형식과 달리 첫 작은 판부터 원래 판과 답의 종류가 같다.
+ * 수가 적힌 집은 더 작은 수가 적힌 집, 가려 내기는 더 작은 꼴의 집 셋. 더 줄일 수 없는 크기(3×3)와 모든 길을 따져야만 아는 집은 null이다.
+ */
+export function smallerRooms(origin, turn = 0) {
+  if (!origin.board || checkRooms(origin.board) !== null) return null;
+  const list = smallRoomBoards(origin);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms };

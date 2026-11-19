@@ -927,7 +927,7 @@ export function createLamps(frame) {
       $('lamps-board').hidden = !on;
       $('lamps-count').hidden = !on;
       if (on) {
-        // 이 형식은 틀의 형식 목록에서 맨 뒤라, 앞의 형식(엉킨 그림 풀기)이 보이게 해 둔 무르기와 되돌리기를 여기서 다시 감춘다.
+        // 이 형식은 무르기와 되돌리기를 쓰지 않는다. 앞의 형식(엉킨 그림 풀기)이 보이게 해 둔 것을 여기서 감춘다(뒤의 방 한 번씩 돌기는 켜질 때 다시 보이게 한다).
         $('undo').hidden = true;
         $('reset').hidden = true;
       }

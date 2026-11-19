@@ -92,7 +92,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   // 형식이 판의 종류(직접 만든 판은 어디까지)로 규칙 글과 힌트를 고른다.
   assert.match(code, /const hintKey = \(round\) => \(round\.custom \? 'reach' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 16);
+  assert.equal(guides.length, 17);
   assert.ok(sentenceCount(guides[15]) <= 3, guides[15]);
   assert.match(guides[15], /두 배씩이 아닌 불로도 빈 곳 없이 멀리 갈 수 있을까요\?$/);
 });
@@ -318,10 +318,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.match(part('id="lamps-confirm-box"', 'id="lamps-entry-box"'), /id="lamps-yes"[^>]*>맞아요</);
   assert.match(part('id="lamps-confirm-box"', 'id="lamps-entry-box"'), /id="lamps-no"[^>]*>다른 수예요</);
   assert.equal([...part('id="lamps-keys"', 'id="lamps-try"').matchAll(/data-n="(\w+)"/g)].map((match) => match[1]).join(), '1,2,3,4,5,6,7,8,9,0,erase');
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 엉킨 그림 풀기 다음).
-  assert.match(read('src/main.js'), /untangle: createUntangle\(frame\), lamps: createLamps\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 엉킨 그림 풀기 다음).
+  assert.match(read('src/main.js'), /untangle: createUntangle\(frame\), lamps: createLamps\(frame\), /);
   assert.match(read('src/check-main.js'), /\['lamps', '켜고 끄기와 숫자 마술'\]/);
-  // 형식 목록의 맨 뒤라서, 켜질 때 앞의 형식(엉킨 그림 풀기)이 보이게 해 둔 무르기와 되돌리기를 감춘다.
+  // 무르기와 되돌리기를 쓰지 않아서, 켜질 때 앞의 형식(엉킨 그림 풀기)이 보이게 해 둔 것을 감춘다(뒤의 방 한 번씩 돌기가 켜질 때 다시 보이게 한다).
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = true;\s*\$\('reset'\)\.hidden = true;/);
   // 지난 기록은 틀이 건네주는 것(작은 판을 뺀 기록)으로 본다. 무작위 값은 쓰지 않는다.
   assert.doesNotMatch(code, /log\.allRecords\(\)/);

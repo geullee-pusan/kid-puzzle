@@ -301,7 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열일곱 장이라 가로 1280px에서 넉 장씩 다섯 줄이다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 퍼즐 만들기 한 장).
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열여덟 장이라 가로 1280px에서 넉 장씩 다섯 줄이다(넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 방 한 번씩 돌기와 퍼즐 만들기).
+   (카드가 열일곱 장일 때는 다섯째 줄에 퍼즐 만들기 한 장이었다.)
    (카드가 열여섯 장일 때는 네 줄에 꼭 맞았다.)
    (카드가 열다섯 장일 때는 넷째 줄에 세 장이었다.)
    (카드가 열네 장일 때는 넷째 줄에 두 장이었다.)
@@ -6162,4 +6163,377 @@ button.lp-card:focus-visible {
 
 .lp-cards.five .lp-card-title {
   font-size: 19px;
+}
+
+
+/* ---- 방 한 번씩 돌기: 네모 방들, 방 사이의 문, 정원, 처음 방과 끝 방, 그은 길 ----
+   색만으로 알리지 않는다: 처음 방은 안쪽의 굵은 실선 테두리와 이름, 끝 방은 굵은 점선 테두리와 이름, 정원은 풀 무늬,
+   색을 켜면 색마다 방 구석에 모양(동그라미, 네모. 조각 덮기의 바둑판 무늬와 같은 색과 모양), 적힌 차례와 다른 방은 점선 고리,
+   그림에서 짚는 방은 두 겹 고리, 가려 내기에서 고른 집은 굵은 점선 테두리와 꼬리표로 그린다. */
+.rm-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rm-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 방 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 112px);
+  max-height: calc(var(--h) * 112px);
+  overflow: visible;
+}
+
+.rm-board.small .rm-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.rm-board.live .rm-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rm-board.live .rm-cell {
+  cursor: pointer;
+}
+
+.rm-cell:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.board-area > .rm-board,
+.door-picture > .rm-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.board-area:has(> #rooms-board:not([hidden])) {
+  padding: 4px;
+}
+
+.rm-floor {
+  fill: #fdf8ef;
+}
+
+.rm-floor.rm-color-0 {
+  fill: #fff3bf;
+}
+
+.rm-floor.rm-color-1 {
+  fill: #a5d8ff;
+}
+
+.rm-mark {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.rm-garden {
+  fill: #d3f9d8;
+}
+
+.rm-grass {
+  fill: none;
+  stroke: #2b8a3e;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 방 사이의 벽은 가늘고 옅게(가운데의 문이 트여 있다), 집의 바깥벽과 정원 쪽 벽은 굵고 진하게 */
+.rm-wall {
+  stroke: #b08968;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.rm-wall.outer {
+  stroke: #5c3d2e;
+  stroke-width: 10;
+}
+
+.rm-start {
+  fill: none;
+  stroke: #2b8a3e;
+  stroke-width: 7;
+}
+
+.rm-end {
+  fill: none;
+  stroke: #c92a2a;
+  stroke-width: 7;
+  stroke-dasharray: 14 8;
+}
+
+.rm-word {
+  font-size: 22px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 6px;
+}
+
+.rm-word-start {
+  fill: #2b8a3e;
+}
+
+.rm-word-end {
+  fill: #c92a2a;
+}
+
+.rm-path {
+  fill: none;
+  stroke: #1c7ed6;
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.rm-dot {
+  fill: #1c7ed6;
+}
+
+.rm-head {
+  fill: #fff;
+  stroke: #1c7ed6;
+  stroke-width: 9;
+}
+
+.rm-step {
+  fill: #1864ab;
+  font-size: 24px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 6px;
+}
+
+.rm-number {
+  fill: #212529;
+  font-size: 46px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 9px;
+}
+
+.rm-wrong {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 7;
+  stroke-dasharray: 11 8;
+}
+
+.rm-ring {
+  fill: none;
+  stroke: #c2255c;
+  stroke-width: 6;
+}
+
+/* 가려 내기: 같은 꼴의 집 여럿. 누르면 고르고, 고른 집은 굵은 점선 테두리와 꼬리표 */
+.board-area > #rooms-board.rm-judge {
+  align-self: stretch;
+}
+
+.rm-judge {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  width: 100%;
+  align-content: center;
+}
+
+.rm-judge.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rm-judge-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px;
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+button.rm-judge-card {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.rm-judge-card:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.rm-judge-card.picked {
+  border: 6px dashed #c92a2a;
+  background: #fff5f5;
+}
+
+.rm-judge-card > div {
+  width: 100%;
+  height: 150px;
+}
+
+.rm-judge.four .rm-judge-card > div {
+  height: min(150px, 17vh);
+}
+
+.rm-judge-name {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.rm-judge-tag {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #c92a2a;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.rm-judge-card .strip-note {
+  margin: 0;
+  text-align: center;
+}
+
+/* 작은 가려 내기 그림(처음 화면, 하던 판 띠, 공책, 판 고르기) */
+.rm-judge.small {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  height: 100%;
+}
+
+.rm-judge.small .rm-judge-card {
+  flex: 1 1 0;
+  padding: 2px;
+  border-width: 2px;
+  border-radius: 8px;
+}
+
+.rm-judge.small .rm-judge-card.picked {
+  border-width: 3px;
+}
+
+.rm-judge.small .rm-judge-card > div {
+  height: 100%;
+}
+
+.rm-judge.small .rm-judge-tag {
+  display: none;
+}
+
+.door-picture > .rm-judge.small {
+  height: 100%;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .rm-board.small {
+  width: 90px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume .rm-judge.small {
+  width: 200px;
+  height: 60px;
+}
+
+.resume.note-picture .rm-board.small {
+  width: 100%;
+  height: 110px;
+  justify-content: center;
+}
+
+.resume.note-picture .rm-judge.small {
+  width: 100%;
+  height: 100px;
+}
+
+.menu-picture > .rm-board {
+  display: flex;
+  height: 76px;
+}
+
+.level .rm-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}
+
+.level .rm-judge.small {
+  width: 130px;
+  height: 64px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림. 둘이 가운데 칸에 나란히 들어가는 크기다 */
+.rm-card {
+  width: min(100%, 216px);
+}
+
+.rm-card > .rm-board {
+  height: 200px;
+}
+
+.rm-card.big {
+  width: min(100%, 420px);
+}
+
+.rm-card.big > .rm-board {
+  height: 330px;
+}
+
+.rm-card .tile-legend {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.rm-card .strip-note {
+  text-align: center;
+}
+
+.sheet-body > .rm-judge {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.sheet-body .rm-judge-card > div {
+  height: 112px;
+}
+
+/* 직접 만들기: 선생님이 찾은 길이나 까닭의 그림 */
+.rooms-make-picture:empty {
+  display: none;
+}
+
+.rooms-make-picture .rm-card {
+  width: 100%;
+}
+
+.rooms-make-picture .rm-card > .rm-board {
+  height: 180px;
 }

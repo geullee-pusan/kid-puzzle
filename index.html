@@ -229,6 +229,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="rooms-title">
+            <h2 id="rooms-title">방 한 번씩 돌기</h2>
+            <div class="door-picture"><div id="home-rooms-sample"></div></div>
+            <p id="home-rooms-ask" class="door-ask">모든 방을 한 번씩 지나 끝 방에 갈 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-rooms-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-rooms-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -296,6 +306,9 @@
               <li>
                 <button id="home-lamps-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-lamps-blank"></span></span><span class="menu-name">켜고 끄기와 숫자 마술</span></button>
               </li>
+              <li>
+                <button id="home-rooms-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-rooms-blank"></span></span><span class="menu-name">방 한 번씩 돌기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -360,6 +373,9 @@
           <!-- 조각 덮기: 판에 무늬를 입혔다 벗기는 도구. 무엇을 알려 주는지는 말하지 않는다. 무늬를 입히면 색마다 남은 빈칸의 수를 적는다 -->
           <button id="tile-pattern" class="btn wide" type="button" aria-pressed="false" hidden>판에 무늬 입히기</button>
           <div id="tile-colors" class="tile-legend" aria-live="polite" hidden></div>
+          <!-- 방 한 번씩 돌기: 방에 두 색을 칠했다 지우는 도구(조각 덮기의 무늬와 같은 색과 모양). 무엇을 알려 주는지는 말하지 않는다. 켜면 색마다 남은 방의 수를 적는다 -->
+          <button id="rooms-color" class="btn wide" type="button" aria-pressed="false" hidden>색 켜기</button>
+          <div id="rooms-colors" class="tile-legend" aria-live="polite" hidden></div>
           <!-- 약수 세금: 지금 가질 수 있는 카드마다 세금으로 나갈 수의 합을 작게 적어 주는 도구 -->
           <button id="tax-costs" class="btn wide" type="button" aria-pressed="false" hidden>카드마다 낼 세금 보기</button>
           <!-- 참말 섬: 쳐 본 대로 말마다 참인지 거짓인지를 적고, 맞지 않는 말을 눈에 띄게 하는 도구. 1단계에서는 처음부터 켜져 있다 -->
@@ -412,6 +428,8 @@
             <div id="maze-board" hidden></div>
             <!-- 켜고 끄기와 숫자 마술: 수가 적힌 불의 줄과 켠 불의 합, 1부터 놓인 수의 줄. 또는 마음 읽기 카드, 또는 선생님의 쪽지와 세로셈 -->
             <div id="lamps-board" hidden></div>
+            <!-- 방 한 번씩 돌기: 네모 방들과 방 사이의 문, 정원, 처음 방과 끝 방, 그은 길. 가려 내기 판에서는 같은 꼴의 집 여럿 -->
+            <div id="rooms-board" hidden></div>
             <!-- 숨은 규칙 찾기: 수 판(1부터 끝 수까지, 한 줄에 열 칸. 누르면 묻는다) 또는 세 수 판(물어본 세 수를 돼요와 안 돼요 두 줄로) -->
             <div id="rulehunt-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
@@ -428,6 +446,13 @@
             </div>
           </div>
           <div class="board-foot">
+            <!-- 방 한 번씩 돌기: 윗줄에 막혔는지(또는 다 지났는지, 적힌 차례와 다른지), 그 아래에 남은 방의 수. 몇 번 그었는지는 적지 않는다 -->
+            <span id="rooms-count" class="count tile-count block-count" hidden>
+              <span id="rooms-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span id="rooms-left-line">남은 방 <strong id="rooms-left">0</strong>개</span>
+              </span>
+            </span>
             <!-- 켜고 끄기와 숫자 마술: 윗줄에 방금 만든 수(또는 할 일), 불 하나 더 달기에서는 그 아래에 지금까지 가장 멀리 간 불. 몇 번 켰는지는 적지 않는다 -->
             <span id="lamps-count" class="count tile-count block-count" hidden>
               <span id="lamps-status" class="tile-status" aria-live="polite"></span>
@@ -533,6 +558,24 @@
         <section class="answer" aria-label="답과 고르기">
           <!-- 켜고 끄기와 숫자 마술: 판의 종류마다 아래 상자 가운데 몇을 보인다. 불은 판에서 누른다.
                숫자판은 새 불의 수, 선생님의 수, 마술에서 고른 수와 계산한 답을 넣을 때 쓴다 -->
+          <!-- 방 한 번씩 돌기: 손가락으로 방을 따라 긋는다. 안 되는 집이 섞이는 판에는 "불가능해요" 단추가, 가려 내기 판에는 "다 골랐어요" 단추가 있다 -->
+          <div id="rooms-pad" class="pad" hidden>
+            <div id="rooms-draw-box" class="choices">
+              <h2>모든 방을 한 번씩</h2>
+              <p class="pad-note">처음 방에서 옆방으로 손가락을 따라 그어요. 방을 하나씩 눌러도 돼요.</p>
+              <p class="pad-note">지나온 방을 누르면 그 방까지만 남아요.</p>
+            </div>
+            <div id="rooms-maybe" class="choices" hidden>
+              <p class="pad-note">아무리 해도 안 될 것 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="rooms-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <div id="rooms-judge-box" class="choices" hidden>
+              <h2>안 되는 집 고르기</h2>
+              <p class="pad-note">안 되는 집을 모두 눌러요. 다시 누르면 지워져요.</p>
+              <button id="rooms-judged" class="btn good huge" type="button">다 골랐어요</button>
+            </div>
+          </div>
+
           <div id="lamps-pad" class="pad" hidden>
             <div id="lamps-switch-box" class="choices">
               <h2>불을 켜고 꺼요</h2>
@@ -1718,6 +1761,45 @@
             <button id="lamps-make-solve" class="btn primary huge" type="button">선생님, 알려 주세요</button>
             <p id="lamps-make-result" class="make-result" aria-live="polite"></p>
             <button id="lamps-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-rooms" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="집 정하기">
+          <h2>방을 누르면</h2>
+          <div id="rooms-make-tools" class="segment column">
+            <button class="btn" type="button" data-tool="start">처음 방 정하기</button>
+            <button class="btn" type="button" data-tool="end">끝 방 정하기</button>
+            <button class="btn" type="button" data-tool="garden">정원 만들기</button>
+          </div>
+          <strong id="rooms-make-count" class="make-count"></strong>
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="rooms-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="rooms-make-w"></strong>
+            <button id="rooms-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="rooms-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="rooms-make-h"></strong>
+            <button id="rooms-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <button id="rooms-make-clear" class="btn wide" type="button">정원 모두 없애기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 집">
+          <p class="rule">방을 눌러 처음 방과 끝 방을 정하고, 정원도 만들어 보세요. 선생님이 모든 방을 한 번씩 지나는 길이 있는지 알려 줘요. 아무리 해도 안 되는 집도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="rooms-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="rooms-make-solve" class="btn primary huge" type="button">선생님, 알려 주세요</button>
+            <p id="rooms-make-result" class="make-result" aria-live="polite"></p>
+            <div id="rooms-make-picture" class="rooms-make-picture"></div>
+            <button id="rooms-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>
