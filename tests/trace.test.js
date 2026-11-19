@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  MAX_PARALLEL,
   MAX_POINTS,
   NEAR,
   applyEdit,
@@ -19,8 +20,11 @@ import {
   passesPoint,
   pieceCount,
   segmentsMeet,
+  sideOf,
   solve,
+  strokePlan,
   walk,
+  walkStrokes,
 } from '../src/core/trace.js';
 import { bruteStarts } from './helpers/brute.js';
 
@@ -252,4 +256,57 @@ test('오답 짐작: 긋지 않고 가리기, 시작점 고르기, 고치기', (
 
   assert.throws(() => diagnose('judge', spokes, { kind: 'start', point: 0 }));
   assert.throws(() => diagnose('draw', spokes, { kind: 'number', value: 3 }));
+});
+
+test('다리 판: 같은 두 점 사이의 선은 multi일 때만 MAX_PARALLEL개까지 받고, 긋기는 아직 긋지 않은 다리를 하나씩 쓴다', () => {
+  const twice = { points: lineUp(3), edges: [[0, 1], [0, 1], [1, 2]] };
+  assert.equal(checkFigure(twice), 'bad-edges', 'multi가 아니면 같은 두 점 사이에 선은 하나');
+  const bridges = { ...twice, multi: true };
+  assert.equal(checkFigure(bridges), null);
+  assert.equal(checkFigure({ ...bridges, multi: 'yes' }), 'bad-edges');
+  assert.equal(checkFigure({ points: lineUp(2), edges: Array.from({ length: MAX_PARALLEL + 1 }, () => [0, 1]), multi: true }), 'bad-edges');
+  // 0 → 1 → 0 → 1 → 2: 0과 1 사이의 두 다리를 차례로 건넌다.
+  const state = walk(bridges, [0, 1, 0]);
+  assert.deepEqual(state.used, [0, 1]);
+  assert.deepEqual(state.open, []);
+  assert.equal(state.stuck, true);
+  const done = walk(bridges, [2, 1, 0, 1]);
+  assert.equal(done.complete, true);
+  assert.equal(walk(bridges, [0, 1, 0, 1]).ok, false, '세 번째 다리는 없다');
+  assert.deepEqual(solve(bridges).starts, bruteStarts(bridges));
+  assert.deepEqual(solve(bridges).starts, [1, 2]);
+});
+
+test('여러 번에 나눠 긋기: 획마다 따라가고, 펜을 뗀 횟수와 선마다의 획을 센다', () => {
+  // 세 갈래: 가운데 0번 점에서 1, 2, 3번 점으로
+  assert.deepEqual(walkStrokes(spokes, []), { ok: true, used: [], strokeOf: [null, null, null], at: null, left: 3, open: [0, 1, 2, 3], stuck: false, complete: false, lifts: 0 });
+  const one = walkStrokes(spokes, [[1, 0, 2]]);
+  assert.equal(one.at, 2);
+  assert.equal(one.stuck, true, '2번 점에서는 더 갈 선이 없다');
+  assert.equal(one.lifts, 0);
+  const lifted = walkStrokes(spokes, [[1, 0, 2], []]);
+  assert.equal(lifted.at, null);
+  assert.deepEqual(lifted.open, [0, 3], '펜을 떼면 아직 긋지 않은 선이 있는 점에만 댈 수 있다');
+  assert.equal(lifted.lifts, 1);
+  const done = walkStrokes(spokes, [[1, 0, 2], [3, 0]]);
+  assert.equal(done.complete, true);
+  assert.deepEqual(done.strokeOf, [0, 0, 1]);
+  assert.equal(done.lifts, 1);
+  // 규칙에 맞지 않는 것: 앞의 획이 비었거나, 이어지지 않은 점, 같은 선을 두 번
+  assert.equal(walkStrokes(spokes, [[], [1, 0]]).ok, false);
+  assert.equal(walkStrokes(spokes, [[1, 2]]).ok, false);
+  assert.equal(walkStrokes(spokes, [[1, 0], [0, 1]]).ok, false);
+  assert.equal(walkStrokes(spokes, 'x').ok, false);
+  assert.deepEqual(strokePlan(spokes).strokes, 2);
+});
+
+test('닮은 두 그림: 한쪽만 떼어 내고, 두 그림을 잇는 선은 받지 않는다. 고른 쪽이 되는지로 답을 견준다', () => {
+  const pair = { points: [...square.points, ...spokes.points.map(([x, y]) => [x + 3, y])], edges: [...square.edges, ...spokes.edges.map(([a, b]) => [a + 4, b + 4])], split: 4 };
+  assert.equal(checkFigure(pair), null);
+  assert.deepEqual(sideOf(pair, 'left'), square);
+  assert.deepEqual(sideOf(pair, 'right').edges, spokes.edges);
+  assert.equal(checkFigure({ ...pair, edges: [...pair.edges, [0, 4]] }), 'bad-edges');
+  assert.equal(checkFigure({ ...pair, split: 1 }), 'bad-points');
+  assert.deepEqual(diagnose('twin', pair, { kind: 'twin', side: 'left' }), { correct: true, guess: null });
+  assert.deepEqual(diagnose('twin', pair, { kind: 'twin', side: 'right' }), { correct: false, guess: 'twin-wrong' });
 });

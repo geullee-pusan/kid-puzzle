@@ -1212,6 +1212,55 @@ div.coin {
   stroke-dasharray: 24 12;
 }
 
+/* 펜 몇 번 떼기: 획마다 선의 무늬가 다르다(곧은 선, 긴 토막, 동글동글한 점, 긴 토막과 점). 획의 번호도 붙는다.
+   선 끝이 둥글어서 보이는 틈은 적은 틈에서 선의 굵기만큼 줄어든다 */
+.figure-edge.stroke-2 {
+  stroke-dasharray: 30 26;
+}
+
+.figure-edge.stroke-3 {
+  stroke-dasharray: 1 26;
+}
+
+.figure-edge.stroke-4 {
+  stroke-dasharray: 30 24 1 24;
+}
+
+/* 다리 건너기: 물, 섬, 다리 */
+.figure-water {
+  fill: #e7f5ff;
+}
+
+.figure-island {
+  fill: #ebfbee;
+  stroke: #5c940d;
+}
+
+.figure-edge.bridge {
+  stroke: #9c6644;
+}
+
+.figure-edge.bridge.used {
+  stroke: var(--accent);
+}
+
+/* 닮은 두 그림 사이의 세로 점선 */
+.figure-divider {
+  stroke: #ced4da;
+  stroke-dasharray: 6 14;
+  stroke-linecap: round;
+}
+
+/* 판 아래의 수: 펜을 뗀 횟수와 이 판에서 가장 적게 뗀 것 */
+.trace-more {
+  margin-left: 18px;
+  white-space: nowrap;
+}
+
+#trace-left-line {
+  white-space: nowrap;
+}
+
 .figure-dot {
   fill: #fff;
   stroke: var(--ink);

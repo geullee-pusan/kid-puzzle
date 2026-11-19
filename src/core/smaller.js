@@ -32,7 +32,7 @@ import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
 import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
 import { MIN_SIZE, checkBoard as checkTile, deadCells, solve as solveTile, xyOf } from './tile.js';
-import { randomFigure, tooPlain } from './trace-ladder.js';
+import { famousShape, plainBridges, randomBridges, randomFigure, randomTwin, tooPlain } from './trace-ladder.js';
 import { checkFigure, fixesOf, solve as solveTrace } from './trace.js';
 import { smallBoards as smallUntangleBoards } from './untangle-ladder.js';
 import { checkBoard as checkUntangle, isPlanar } from './untangle.js';
@@ -121,12 +121,48 @@ function smallFigure(rng, counts, accept) {
   return null;
 }
 
+/** 다리 건너기의 작은 판: 섬 셋이나 넷. 섬이 셋이면 늘 되는 판이다(안 되는 판에는 다리가 홀수 개 모인 섬이 넷 있어야 한다) */
+export const BRIDGE_COUNTS = [3, 4];
+const BRIDGE_GRID = [3, 2];
+/** 닮은 두 그림의 작은 판: 한쪽 그림의 점이 다섯. 점이 넷인 그림으로는 하나만 되는 뻔하지 않은 두 그림을 거의 만들 수 없다 */
+export const TWIN_COUNTS = [5];
+
+function smallBridges(rng, counts, want) {
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const figure = randomBridges(rng, counts[randInt(rng, 0, counts.length - 1)], BRIDGE_GRID, [0, 1], [1, 2]);
+    if (!figure || plainBridges(figure) || famousShape(figure)) continue;
+    if (solveTrace(figure).possible === want) return figure;
+  }
+  return null;
+}
+
 export function smallerTrace(origin, turn = 0) {
   const { board, mode } = origin;
   if (checkFigure(board) !== null) return null;
+  if (mode === 'bridge') {
+    // 다리 건너기: 섬이 적은 다리 판. 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 안 되는 판과 번갈아 낸다.
+    const counts = BRIDGE_COUNTS.filter((count) => count < board.points.length);
+    if (counts.length === 0) return null;
+    const want = solveTrace(board).possible || turn % 2 === 0;
+    const rng = createRng(seedFrom('trace-smaller', mode, want ? 'yes' : 'no', JSON.stringify(board), turn));
+    return wrap(smallBridges(rng, counts, want) ?? smallBridges(rng, counts, true));
+  }
+  if (mode === 'twin') {
+    // 닮은 두 그림: 한쪽 그림의 점이 더 적은 닮은 두 그림
+    const counts = TWIN_COUNTS.filter((count) => count < board.split);
+    if (counts.length === 0) return null;
+    const rng = createRng(seedFrom('trace-smaller', mode, JSON.stringify(board), turn));
+    for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+      const made = randomTwin(rng, counts[randInt(rng, 0, counts.length - 1)], TRACE_GRID, TRACE_EXTRA);
+      if (made) return { board: made.board };
+    }
+    return null;
+  }
   const counts = TRACE_COUNTS.filter((count) => count < board.points.length);
   if (counts.length === 0) return null;
   const rngOf = (kind) => createRng(seedFrom('trace-smaller', mode, kind, JSON.stringify(board), turn));
+  // 펜 몇 번 떼기: 한 번에 그을 수 없는 한 덩어리 그림
+  if (mode === 'pen') return wrap(smallFigure(rngOf('pen'), counts, (_, solution) => !solution.possible && solution.pieces === 1));
   // 시작점 고르기: 시작할 수 있는 점이 꼭 둘인 그림. 고치기: 한 군데 고쳐서 되는 그림이 되는 안 되는 그림
   if (mode === 'start') return wrap(smallFigure(rngOf('start'), counts, (_, solution) => solution.possible && solution.starts.length === 2));
   if (mode === 'fix') return wrap(smallFigure(rngOf('fix'), counts, (figure, solution) => !solution.possible && fixesOf(figure).length > 0));

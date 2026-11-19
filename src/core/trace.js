@@ -1,14 +1,20 @@
 // 한붓그리기: 그림, 긋는 규칙, 풀이 프로그램, 그림 고치기, 오답 짐작.
 // 순수 함수만 둔다. 화면에 손대지 않고, 무작위 수와 지금 시각을 쓰지 않는다. 같은 입력은 늘 같은 출력을 낸다.
 //
-// 그림(figure): { points, edges }
+// 그림(figure): { points, edges, multi?, split? }
 //   points  점의 자리. [가로, 세로]의 목록(격자 칸 단위)
-//   edges   선. [점 번호, 점 번호]의 목록. 같은 두 점 사이에 선은 하나뿐이다
+//   edges   선. [점 번호, 점 번호]의 목록. 같은 두 점 사이에 선은 하나뿐이다(multi가 아니면)
+//   multi   true면 같은 두 점 사이에 선(다리)이 여럿일 수 있다(MAX_PARALLEL개까지. 6단계 다리 건너기)
+//   split   닮은 두 그림(7단계): 앞의 split개 점이 왼쪽 그림, 나머지가 오른쪽 그림이다. 두 그림을 잇는 선은 없다
 // 목표는 손을 떼지 않고 모든 선을 꼭 한 번씩 긋는 것이다. 같은 점은 여러 번 지나도 된다.
+// 같은 두 점 사이의 선은 서로 바꿔 써도 같다(끝이 같다). 그래서 길은 지나는 점의 차례로만 적고,
+// 두 점 사이를 지날 때마다 아직 긋지 않은 선 가운데 번호가 가장 작은 것을 긋는다.
 
-/** 한 그림에 놓을 수 있는 점과 선의 위 끝 */
-export const MAX_POINTS = 10;
+/** 한 그림에 놓을 수 있는 점과 선의 위 끝(점 11~12개는 닮은 두 그림을 나란히 놓을 때만 쓴다) */
+export const MAX_POINTS = 12;
 export const MAX_EDGES = 24;
+/** 같은 두 점 사이에 놓을 수 있는 다리의 위 끝(multi인 그림) */
+export const MAX_PARALLEL = 3;
 
 /**
  * 선이 다른 점에 이만큼(격자 칸)보다 가까이 지나가면 그 점 위를 지나는 것으로 본다.
@@ -32,14 +38,20 @@ export function checkFigure(figure, { allowEmpty = false } = {}) {
   }
   if (new Set(points.map((point) => point.join(','))).size !== points.length) return 'bad-points';
   if (!Array.isArray(edges) || edges.length > MAX_EDGES) return 'bad-edges';
-  const seen = new Set();
+  if (figure.multi !== undefined && figure.multi !== true) return 'bad-edges';
+  const split = figure.split;
+  if (split !== undefined && (!Number.isInteger(split) || split < 2 || split > points.length - 2)) return 'bad-points';
+  const seen = new Map();
   for (const edge of edges) {
     if (!Array.isArray(edge) || edge.length !== 2) return 'bad-edges';
     const [a, b] = edge;
     if (!Number.isInteger(a) || !Number.isInteger(b)) return 'bad-edges';
     if (a < 0 || b < 0 || a >= points.length || b >= points.length || a === b) return 'bad-edges';
-    if (seen.has(edgeKey(a, b))) return 'bad-edges';
-    seen.add(edgeKey(a, b));
+    const times = (seen.get(edgeKey(a, b)) ?? 0) + 1;
+    if (times > (figure.multi ? MAX_PARALLEL : 1)) return 'bad-edges';
+    seen.set(edgeKey(a, b), times);
+    // 닮은 두 그림: 두 그림을 잇는 선은 없다.
+    if (split !== undefined && a < split !== b < split) return 'bad-edges';
   }
   if (edges.length === 0 && !allowEmpty) return 'no-edges';
   return null;
@@ -55,9 +67,19 @@ export function degreesOf(figure) {
   return degrees;
 }
 
-/** 두 점을 잇는 선의 번호. 없으면 -1 */
-export function edgeIndex(figure, a, b) {
-  return figure.edges.findIndex(([p, q]) => (p === a && q === b) || (p === b && q === a));
+/** 두 점을 잇는 선의 번호. 없으면 -1. skip에 든 번호는 건너뛴다(같은 두 점 사이의 다른 다리를 찾을 때) */
+export function edgeIndex(figure, a, b, skip = null) {
+  return figure.edges.findIndex(([p, q], index) => ((p === a && q === b) || (p === b && q === a)) && !(skip && skip.has(index)));
+}
+
+/** 닮은 두 그림 가운데 한쪽('left' | 'right')만 떼어 낸 그림. 점 번호는 0부터 다시 붙인다 */
+export function sideOf(figure, side) {
+  const { split } = figure;
+  const left = side === 'left';
+  const from = left ? 0 : split;
+  const points = left ? figure.points.slice(0, split) : figure.points.slice(split);
+  const edges = figure.edges.filter(([a]) => a < split === left).map(([a, b]) => [a - from, b - from]);
+  return { points, edges };
 }
 
 /** 점마다 이어진 것들: [이웃 점, 선 번호]의 목록 */
@@ -163,21 +185,180 @@ export function walk(figure, path) {
   }
   if (path.some((point) => !Number.isInteger(point) || point < 0 || point >= figure.points.length)) return fail;
   const used = [];
+  const taken = new Set();
   for (let step = 1; step < path.length; step++) {
-    const edge = edgeIndex(figure, path[step - 1], path[step]);
-    if (edge < 0 || used.includes(edge)) return fail;
+    const edge = edgeIndex(figure, path[step - 1], path[step], taken);
+    if (edge < 0) return fail;
     used.push(edge);
+    taken.add(edge);
   }
   const at = path.at(-1);
-  const open = [];
-  figure.edges.forEach(([a, b], index) => {
-    if (used.includes(index)) return;
-    if (a === at) open.push(b);
-    else if (b === at) open.push(a);
-  });
-  open.sort((x, y) => x - y);
+  const open = openFrom(figure, taken, at);
   const left = total - used.length;
   return { ok: true, used, at, left, open, stuck: left > 0 && open.length === 0, complete: left === 0 && total > 0 };
+}
+
+/** at에서 아직 긋지 않은 선으로 갈 수 있는 점들(같은 점은 한 번만, 작은 번호부터) */
+function openFrom(figure, taken, at) {
+  const open = new Set();
+  figure.edges.forEach(([a, b], index) => {
+    if (taken.has(index)) return;
+    if (a === at) open.add(b);
+    else if (b === at) open.add(a);
+  });
+  return [...open].sort((x, y) => x - y);
+}
+
+// ---- 5단계 "펜 몇 번 떼기": 펜을 떼고 여러 번에 나눠 긋는다 ----
+
+/**
+ * 모든 선을 한 번씩 지나는 차례(Hierholzer). 점의 수와 선 목록을 받아 start에서 시작한다.
+ * 한 덩어리이고 선이 홀수 개 모인 점이 없는 선 목록에서만 부른다(그러면 start로 돌아온다).
+ * @returns {{points: number[], edges: number[]}} 지나는 점의 차례와, 그 사이의 선 번호의 차례
+ */
+function tourOf(count, edges, start) {
+  const near = Array.from({ length: count }, () => []);
+  edges.forEach(([a, b], index) => {
+    near[a].push([b, index]);
+    near[b].push([a, index]);
+  });
+  const used = Array(edges.length).fill(false);
+  const cursor = Array(count).fill(0);
+  const stack = [[start, -1]];
+  const out = [];
+  while (stack.length > 0) {
+    const [at] = stack.at(-1);
+    while (cursor[at] < near[at].length && used[near[at][cursor[at]][1]]) cursor[at] += 1;
+    if (cursor[at] === near[at].length) {
+      out.push(stack.pop());
+      continue;
+    }
+    const [next, edge] = near[at][cursor[at]];
+    used[edge] = true;
+    stack.push([next, edge]);
+  }
+  out.reverse();
+  return { points: out.map(([point]) => point), edges: out.slice(1).map(([, edge]) => edge) };
+}
+
+/** 선이 있는 덩어리마다 점 번호의 목록 */
+function piecesOf(figure) {
+  const near = neighbors(figure);
+  const seen = Array(figure.points.length).fill(false);
+  const pieces = [];
+  for (let start = 0; start < figure.points.length; start++) {
+    if (seen[start] || near[start].length === 0) continue;
+    const piece = [];
+    const stack = [start];
+    seen[start] = true;
+    while (stack.length > 0) {
+      const at = stack.pop();
+      piece.push(at);
+      for (const [next] of near[at]) {
+        if (seen[next]) continue;
+        seen[next] = true;
+        stack.push(next);
+      }
+    }
+    pieces.push(piece.sort((x, y) => x - y));
+  }
+  return pieces;
+}
+
+/**
+ * 가장 적게 몇 번에 나눠 그을 수 있나, 그리고 그렇게 긋는 한 가지 방법.
+ * 덩어리마다 선이 홀수 개 모인 점의 수의 절반(그런 점이 없으면 1번)을 더한다.
+ * 방법: 홀수 점을 둘씩 묶어 없는 선(가짜 선)으로 잇고, 모든 선을 한 바퀴에 도는 차례를 찾은 뒤 가짜 선에서 끊는다.
+ * (펜을 떼고 다시 대는 모든 차례를 다 해 보는 탐색과 결과가 같다는 것을 테스트에서 확인한다.)
+ * @returns {{strokes: number, lifts: number, plan: number[][]}} plan은 획마다 지나는 점의 차례. lifts는 펜을 떼는 횟수(획의 수 - 1)
+ */
+export function strokePlan(figure) {
+  const problem = checkFigure(figure);
+  if (problem) throw new Error(`그림이 규격에 맞지 않아요: ${problem}`);
+  const degrees = degreesOf(figure);
+  const plan = [];
+  for (const piece of piecesOf(figure)) {
+    const odd = piece.filter((point) => degrees[point] % 2 === 1);
+    const fake = [];
+    for (let at = 0; at < odd.length; at += 2) fake.push([odd[at], odd[at + 1]]);
+    const real = figure.edges.length;
+    const tour = tourOf(figure.points.length, [...figure.edges, ...fake], odd[0] ?? piece[0]);
+    if (fake.length === 0) {
+      plan.push(tour.points);
+      continue;
+    }
+    // 가짜 선 하나 바로 뒤에서 시작하도록 돌려 놓고(한 바퀴 도는 차례라 돌려도 된다), 가짜 선마다 끊는다.
+    const steps = tour.edges.length;
+    const turnAt = tour.edges.findIndex((edge) => edge >= real);
+    let stroke = [tour.points[turnAt + 1]];
+    for (let k = 1; k < steps; k++) {
+      const at = (turnAt + k) % steps;
+      const next = tour.points[at + 1];
+      if (tour.edges[at] >= real) {
+        plan.push(stroke);
+        stroke = [next];
+      } else stroke.push(next);
+    }
+    plan.push(stroke);
+  }
+  // 긴 획부터 적는다(풀이에서 큰 덩어리를 먼저 긋는 것이 보기 쉽다). 길이가 같으면 찾은 차례대로.
+  plan.sort((x, y) => y.length - x.length);
+  return { strokes: plan.length, lifts: Math.max(0, plan.length - 1), plan };
+}
+
+/**
+ * 여러 번에 나눠 그은 것(획의 목록)을 따라가 본다. 획마다 지나는 점의 차례를 적는다.
+ * 맨 뒤의 획만 비어 있거나 점 하나뿐일 수 있다(펜을 뗐거나, 막 댔다). 앞의 획은 선이 하나 이상 있다.
+ * @returns {{ok, used: number[], strokeOf: (number|null)[], at: number|null, left, open: number[], stuck, complete, lifts: number}}
+ *   strokeOf 선마다 몇 번째 획(0부터)으로 그었는가(긋지 않았으면 null)
+ *   at       펜이 있는 점(펜을 뗐으면 null)
+ *   open     펜이 있으면 이어서 갈 수 있는 점, 뗐으면 아직 긋지 않은 선이 있는 점
+ *   stuck    펜이 있는 점에서 더 갈 선이 없는데 선이 남아 있다(펜을 떼야 한다)
+ *   lifts    펜을 뗀 횟수(획의 수 - 1)
+ */
+export function walkStrokes(figure, strokes) {
+  const total = figure.edges.length;
+  const fail = { ok: false, used: [], strokeOf: figure.edges.map(() => null), at: null, left: total, open: [], stuck: false, complete: false, lifts: 0 };
+  if (!Array.isArray(strokes) || !strokes.every(Array.isArray)) return fail;
+  const used = [];
+  const taken = new Set();
+  const strokeOf = figure.edges.map(() => null);
+  for (let index = 0; index < strokes.length; index++) {
+    const stroke = strokes[index];
+    if (stroke.length < 2 && index < strokes.length - 1) return fail;
+    if (stroke.some((point) => !Number.isInteger(point) || point < 0 || point >= figure.points.length)) return fail;
+    for (let step = 1; step < stroke.length; step++) {
+      const edge = edgeIndex(figure, stroke[step - 1], stroke[step], taken);
+      if (edge < 0) return fail;
+      used.push(edge);
+      taken.add(edge);
+      strokeOf[edge] = index;
+    }
+  }
+  const last = strokes.at(-1);
+  const at = last && last.length > 0 ? last.at(-1) : null;
+  const left = total - used.length;
+  let open;
+  if (at === null) {
+    const free = new Set();
+    figure.edges.forEach(([a, b], index) => {
+      if (taken.has(index)) return;
+      free.add(a);
+      free.add(b);
+    });
+    open = [...free].sort((x, y) => x - y);
+  } else open = openFrom(figure, taken, at);
+  return {
+    ok: true,
+    used,
+    strokeOf,
+    at,
+    left,
+    open,
+    stuck: at !== null && left > 0 && open.length === 0,
+    complete: left === 0 && total > 0,
+    lifts: Math.max(0, strokes.length - 1),
+  };
 }
 
 // ---- 선의 자리: 선이 다른 점 위를 지나거나 선끼리 엇갈리면 그곳이 점처럼 보인다 ----
@@ -284,7 +465,7 @@ export function fixesOf(figure) {
 
 /**
  * 답을 견주고, 틀렸으면 무엇을 놓쳤을지 짐작한 열쇠를 돌려준다.
- * @param {'draw'|'judge'|'start'|'fix'} mode 판의 종류
+ * @param {'draw'|'judge'|'start'|'fix'|'bridge'|'twin'} mode 판의 종류(다리 건너기는 긋기와 같다)
  * @param {object} figure 처음 그림
  * @param {object} answer 아이의 답
  *   { kind: 'traced' }                 끝까지 그었다(고친 그림이면 고친 그림을)
@@ -292,6 +473,7 @@ export function fixesOf(figure) {
  *   { kind: 'judge', value: boolean }  "돼요"(true) / "안 돼요"(false)
  *   { kind: 'start', point: number }   시작점
  *   { kind: 'fix', edit }              고친 것
+ *   { kind: 'twin', side }             닮은 두 그림에서 고른 쪽('left' | 'right')
  * @param {{startsTried?: number[], strokes?: number}} tried 지금까지 해 본 것
  * @returns {{correct: boolean, guess: string|null}}
  *   guess: 'impossible-no-try'        되는 그림에 "불가능해요". 한 번도 긋지 않았다
@@ -302,6 +484,7 @@ export function fixesOf(figure) {
  *          'start-wrong'              끝까지 갈 수 없는 시작점을 골랐다
  *          'fix-split'                고친 그림이 두 덩어리로 나뉘었다
  *          'fix-still-impossible'     고친 그림이 아직 안 된다
+ *          'twin-wrong'               닮은 두 그림에서 끝까지 그을 수 없는 쪽을 골랐다
  */
 export function diagnose(mode, figure, answer, tried = {}) {
   const right = { correct: true, guess: null };
@@ -321,6 +504,9 @@ export function diagnose(mode, figure, answer, tried = {}) {
   }
   if (mode === 'start' && answer.kind === 'start' && Number.isInteger(answer.point)) {
     return solution.starts.includes(answer.point) ? right : wrong('start-wrong');
+  }
+  if (mode === 'twin' && answer.kind === 'twin' && (answer.side === 'left' || answer.side === 'right')) {
+    return solve(sideOf(figure, answer.side)).possible ? right : wrong('twin-wrong');
   }
   if (mode === 'fix' && answer.kind === 'fix' && answer.edit) {
     const fixed = applyEdit(figure, answer.edit);

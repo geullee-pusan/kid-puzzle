@@ -19,7 +19,7 @@ import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } 
 import { bruteDays, bruteUsefulAt, bruteWorlds } from './helpers/brute-logic.js';
 import * as blockLadder from '../src/core/block-ladder.js';
 import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from '../src/core/block.js';
-import { BLOCK_SHRINK, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import { BLOCK_SHRINK, BRIDGE_COUNTS, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, TWIN_COUNTS, pickByTurn, RIVER_FLOOR, smallBlockBoards, smallRiverBoards, smallerBlock, smallerRiver, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
 import * as riverLadder from '../src/core/river-ladder.js';
 import { castOf as riverCast, checkBoard as checkRiver } from '../src/core/river.js';
 import * as swapLadder from '../src/core/swap-ladder.js';
@@ -29,7 +29,7 @@ import { cardsUpTo, checkBoard as checkTax, plainN, solve as solveTax } from '..
 import * as tileLadder from '../src/core/tile-ladder.js';
 import { checkBoard as checkTile, deadCells, solve as solveTile } from '../src/core/tile.js';
 import * as traceLadder from '../src/core/trace-ladder.js';
-import { checkFigure, fixesOf, isTidy, solve as solveTrace } from '../src/core/trace.js';
+import { checkFigure, fixesOf, isTidy, sideOf, solve as solveTrace } from '../src/core/trace.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Array.from({ length: 100 }, (_, index) => index + 1);
@@ -106,11 +106,42 @@ test('동전 뒤집기: 같은 규칙과 모양, 동전을 둘 줄인 판. 풀�
 
 test('한붓그리기: 점이 넷이나 다섯인 그림. 시작점 고르기와 고치기는 같은 물음의 작은 그림이다', () => {
   let none = 0;
+  let twinNone = 0;
   eachBoard(traceLadder, (board, rung, where) => {
     const origin = { mode: rung.mode, board };
     const from = solveTrace(board);
     for (const turn of TURNS) {
       const small = smallerTrace(origin, turn);
+      if (rung.mode === 'bridge') {
+        // 다리 건너기: 섬이 더 적은 다리 판. 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 번갈아(섬이 셋이면 늘 되는 판)
+        assert.ok(small, where);
+        const figure = small.board;
+        assert.equal(figure.multi, true, where);
+        assert.equal(checkFigure(figure), null, where);
+        assert.ok(BRIDGE_COUNTS.includes(figure.points.length) && figure.points.length < board.points.length, where);
+        assert.equal(traceLadder.plainBridges(figure), false, where);
+        assert.equal(traceLadder.famousShape(figure), false, where);
+        const possible = solveTrace(figure).possible;
+        if (from.possible || turn % 2 === 0) assert.equal(possible, true, `${where} ${turn}번째`);
+        else if (board.points.length >= 5) assert.equal(possible, false, `${where} ${turn}번째`);
+        assert.deepEqual(smallerTrace(origin, turn), small, where);
+        continue;
+      }
+      if (rung.mode === 'twin') {
+        // 닮은 두 그림: 한쪽 그림의 점이 다섯인 닮은 두 그림. 원래 그림의 점이 다섯이면 더 작은 판이 없다.
+        if (board.split <= TWIN_COUNTS[0]) {
+          assert.equal(small, null, where);
+          twinNone += turn === 0 ? 1 : 0;
+          continue;
+        }
+        assert.ok(small, where);
+        assert.equal(checkFigure(small.board), null, where);
+        assert.ok(TWIN_COUNTS.includes(small.board.split), where);
+        assert.ok(traceLadder.twinAnswer(small.board) !== null, where);
+        for (const side of ['left', 'right']) assert.ok(isTidy(sideOf(small.board, side)), where);
+        assert.deepEqual(smallerTrace(origin, turn), small, where);
+        continue;
+      }
       if (!small) {
         // 점이 넷인 그림이 가장 작다. 고치기는 점이 다섯인 그림이 가장 작다(점이 넷인 안 되는 그림은 만들 수 없다).
         assert.ok(board.points.length <= (rung.mode === 'fix' ? 5 : 4), `${where}: 점 ${board.points.length}개인데 작은 판이 없어요`);
@@ -124,6 +155,7 @@ test('한붓그리기: 점이 넷이나 다섯인 그림. 시작점 고르기와
       assert.equal(traceLadder.tooPlain(figure), false, `${where}: 너무 뻔한 그림`);
       const solved = solveTrace(figure);
       if (rung.mode === 'start') assert.ok(solved.possible && solved.starts.length === 2, `${where}: 시작할 수 있는 점이 둘이 아니에요`);
+      else if (rung.mode === 'pen') assert.ok(!solved.possible && solved.pieces === 1, `${where}: 한 번에 그을 수 있는 그림이에요`);
       else if (rung.mode === 'fix') assert.ok(!solved.possible && fixesOf(figure).length > 0, `${where}: 한 군데 고쳐서 되는 그림이 아니에요`);
       else if (from.possible || turn % 2 === 1) assert.equal(solved.possible, true, `${where} ${turn}번째`);
       // 안 되는 그림에서는 안 되는 그림부터 낸다. 점이 넷인 그림밖에 낼 수 없을 때만 되는 그림이 나온다.
@@ -132,6 +164,8 @@ test('한붓그리기: 점이 넷이나 다섯인 그림. 시작점 고르기와
     }
   });
   assert.ok(none > 0 && none < 80, `없는 판 ${none}개`);
+  // 닮은 두 그림은 한쪽 그림의 점이 다섯인 판(절반쯤)에 더 작은 판이 없다.
+  assert.ok(twinNone > SEEDS.length / 4 && twinNone < (SEEDS.length * 3) / 4, `닮은 두 그림에서 없는 판 ${twinNone}개`);
   assert.equal(smallerTrace({ mode: 'draw', board: { points: [[0, 0], [1, 0], [0, 1]], edges: [[0, 1], [1, 2], [0, 2]] } }), null);
   assert.equal(smallerTrace({ mode: 'draw', board: { points: [], edges: [] } }), null);
 });

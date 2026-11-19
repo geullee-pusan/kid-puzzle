@@ -7,16 +7,18 @@ import { fileURLToPath } from 'node:url';
 
 import { TUNING, tuningFor } from '../src/core/level.js';
 import { fill, sentenceCount } from '../src/core/text.js';
-import { LADDER, MAKE_LEVEL } from '../src/core/trace-ladder.js';
-import { applyEdit, checkFigure, degreesOf, isTidy, solve, walk } from '../src/core/trace.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, TOP_LEVEL, famousShape, twinAnswer } from '../src/core/trace-ladder.js';
+import { applyEdit, checkFigure, degreesOf, isTidy, sideOf, solve, strokePlan, walk, walkStrokes } from '../src/core/trace.js';
 import { bruteStarts } from './helpers/brute.js';
+import { bruteMinStrokes } from './helpers/brute-trace.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const T = JSON.parse(readFileSync(resolve(ROOT, 'src/content/trace.json'), 'utf8'));
 const C = JSON.parse(readFileSync(resolve(ROOT, 'src/content/coins.json'), 'utf8'));
 const html = readFileSync(resolve(ROOT, 'index.html'), 'utf8');
+const code = readFileSync(resolve(ROOT, 'src/formats/trace.js'), 'utf8');
 
-const MODES = ['draw', 'judge', 'start', 'fix'];
+const MODES = ['draw', 'judge', 'start', 'fix', 'pen', 'bridge', 'twin'];
 const GUESS_KEYS = [
   'impossible-no-try',
   'impossible-untried-start',
@@ -26,6 +28,10 @@ const GUESS_KEYS = [
   'start-wrong',
   'fix-split',
   'fix-still-impossible',
+  'bridge-impossible-no-try',
+  'bridge-impossible-untried-start',
+  'bridge-impossible-other-route',
+  'twin-wrong',
 ];
 
 /** 대본의 모든 글(값)을 길과 함께 모은다. 설명(_로 시작하는 것)은 뺀다. 그림의 점과 선은 수라서 들어오지 않는다. */
@@ -61,7 +67,8 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
 
 test('단계 목록이 사다리와 같고, 표시는 기본·응용·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '응용', '도전', '응용', '도전']);
+  assert.deepEqual(T.levels.slice(4, 7).map((entry) => entry.name), ['펜 몇 번 떼기', '다리 건너기', '닮은 두 그림']);
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
 });
@@ -147,7 +154,7 @@ test('까닭은 "왜 그럴까?"에서만 말한다: 다른 글에는 홀수, �
 test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 않는다', () => {
   const praise = /최고|잘했|대단|훌륭|멋져|멋진|천재|똑똑|완벽|짱|굉장/;
   for (const [path, text] of strings) assert.doesNotMatch(text, praise, `${path}: ${text}`);
-  const keys = ['traced-clean', 'traced-back', 'impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'no-stroke', 'check-invite', 'start-right', 'fix-add', 'fix-remove', 'fix-add-traced', 'fix-remove-traced', 'after-retry', 'why-invite'];
+  const keys = ['traced-clean', 'traced-back', 'impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'no-stroke', 'check-invite', 'start-right', 'fix-add', 'fix-remove', 'fix-add-traced', 'fix-remove-traced', 'after-retry', 'why-invite', 'bridge-clean', 'bridge-back', 'bridge-impossible-tried', 'bridge-impossible-some', 'bridge-impossible-untried', 'pen-best', 'pen-first', 'pen-after', 'pen-stopped', 'pen-stopped-tries', 'twin-left', 'twin-right'];
   assert.deepEqual(Object.keys(T.right).sort(), [...keys].sort());
   assert.ok(fill(T.right['traced-back'], { u: 3, m: 7 }).includes('3번'));
   assert.ok(fill(T.right['traced-back'], { u: 3, m: 7 }).includes('7개'));
@@ -158,15 +165,19 @@ test('맞혔을 때 하는 말은 한 일을 말하고, 칭찬 낱말을 쓰지 
   assert.match(T.right['no-stroke'], /긋지 않고/);
   assert.equal(T.right['after-retry'], '처음 답을 바꿔서 찾아냈어요.');
   // "맞아요."는 답 단추를 눌러 맞혔을 때만 한다. 끝까지 그어서 끝난 말에는 붙이지 않는다.
-  const byButton = ['impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'start-right', 'fix-add', 'fix-remove'];
-  const byTracing = ['traced-clean', 'traced-back', 'fix-add-traced', 'fix-remove-traced'];
+  const byButton = ['impossible-tried', 'impossible-some', 'impossible-untried', 'judge-yes', 'judge-no', 'start-right', 'fix-add', 'fix-remove', 'bridge-impossible-tried', 'bridge-impossible-some', 'bridge-impossible-untried', 'twin-left', 'twin-right'];
+  const byTracing = ['traced-clean', 'traced-back', 'fix-add-traced', 'fix-remove-traced', 'bridge-clean', 'bridge-back', 'pen-best'];
+  // 펜 몇 번 떼기는 뗀 횟수를 말한다. 가장 적게 뗐을 때만 "이보다 적게 뗄 수는 없어요"라고 사실을 덧붙인다.
+  assert.equal(fill(T.right['pen-best'], { k: 2, m: 11 }), '펜을 2번 떼고 선 11개를 모두 그었어요. 이보다 적게 뗄 수는 없어요.');
+  assert.equal(fill(T.pen.more, { k: 3 }), '선을 모두 그었어요. 펜을 3번 뗐어요. 더 적게 뗄 수 있을까요?');
+  assert.ok(T.pen['more-down'].endsWith('더 적게 뗄 수 있을까요?'));
   for (const key of byButton) assert.match(T.right[key], /^맞아요\. /, key);
   for (const key of byTracing) assert.doesNotMatch(T.right[key], /맞아요/, key);
   for (const key of keys.filter((item) => !byButton.includes(item))) assert.doesNotMatch(T.right[key], /맞아요/, key);
 });
 
 test('글의 빈칸({이름})은 정해진 이름만 쓴다', () => {
-  const allowed = new Set(['no', 'a', 'b', 'n', 'm', 'u', 's']);
+  const allowed = new Set(['no', 'a', 'b', 'n', 'm', 'u', 's', 'k', 'r']);
   for (const [path, text] of strings) {
     for (const [, name] of text.matchAll(/\{([^{}]*)\}/g)) assert.ok(allowed.has(name), `${path}: {${name}}`);
   }
@@ -196,10 +207,14 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
       .filter(([key]) => key !== 'count')
       .map(([, text]) => text),
     ...T.why.map((slide) => slide.say),
+    ...Object.values(T.pen),
+    ...Object.values(T.bridge),
+    ...Object.values(T.twin),
+    ...T.whyPen.map((slide) => slide.say),
   ];
   for (const text of spoken) for (const sentence of sentences(text)) assert.match(sentence, /요[.?!]$/, sentence);
   // 마침표 없이 쓰는 짧은 글도 "~요"로 끝난다.
-  for (const text of [...Object.values(T.status), ...T.why.flatMap((slide) => slide.figures.map((item) => item.note))]) {
+  for (const text of [...Object.values(T.status), ...[...T.why, ...T.whyPen].flatMap((slide) => slide.figures.map((item) => item.note))]) {
     for (const sentence of sentences(text)) assert.match(sentence, /요[.?!]?$/, sentence);
   }
 });
@@ -338,9 +353,93 @@ test('index.html: 한붓그리기의 카드, 답하는 단추, 직접 만들기�
 test('한붓그리기의 수준 맞추기 값은 임시값이고, 처음 보여 줄 단계는 1단계다', () => {
   const tuning = tuningFor('trace');
   assert.equal(tuning.startLevel, 1);
-  assert.equal(tuning.topLevel, 4);
+  assert.equal(tuning.topLevel, 7);
+  assert.equal(tuning.topLevel, TOP_LEVEL);
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(tuning.expectedSeconds[rung.level] > 0, `${rung.level}단계의 예상 시간`);
   // 동전 뒤집기의 값은 그대로다.
   assert.equal(tuningFor('coins').startLevel, TUNING.startLevel);
   assert.equal(tuningFor('coins').topLevel, 5);
+});
+
+test('5~7단계의 판 고르기 그림: 펜 몇 번 떼기는 두 번에 나눠 그은 그림, 다리 건너기는 겹 다리를 건너는 중인 섬, 닮은 두 그림은 하나만 되는 두 그림이다', () => {
+  const picture = (level) => T.levels.find((entry) => entry.level === level).picture;
+  // 5단계: 한 번에 그을 수 없는 그림을 가장 적게(1번) 떼고 모두 그었다.
+  const pen = picture(5);
+  const drawn = walkStrokes(pen, pen.strokes);
+  assert.ok(drawn.ok && drawn.complete);
+  assert.equal(solve(pen).possible, false);
+  assert.equal(drawn.lifts, strokePlan(pen).lifts);
+  assert.equal(drawn.lifts + 1, bruteMinStrokes(pen));
+  // 6단계: 같은 두 섬 사이에 다리가 둘인 곳이 있고, 건너는 중이며, 끝까지 건널 수 있는 판이다. 옛 도시의 그림이 아니다.
+  const bridge = picture(6);
+  assert.equal(bridge.multi, true);
+  assert.equal(checkFigure(bridge), null);
+  assert.ok(bridge.edges.length > new Set(bridge.edges.map((edge) => edge.join('-'))).size);
+  const crossing = walk(bridge, bridge.path);
+  assert.ok(crossing.ok && !crossing.complete && !crossing.stuck);
+  assert.ok(bruteStarts(bridge).includes(bridge.path[0]));
+  assert.equal(famousShape(bridge), false);
+  // 7단계: 두 그림의 점의 자리가 같고(옮긴 만큼만 다르다) 선 하나만 다르며, 하나만 된다.
+  const twin = picture(7);
+  assert.equal(checkFigure(twin), null);
+  const [left, right] = [sideOf(twin, 'left'), sideOf(twin, 'right')];
+  assert.deepEqual(right.points.map(([x, y]) => [x - 3, y]), left.points);
+  assert.equal(Math.abs(left.edges.length - right.edges.length), 1);
+  assert.equal(twinAnswer(twin), 'left');
+  assert.equal(bruteStarts(right).length, 0);
+});
+
+test('펜 몇 번 떼기의 "왜 그럴까?" 두 장: 그림 속 획이 모든 선을 긋고, 뗀 횟수가 다 해 보는 탐색의 가장 적은 횟수와 같다', () => {
+  assert.equal(T.whyPen.length, 2);
+  for (const slide of T.whyPen) {
+    assert.ok(sentenceCount(slide.say) <= 3, slide.say);
+    for (const item of slide.figures) {
+      const where = item.note;
+      assert.equal(checkFigure(item), null, where);
+      assert.ok(isTidy(item), where);
+      const state = walkStrokes(item, item.strokes);
+      assert.ok(state.ok && state.complete, where);
+      assert.equal(state.lifts, item.lifts, where);
+      assert.equal(item.lifts + 1, bruteMinStrokes(item), where);
+      assert.equal(strokePlan(item).lifts, item.lifts, where);
+      assert.deepEqual(solve(item).odd, item.odd, where);
+      // 선이 홀수 개 모인 점은 모두 획의 처음이나 끝이다.
+      const ends = new Set(item.strokes.flatMap((stroke) => [stroke[0], stroke.at(-1)]));
+      for (const point of item.odd) assert.ok(ends.has(point), where);
+      assert.ok(item.note.includes(`${item.lifts}번`), where);
+    }
+  }
+  assert.match(T.whyPen[0].say, /다시 살펴봤어요/);
+  assert.match(T.whyPen[1].say, /둘씩/);
+  assert.match(T.whyPen[1].figures[0].note, /여섯/);
+  assert.equal(T.whyPen[1].figures[0].odd.length, 6);
+  // 펜 몇 번 떼기의 판에서만 "왜 그럴까?" 뒤에 붙인다.
+  assert.match(code, /const slides = round && isPen\(round\) \? \[\.\.\.T\.why, \.\.\.T\.whyPen\] : T\.why;/);
+});
+
+test('index.html: 5~7단계의 답하는 칸과 판 아래의 수가 있다', () => {
+  for (const id of ['trace-pen', 'trace-lift', 'trace-pen-again', 'trace-pen-stop', 'trace-bridge', 'trace-bridge-impossible', 'trace-twin', 'trace-twin-left', 'trace-twin-right', 'trace-left-name', 'trace-lifts', 'trace-best']) {
+    assert.ok(html.includes(`id="${id}"`), id);
+  }
+  assert.match(html, /id="trace-bridge-impossible"[^>]*>불가능해요</);
+  assert.match(html, /id="trace-lift"[^>]*>펜 떼기</);
+  assert.match(html, /id="trace-pen-again"[^>]*>처음부터 다시 해 볼래요</);
+  assert.match(html, /id="trace-pen-stop"[^>]*>여기까지 할래요</);
+  assert.match(html, /id="trace-twin-left"[^>]*>왼쪽 그림</);
+  assert.match(html, /id="trace-twin-right"[^>]*>오른쪽 그림</);
+  assert.match(html, /<span id="trace-left-name">남은 선<\/span>/);
+  // 도구 단추의 이름은 다리 판에서만 섬과 다리로 바꾼다. 처음 이름은 화면 파일의 이름과 같다.
+  assert.match(html, new RegExp(`id="trace-degrees"[^>]*>${T.tools.point}<`));
+  assert.equal(T.count.line, '남은 선');
+});
+
+test('하던 판: 만들어 낸 판은 그 단계의 판의 종류여야 하고, 직접 만든 판은 지금의 8단계와 예전의 5단계를 모두 받는다', () => {
+  assert.match(code, /if \(saved\.custom === true\) return \[MAKE_LEVEL, OLD_MAKE_LEVEL\]\.includes\(saved\.level\) && saved\.mode === 'draw';/);
+  assert.match(code, /saved\.level <= TOP_LEVEL && rungOf\(saved\.level\)\.mode === saved\.mode;/);
+  assert.match(code, /if \(!levelOk\(saved\)\) return false;/);
+  assert.equal(OLD_MAKE_LEVEL, 5);
+  assert.equal(MAKE_LEVEL, 8);
+  // 다리 판과 나란히 놓은 두 그림은 그 단계에서만 받는다.
+  assert.match(code, /if \(\(saved\.mode === 'bridge'\) !== \(saved\.board\.multi === true\)\) return false;/);
+  assert.match(code, /if \(\(saved\.mode === 'twin'\) !== \(saved\.board\.split !== undefined\)\) return false;/);
 });
