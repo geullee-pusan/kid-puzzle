@@ -47,6 +47,7 @@ function drawCounts() {
     ['cups', '컵 뒤집기와 세 색 무리'],
     ['dandelion', '민들레와 바람'],
     ['maze', '주사위 미로와 길 세기'],
+    ['rulehunt', '숨은 규칙 찾기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

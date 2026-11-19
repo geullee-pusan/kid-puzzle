@@ -40,7 +40,7 @@
       </main>
     </section>
 
-    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람, 주사위 미로와 길 세기)와 퍼즐 만들기, 판 고르기.
+    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람, 주사위 미로와 길 세기, 숨은 규칙 찾기)와 퍼즐 만들기, 판 고르기.
          형식을 더할 때는 카드 하나를 "퍼즐 만들기" 앞에 더하고, "만들기" 목록에 단추 하나를 더한다 -->
     <section id="home" class="screen home" hidden>
       <header class="top">
@@ -199,6 +199,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="rulehunt-title">
+            <h2 id="rulehunt-title">숨은 규칙 찾기</h2>
+            <div class="door-picture"><div id="home-rulehunt-sample"></div></div>
+            <p id="home-rulehunt-ask" class="door-ask">어떤 수가 ‘돼요’일까요?</p>
+            <div class="door-foot">
+              <button id="home-rulehunt-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-rulehunt-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -256,6 +266,9 @@
               </li>
               <li>
                 <button id="home-maze-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-maze-blank"></span></span><span class="menu-name">주사위 미로와 길 세기</span></button>
+              </li>
+              <li>
+                <button id="home-rulehunt-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-rulehunt-blank"></span></span><span class="menu-name">숨은 규칙 찾기</span></button>
               </li>
             </ul>
           </div>
@@ -367,6 +380,8 @@
             <div id="dandelion-board" hidden></div>
             <!-- 주사위 미로: 세모꼴로 놓인 갈림길과 맨 아래 출구. 실험 판에서는 출구 아래에 손님 막대가 쌓인다. 세는 판에서는 칸마다 자물쇠가 있다 -->
             <div id="maze-board" hidden></div>
+            <!-- 숨은 규칙 찾기: 수 판(1부터 끝 수까지, 한 줄에 열 칸. 누르면 묻는다) 또는 세 수 판(물어본 세 수를 돼요와 안 돼요 두 줄로) -->
+            <div id="rulehunt-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
             <div id="code-board" class="code-board" hidden>
               <div id="code-table" class="code-scroll"></div>
@@ -438,6 +453,16 @@
             <span id="duel-count" class="count tile-count" hidden>
               <span id="duel-status" class="tile-status" aria-live="polite"></span>
             </span>
+            <!-- 숨은 규칙 찾기: 윗줄에 방금 들은 답(또는 할 일), 그 아래에 판의 표시가 무엇인지. 몇 번 물었는지는 적지 않는다 -->
+            <span id="rulehunt-count" class="count tile-count block-count" hidden>
+              <span id="rulehunt-status" class="tile-status" aria-live="polite"></span>
+              <span class="rh-legend">
+                <span class="rh-legend-item"><span class="rh-key yes" aria-hidden="true"></span>돼요</span>
+                <span class="rh-legend-item"><span class="rh-key no" aria-hidden="true"></span>안 돼요</span>
+                <span class="rh-legend-item"><span class="rh-key check" aria-hidden="true"></span>갈라 볼 것</span>
+                <span class="rh-legend-item"><span class="rh-key strong" aria-hidden="true"></span>다르게 가른 것</span>
+              </span>
+            </span>
             <button id="undo" class="btn" type="button">한 번 무르기</button>
             <button id="reset" class="btn" type="button">처음으로 되돌리기</button>
           </div>
@@ -502,6 +527,55 @@
               <p class="pad-note">주사위 눈이 1, 2, 3이면 왼쪽, 4, 5, 6이면 오른쪽으로 가요.</p>
               <button id="maze-send-one" class="btn primary huge" type="button">손님 1명 보내기</button>
               <button id="maze-send-many" class="btn huge" type="button">손님 100명 보내기</button>
+            </div>
+          </div>
+
+          <!-- 숨은 규칙 찾기: 수 판은 판의 수를 누르면 묻는다. 세 수 판은 세 칸에 수를 차례로 넣고 "물어보기"를 누른다.
+               "알 것 같아요"를 누르면 선생님이 낸 것마다 돼요와 안 돼요를 고르고 "다 골랐어요"를 누른다 -->
+          <div id="rulehunt-pad" class="pad" hidden>
+            <div id="rulehunt-ask-box" class="choices">
+              <h2>어떤 수가 돼요일까요?</h2>
+              <p class="pad-note">판의 수를 누르면 선생님이 돼요인지 안 돼요인지 알려 줘요.</p>
+            </div>
+            <div id="rulehunt-triple" class="choices" hidden>
+              <h2>세 수를 물어봐요</h2>
+              <div id="rulehunt-slots" class="rh-slots" aria-live="polite"></div>
+              <div id="rulehunt-keys" class="keys rh-keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="10">10</button>
+                <button class="btn key" type="button" data-n="11">11</button>
+                <button class="btn key" type="button" data-n="12">12</button>
+                <button class="btn key" type="button" data-n="13">13</button>
+                <button class="btn key" type="button" data-n="14">14</button>
+                <button class="btn key" type="button" data-n="15">15</button>
+                <button class="btn key" type="button" data-n="16">16</button>
+                <button class="btn key" type="button" data-n="17">17</button>
+                <button class="btn key" type="button" data-n="18">18</button>
+                <button class="btn key" type="button" data-n="19">19</button>
+                <button class="btn key" type="button" data-n="20">20</button>
+              </div>
+              <div class="rh-key-row">
+                <button id="rulehunt-erase" class="btn" type="button">지우기</button>
+                <button id="rulehunt-ask" class="btn primary" type="button" disabled>물어보기</button>
+              </div>
+            </div>
+            <div id="rulehunt-know-box" class="choices">
+              <button id="rulehunt-know" class="btn good huge" type="button">알 것 같아요</button>
+              <p class="pad-note">누르면 선생님이 새로 몇 개를 내요. 숨은 규칙이라면 어떻게 가를지 골라요.</p>
+            </div>
+            <div id="rulehunt-check" class="choices" hidden>
+              <h2>숨은 규칙이라면 어떻게 가를까요?</h2>
+              <p class="pad-note">하나하나 돼요나 안 돼요를 골라요.</p>
+              <ol id="rulehunt-check-list" class="rh-check-list"></ol>
+              <button id="rulehunt-check-done" class="btn good huge" type="button" disabled>다 골랐어요</button>
             </div>
           </div>
 
@@ -1394,6 +1468,68 @@
             <button id="maze-make-send" class="btn huge" type="button">손님 100명 보내기</button>
             <p id="maze-make-result" class="make-result" aria-live="polite"></p>
             <button id="maze-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-rulehunt" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="규칙 정하기">
+          <h2>첫째 규칙</h2>
+          <div id="rulehunt-make-kind-a" class="segment three rh-kinds">
+            <button class="btn" type="button" data-kind="even"></button>
+            <button class="btn" type="button" data-kind="odd"></button>
+            <button class="btn" type="button" data-kind="mult"></button>
+            <button class="btn" type="button" data-kind="ones"></button>
+            <button class="btn" type="button" data-kind="gt"></button>
+            <button class="btn" type="button" data-kind="lt"></button>
+          </div>
+          <div id="rulehunt-make-param-a" class="stepper rh-param">
+            <button id="rulehunt-make-fewer-a" class="btn" type="button" aria-label="첫째 규칙의 수 줄이기">−</button>
+            <strong id="rulehunt-make-value-a"></strong>
+            <button id="rulehunt-make-more-a" class="btn" type="button" aria-label="첫째 규칙의 수 늘리기">＋</button>
+          </div>
+          <!-- 둘째 규칙은 오른쪽 칸의 "하나 더 잇기"에서 이면서나 이거나를 고르면 나온다 -->
+          <div id="rulehunt-make-second" class="choices">
+            <h2>둘째 규칙</h2>
+            <div id="rulehunt-make-kind-b" class="segment three rh-kinds">
+              <button class="btn" type="button" data-kind="even"></button>
+              <button class="btn" type="button" data-kind="odd"></button>
+              <button class="btn" type="button" data-kind="mult"></button>
+              <button class="btn" type="button" data-kind="ones"></button>
+              <button class="btn" type="button" data-kind="gt"></button>
+              <button class="btn" type="button" data-kind="lt"></button>
+            </div>
+            <div id="rulehunt-make-param-b" class="stepper rh-param">
+              <button id="rulehunt-make-fewer-b" class="btn" type="button" aria-label="둘째 규칙의 수 줄이기">−</button>
+              <strong id="rulehunt-make-value-b"></strong>
+              <button id="rulehunt-make-more-b" class="btn" type="button" aria-label="둘째 규칙의 수 늘리기">＋</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table" aria-label="숨길 규칙">
+          <p class="rule">어떤 수가 돼요인지 정하는 규칙을 골라 숨겨요. 선생님은 수를 하나씩 물어서 찾아요. 선생님이 오래 물어야 찾는 규칙도 만들 수 있을까요?</p>
+          <p id="rulehunt-make-name" class="rh-make-name"></p>
+          <div class="board-area"><div id="rulehunt-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <h2>하나 더 잇기</h2>
+            <div id="rulehunt-make-join" class="segment three">
+              <button class="btn" type="button" data-join="one">잇지 않기</button>
+              <button class="btn" type="button" data-join="and">이면서</button>
+              <button class="btn" type="button" data-join="or">이거나</button>
+            </div>
+            <h2>수의 범위</h2>
+            <div id="rulehunt-make-range" class="segment three">
+              <button class="btn" type="button" data-top="30">30까지</button>
+              <button class="btn" type="button" data-top="50">50까지</button>
+              <button class="btn" type="button" data-top="100">100까지</button>
+            </div>
+            <p class="pad-note">동그라미를 친 수가 내 규칙으로 돼요인 수예요.</p>
+            <button id="rulehunt-make-solve" class="btn primary huge" type="button">선생님, 찾아 보세요</button>
+            <p id="rulehunt-make-result" class="make-result" aria-live="polite"></p>
           </div>
         </section>
       </main>

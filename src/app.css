@@ -301,7 +301,8 @@ a.btn {
   overflow: hidden;
 }
 
-/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열네 장이라 가로 1280px에서 넉 장씩 세 줄과, 넷째 줄의 주사위 미로와 길 세기, 퍼즐 만들기 카드 두 장이다.
+/* 퍼즐 만들기 카드도 다른 카드처럼 한 칸을 쓴다. 카드가 열다섯 장이라 가로 1280px에서 넉 장씩 세 줄과, 넷째 줄의 주사위 미로와 길 세기, 숨은 규칙 찾기, 퍼즐 만들기 카드 세 장이다.
+   (카드가 열네 장일 때는 넷째 줄에 두 장이었다.)
    (카드가 열세 장일 때는 넷째 줄에 퍼즐 만들기 카드 한 장이었다.)
    (카드가 열두 장일 때는 세 줄에 꼭 맞았다.)
    (카드가 열 장일 때는 셋째 줄에 혼자 놓여서 두 칸을 썼다.) */
@@ -4838,4 +4839,497 @@ button.tax-card {
 /* 주사위 미로의 숫자판: 한 줄에 넷씩 놓아 세 줄로 줄인다(판의 단추들이 굴리지 않고 보이게) */
 .keys.four {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* ---- 숨은 규칙 찾기 ----
+   색만으로 알리지 않는다: 돼요는 동그라미, 안 돼요는 빗금 한 줄, 갈라 볼 것은 점선 네모, 다르게 가른 것은 두 겹 테두리, 방금 물어본 것은 굵은 테두리 */
+.rh-board {
+  /* 칸의 크기: 판 자리의 가로와 세로 가운데 작은 쪽에 맞추고, 64px을 넘지 않는다 */
+  --gap: 6px;
+  --cell: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((100cqh - (var(--rows) - 1) * var(--gap)) / var(--rows)), 64px);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: var(--gap);
+  justify-content: center;
+}
+
+.rh-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.rh-cell {
+  cursor: pointer;
+}
+
+button.rh-cell:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.rh-n {
+  position: relative;
+  z-index: 1;
+}
+
+/* 돼요: 수를 감싸는 동그라미(직접 만들기에서 내 규칙으로 돼요인 수는 점선 동그라미) */
+.rh-cell.yes,
+.rh-cell.pick-yes {
+  background: #ebfbee;
+}
+
+.rh-cell.yes::before,
+.rh-cell.pick-yes::before,
+.rh-cell.rule::before {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border: 4px solid var(--good);
+  border-radius: 50%;
+}
+
+.rh-cell.rule::before {
+  border: 3px dashed var(--good);
+}
+
+/* 안 돼요: 수 위에 빗금 한 줄 */
+.rh-cell.no,
+.rh-cell.pick-no {
+  background: #f1f3f5;
+  color: var(--muted);
+}
+
+.rh-cell.no::after,
+.rh-cell.pick-no::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  border-top: 4px solid #495057;
+  transform: rotate(-40deg);
+}
+
+/* 갈라 볼 것: 점선 네모 */
+.rh-cell.check {
+  border: 4px dashed var(--bar);
+  background: #fff9db;
+}
+
+/* 숨은 규칙이 다르게 가른 것, 그림에서 가리키는 것: 두 겹 테두리 */
+.rh-cell.strong {
+  outline: 6px double #d9480f;
+  outline-offset: 1px;
+  z-index: 2;
+}
+
+/* 방금 물어본 것: 굵은 테두리 */
+.rh-cell.fresh {
+  border: 4px solid var(--bar);
+}
+
+/* 직접 만들기에서 선생님이 물어본 차례 */
+.rh-order {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  z-index: 3;
+  min-width: 26px;
+  padding: 0 4px;
+  border-radius: 13px;
+  background: var(--bar);
+  color: #fff;
+  font-size: 18px;
+  line-height: 24px;
+  text-align: center;
+}
+
+/* 작은 그림(처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책): 수를 적지 않고 표시만 그린다 */
+.rh-board.small {
+  --gap: 2px;
+  --cell: 10px;
+}
+
+.rh-board.small .rh-cell {
+  border-width: 1px;
+  border-radius: 2px;
+}
+
+.rh-board.small .rh-n,
+.rh-board.small .rh-order {
+  display: none;
+}
+
+.rh-board.small .rh-cell::before {
+  inset: 0;
+  border-width: 2px;
+}
+
+.rh-board.small .rh-cell::after {
+  border-top-width: 2px;
+}
+
+.rh-board.small .rh-cell.check {
+  border-width: 2px;
+}
+
+.rh-board.small .rh-cell.strong {
+  outline-width: 3px;
+  outline-style: solid;
+}
+
+.door-picture .rh-board.small,
+.menu-picture .rh-board.small {
+  --cell: 14px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.rh-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rh-card .rh-board.small {
+  --gap: 3px;
+  --cell: 30px;
+}
+
+.rh-card.big .rh-board.small {
+  --gap: 4px;
+  --cell: 40px;
+}
+
+.rh-card .rh-board.small .rh-n {
+  display: inline;
+}
+
+.rh-card .rh-board.small .rh-cell {
+  border-width: 2px;
+  font-size: 18px;
+}
+
+.rh-card .rh-board.small .rh-cell::before {
+  inset: 4%;
+  border-width: 3px;
+}
+
+.rh-card .rh-board.small .rh-cell::after {
+  border-top-width: 3px;
+}
+
+.rh-card .rh-board.small .rh-cell.strong {
+  outline: 5px double #d9480f;
+}
+
+.rh-card .strip-note {
+  text-align: center;
+}
+
+/* 세 수 판: 돼요 줄과 안 돼요 줄 */
+.rh-triples {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-self: stretch;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.board-area > #rulehunt-board {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.board-area > #rulehunt-board > .rh-triples {
+  width: 100%;
+  height: 100%;
+}
+
+.rh-column {
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+
+.rh-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.rh-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rh-item {
+  padding: 4px 12px;
+  border: 3px solid var(--good);
+  border-radius: 999px;
+  background: #ebfbee;
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rh-item.no {
+  border: 3px solid #868e96;
+  border-radius: 6px;
+  background: #f1f3f5;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 3px;
+}
+
+.rh-item.strong {
+  outline: 6px double #d9480f;
+  outline-offset: 2px;
+}
+
+.rh-item.fresh {
+  border-width: 5px;
+  border-color: var(--bar);
+}
+
+.rh-triples.small {
+  gap: 6px;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.rh-triples.small .rh-column {
+  padding: 4px 6px;
+  border-width: 1px;
+}
+
+.rh-triples.small .rh-head {
+  margin-bottom: 2px;
+  font-size: 18px;
+}
+
+.rh-triples.small .rh-item {
+  padding: 0 6px;
+  border-width: 2px;
+  font-size: 18px;
+}
+
+.resume .rh-triples.small,
+.level .rh-triples.small {
+  width: 220px;
+  height: 64px;
+}
+
+.rh-card .rh-triples.small {
+  width: min(100%, 420px);
+}
+
+/* 판 아래의 표시 풀이: 무엇이 무엇인지 */
+.board-foot:has(> #rulehunt-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+.rh-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  font-size: 18px;
+}
+
+.rh-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rh-key {
+  display: inline-block;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ced4da;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.rh-key.yes {
+  border: 4px solid var(--good);
+  border-radius: 50%;
+  background: #ebfbee;
+}
+
+.rh-key.no {
+  background: linear-gradient(140deg, transparent 42%, #495057 42%, #495057 58%, transparent 58%), #f1f3f5;
+}
+
+.rh-key.check {
+  border: 3px dashed var(--bar);
+  background: #fff9db;
+}
+
+.rh-key.strong {
+  border: 5px double #d9480f;
+}
+
+/* 세 수 넣기 */
+.rh-slots {
+  display: flex;
+  gap: 8px;
+}
+
+.rh-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 56px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.rh-slot.next {
+  border: 3px dashed var(--bar);
+}
+
+.keys.rh-keys {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.rh-keys .key {
+  min-height: 48px;
+  font-size: 22px;
+}
+
+.rh-key-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rh-key-row .btn {
+  min-height: 56px;
+  font-size: 20px;
+}
+
+/* 갈라 보기: 낸 것마다 돼요와 안 돼요 단추 */
+.rh-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rh-check-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.rh-check-item {
+  font-size: 24px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.btn.rh-pick {
+  min-height: 48px;
+  padding: 4px 10px;
+  font-size: 19px;
+}
+
+/* 직접 만들기 */
+.rh-make-name {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  word-break: keep-all;
+}
+
+.rh-kinds .btn {
+  min-height: 52px;
+  padding: 4px;
+  font-size: 18px;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.2;
+}
+
+.rh-param strong {
+  flex: 1;
+  font-size: 20px;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.rh-param .btn {
+  min-width: 56px;
+  min-height: 56px;
+}
+
+/* 풀이 보기: 처음 받은 것과도 맞는 다른 규칙들 */
+.rh-name-chip {
+  padding: 6px 14px;
+  border: 2px solid #adb5bd;
+  border-radius: 999px;
+  background: #f8f9fa;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.figure-row.rh-chips {
+  gap: 10px;
+}
+
+/* 판 고르기와 하던 판 띠의 작은 그림은 왼쪽에 붙는다(다른 형식과 같게). 공책에서는 가운데에 둔다 */
+.level .rh-board.small,
+.resume .rh-board.small {
+  justify-content: start;
+}
+
+.resume.note-picture .rh-board.small {
+  justify-content: center;
+}
+
+/* 처음 화면의 카드와 하던 판 띠의 세 수 그림: 자리가 낮아서 머리글 없이 두 칸과 세 수만 그린다 */
+.door-picture .rh-triples.small,
+.menu-picture .rh-triples.small {
+  max-height: 100cqh;
+}
+
+.door-picture .rh-triples.small .rh-head,
+.resume:not(.note-picture) .rh-triples.small .rh-head {
+  display: none;
+}
+
+.resume.note-picture .rh-board.small {
+  --cell: 13px;
 }

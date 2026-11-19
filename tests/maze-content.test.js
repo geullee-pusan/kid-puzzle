@@ -82,7 +82,7 @@ test('규칙 설명은 세 문장 안이고, 주사위 눈과 가는 쪽, 묻는
   // 형식이 단계(직접 만든 판은 exits)로 규칙 글을 고른다.
   assert.match(code, /ruleLine: \(round\) => T\.rules\[round\.custom \? 'exits' : rungOf\(round\.level\)\.hint\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 13);
+  assert.equal(guides.length, 14);
   assert.ok(sentenceCount(guides[12]) <= 3, guides[12]);
   assert.match(guides[12], /길이 많은 출구에 손님도 많이 갈까요\?$/);
   // 판 위의 주사위 안내도 같은 말이다.
@@ -325,7 +325,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   // 판 아래의 수는 보낸 손님, 남은 자물쇠, 칠한 칸뿐이다(몇 판째, 몇 번 맞혔는지는 없다).
   assert.equal([...part('id="maze-count"', 'id="cups-count"').matchAll(/<strong/g)].length, 3);
   // 틀이 형식을 안다.
-  assert.match(read('src/main.js'), /dandelion: createDandelion\(frame\), maze: createMaze\(frame\) \};/);
+  assert.match(read('src/main.js'), /dandelion: createDandelion\(frame\), maze: createMaze\(frame\), /);
   assert.match(read('src/check-main.js'), /\['maze', '주사위 미로와 길 세기'\]/);
   // 지난 기록은 틀이 건네주는 것(작은 판을 뺀 기록)으로 본다.
   assert.doesNotMatch(code, /log\.allRecords\(\)/);

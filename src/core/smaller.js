@@ -20,6 +20,7 @@ import { boxBoards, smallFolkBoards } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
 import { checkBoard as checkMaze, smallBoards as smallMazeBoards } from './maze.js';
 import { createRng, randInt, seedFrom } from './rng.js';
+import { checkBoard as checkRulehunt, smallBoards as smallRuleBoards } from './rulehunt.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
 import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
@@ -463,4 +464,17 @@ export function smallerMaze(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze };
+// ---- 숨은 규칙 찾기: 같은 숨은 규칙을 더 좁은 범위에서 ----
+
+/**
+ * 수 판은 범위를 30, 20, 10으로, 세 수 판은 10으로 줄인다(원래보다 좁은 것만, 넓은 것부터).
+ * 처음 받은 것은 그 범위에 드는 것만 남기고, 숨은 규칙이 그 범위에서 돼요와 안 돼요가 둘 이상씩 있는 판만 낸다.
+ * 범위가 좁으면 견주어 볼 후보 규칙(크다·작다의 경계)도 줄어든다. 그런 판이 없으면 null이다.
+ */
+export function smallerRulehunt(origin, turn = 0) {
+  if (!origin.board || checkRulehunt(origin.board) !== null) return null;
+  const list = smallRuleBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt };
