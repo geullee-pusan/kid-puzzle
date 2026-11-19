@@ -18,6 +18,7 @@ import { checkBoard as checkDandelion, smallBoards as smallDandelionBoards } fro
 import { checkBoard as checkDuel, smallBoards } from './duel.js';
 import { boxBoards, smallFolkBoards } from './logic-ladder.js';
 import { checkBoard as checkLogic, solve as solveLogic } from './logic.js';
+import { checkBoard as checkMaze, smallBoards as smallMazeBoards } from './maze.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -449,4 +450,17 @@ export function smallerDandelion(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion };
+// ---- 주사위 미로와 길 세기: 같은 종류에서 갈림길의 줄을 줄인 판 ----
+
+/**
+ * 실험 판은 줄을 줄이고(2줄까지), 짝수 판은 3줄까지 줄인다. 표시한 출구가 있는 판은 출구의 자리를 비슷하게 옮긴다(길이 둘 이상인 출구).
+ * 막힌 갈림길이 있던 판은 작은 판에도 막힌 갈림길이 남아 길의 수를 바꾸는 판만 낸다.
+ * 원래 판에 가까운 것(줄이 많은 것)부터 차례로 낸다. 그런 판이 없으면 null이다.
+ */
+export function smallerMaze(origin, turn = 0) {
+  if (!origin.board || checkMaze(origin.board) !== null) return null;
+  const list = smallMazeBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze };

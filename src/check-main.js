@@ -46,6 +46,7 @@ function drawCounts() {
     ['river', '강 건너기'],
     ['cups', '컵 뒤집기와 세 색 무리'],
     ['dandelion', '민들레와 바람'],
+    ['maze', '주사위 미로와 길 세기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

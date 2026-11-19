@@ -97,7 +97,7 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   assert.match(T.rules.pairs, /더 움직이지 못해요/);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 12, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 13, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[3]) <= 3, guides[3]);
   assert.match(guides[3], /안 되는 판도 만들 수 있을까요\?/);
   // 선생님의 만들기 안내: 만들기 화면에 "선생님, 풀어 보세요" 단추가 있으므로 그 말로 끝난다.
@@ -503,21 +503,21 @@ test('처음 화면: 하던 판 띠가 카드들 위에 있고, 퍼즐 만들기
   assert.ok(at('id="doors"') < at('id="make-menu"'));
   assert.ok(at('id="make-menu"') < at('id="picker"'));
   // 카드의 차례: 형식들, 맨 뒤에 퍼즐 만들기
-  const titles = ['coins-title', 'trace-title', 'code-title', 'swap-title', 'tile-title', 'duel-title', 'tax-title', 'logic-title', 'block-title', 'river-title', 'cups-title', 'dandelion-title', 'make-title'].map((id) => at(`id="${id}"`));
+  const titles = ['coins-title', 'trace-title', 'code-title', 'swap-title', 'tile-title', 'duel-title', 'tax-title', 'logic-title', 'block-title', 'river-title', 'cups-title', 'dandelion-title', 'maze-title', 'make-title'].map((id) => at(`id="${id}"`));
   assert.deepEqual(titles, [...titles].sort((a, b) => a - b));
   const cards = part('id="doors"', 'id="make-menu"');
-  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 13);
+  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 14);
   // 형식의 카드마다 "해 보기"와 "판 고르기"가 하나씩 있다.
-  assert.equal([...cards.matchAll(/>해 보기</g)].length, 12);
-  assert.equal([...cards.matchAll(/>판 고르기</g)].length, 12);
+  assert.equal([...cards.matchAll(/>해 보기</g)].length, 13);
+  assert.equal([...cards.matchAll(/>판 고르기</g)].length, 13);
   // 퍼즐 만들기 카드에는 단추가 "만들기" 하나뿐이다. 형식마다의 단추는 목록 안에 있다.
   const makeCard = part('id="make-title"', 'id="make-menu"');
   assert.deepEqual([...makeCard.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]), ['home-make-open']);
   assert.match(makeCard, /id="home-make-open"[^>]*>만들기</);
   const menu = part('id="make-menu"', 'id="picker"');
-  assert.deepEqual([...menu.matchAll(/<button id="([^"]+)" class="menu-item"/g)].map((match) => match[1]), ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make', 'home-duel-make', 'home-tax-make', 'home-logic-make', 'home-block-make', 'home-river-make', 'home-cups-make', 'home-dandelion-make']);
+  assert.deepEqual([...menu.matchAll(/<button id="([^"]+)" class="menu-item"/g)].map((match) => match[1]), ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make', 'home-duel-make', 'home-tax-make', 'home-logic-make', 'home-block-make', 'home-river-make', 'home-cups-make', 'home-dandelion-make', 'home-maze-make']);
   assert.match(menu, /id="make-menu-close"[^>]*>닫기</);
-  for (const name of ['동전 뒤집기', '한붓그리기', '숫자 추리', '자리 바꾸기', '조각 덮기', '누가 이길까', '약수 세금', '참말 섬', '조각 못 들어가게 막기', '강 건너기', '컵 뒤집기와 세 색 무리', '민들레와 바람']) assert.ok(visibleText(menu).includes(name), name);
+  for (const name of ['동전 뒤집기', '한붓그리기', '숫자 추리', '자리 바꾸기', '조각 덮기', '누가 이길까', '약수 세금', '참말 섬', '조각 못 들어가게 막기', '강 건너기', '컵 뒤집기와 세 색 무리', '민들레와 바람', '주사위 미로와 길 세기']) assert.ok(visibleText(menu).includes(name), name);
 });
 
 test('처음 화면의 배치: 카드는 한 줄에 여러 장이 놓이고, 넘치면 카드 칸만 굴러간다', () => {

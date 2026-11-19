@@ -78,6 +78,7 @@ const SCREEN_CODE = [
   'src/formats/river.js',
   'src/formats/cups.js',
   'src/formats/dandelion.js',
+  'src/formats/maze.js',
   'src/ui/coin-board.js',
   'src/ui/trace-board.js',
   'src/ui/code-board.js',
@@ -90,9 +91,10 @@ const SCREEN_CODE = [
   'src/ui/river-board.js',
   'src/ui/cups-board.js',
   'src/ui/dandelion-board.js',
+  'src/ui/maze-board.js',
 ];
 // 대본: 형식마다 하나씩
-const SCRIPTS = ['src/content/coins.json', 'src/content/trace.json', 'src/content/code.json', 'src/content/swap.json', 'src/content/tile.json', 'src/content/duel.json', 'src/content/tax.json', 'src/content/logic.json', 'src/content/block.json', 'src/content/river.json', 'src/content/cups.json', 'src/content/dandelion.json'];
+const SCRIPTS = ['src/content/coins.json', 'src/content/trace.json', 'src/content/code.json', 'src/content/swap.json', 'src/content/tile.json', 'src/content/duel.json', 'src/content/tax.json', 'src/content/logic.json', 'src/content/block.json', 'src/content/river.json', 'src/content/cups.json', 'src/content/dandelion.json', 'src/content/maze.json'];
 
 test('검사 목록에 모든 형식의 코드와 대본이 들어 있다', () => {
   for (const { path } of sources) {

@@ -48,7 +48,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="dandelion-title"', 'id="make-title"'), part('id="dandelion-count"', 'id="cups-count"'), part('id="dandelion-pad"', 'id="cups-pad"'), part('id="dandelion-swap"', '</section>'), part('id="make-dandelion"', '<script')]
+const own = [part('id="dandelion-title"', 'id="maze-title"'), part('id="dandelion-count"', 'id="maze-count"'), part('id="dandelion-pad"', 'id="cups-pad"'), part('id="dandelion-swap"', 'id="maze-more"'), part('id="make-dandelion"', 'id="make-maze"')]
   .map(visibleText)
   .join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
@@ -76,7 +76,7 @@ test('규칙 설명은 세 문장 안이고, 심기·바람·이기는 때를 �
   // 형식이 판의 종류로 규칙 글을 고른다.
   assert.match(code, /ruleLine: \(round\) => T\.rules\[round\.mode\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 12);
+  assert.equal(guides.length, 13);
   assert.ok(sentenceCount(guides[11]) <= 3, guides[11]);
   assert.match(guides[11], /바람이 이기는 판도 만들 수 있을까요\?$/);
   // 보기 판: 직접 만들기의 그림과 처음 화면의 그림은 꽃 하나에 바람이 한 번 분 모습이다.
@@ -261,7 +261,7 @@ test('"더 작은 판으로": 사다리의 판마다 같은 방향 수의 작은
 });
 
 test('직접 만들기: 가로·세로와 방향의 수를 정하면, 잘 두었을 때 어느 쪽이 이기는지 알려 준다. 여덟 방향은 4칸까지', () => {
-  const make = part('id="make-dandelion"', '<script');
+  const make = part('id="make-dandelion"', 'id="make-maze"');
   for (const id of ['dandelion-make-w-fewer', 'dandelion-make-w-more', 'dandelion-make-h-fewer', 'dandelion-make-h-more', 'dandelion-make-board', 'dandelion-make-solve', 'dandelion-make-result', 'dandelion-make-play', 'dandelion-make-eight-note']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /data-dirs="4">네 방향</);
   assert.match(make, /data-dirs="8">여덟 방향</);
@@ -313,9 +313,9 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 끝난 �
   // 진 판 뒤에는 "같은 단계 새 판"보다 위에 놓고 눈에 띄게 한다(누가 이길까와 같다).
   assert.match(code, /\$\(lost \? 'after-same' : 'after-make'\)\.before\(\$\('dandelion-swap'\), \$\('dandelion-replay'\)\);/);
   // 판 아래의 수는 심은 꽃과 남은 빈칸뿐이다(몇 판째, 몇 번 이겼는지는 없다).
-  assert.equal([...part('id="dandelion-count"', 'id="cups-count"').matchAll(/<strong/g)].length, 2);
+  assert.equal([...part('id="dandelion-count"', 'id="maze-count"').matchAll(/<strong/g)].length, 2);
   // 틀이 형식을 안다.
-  assert.match(read('src/main.js'), /cups: createCups\(frame\), dandelion: createDandelion\(frame\) \};/);
+  assert.match(read('src/main.js'), /cups: createCups\(frame\), dandelion: createDandelion\(frame\), /);
   assert.match(read('src/check-main.js'), /\['dandelion', '민들레와 바람'\]/);
   // 지난 기록은 틀이 건네주는 것(작은 판을 뺀 기록)으로 본다.
   assert.doesNotMatch(code, /log\.allRecords\(\)/);

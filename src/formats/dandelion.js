@@ -594,7 +594,7 @@ export function createDandelion(frame) {
       $('dandelion-board').hidden = !on;
       $('dandelion-count').hidden = !on;
       if (on) {
-        // 이 형식은 틀의 형식 목록에서 맨 뒤라, 앞의 형식이 정해 둔 무르기와 되돌리기를 여기서 다시 정한다.
+        // 앞의 형식이 정해 둔 무르기와 되돌리기를 여기서 다시 정한다(뒤의 주사위 미로는 꺼질 때 이 둘에 손대지 않는다).
         const game = frame.round?.mode !== 'cover';
         $('undo').hidden = game;
         $('reset').hidden = game;

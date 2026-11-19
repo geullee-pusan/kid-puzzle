@@ -40,7 +40,7 @@
       </main>
     </section>
 
-    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람)와 퍼즐 만들기, 판 고르기.
+    <!-- 처음 화면(연구소): 하던 판 띠, 형식마다 카드 하나(동전 뒤집기, 한붓그리기, 숫자 추리, 자리 바꾸기, 조각 덮기, 누가 이길까, 약수 세금, 참말 섬, 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람, 주사위 미로와 길 세기)와 퍼즐 만들기, 판 고르기.
          형식을 더할 때는 카드 하나를 "퍼즐 만들기" 앞에 더하고, "만들기" 목록에 단추 하나를 더한다 -->
     <section id="home" class="screen home" hidden>
       <header class="top">
@@ -189,6 +189,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="maze-title">
+            <h2 id="maze-title">주사위 미로와 길 세기</h2>
+            <div class="door-picture"><div id="home-maze-sample"></div></div>
+            <p id="home-maze-ask" class="door-ask">어느 출구로 손님이 가장 많이 갈까요?</p>
+            <div class="door-foot">
+              <button id="home-maze-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-maze-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -243,6 +253,9 @@
               </li>
               <li>
                 <button id="home-dandelion-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-dandelion-blank"></span></span><span class="menu-name">민들레와 바람</span></button>
+              </li>
+              <li>
+                <button id="home-maze-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-maze-blank"></span></span><span class="menu-name">주사위 미로와 길 세기</span></button>
               </li>
             </ul>
           </div>
@@ -315,6 +328,14 @@
           <!-- 컵 뒤집기와 세 색 무리: 처음 모습과 움직일 때마다의 엎어진 컵 수(또는 색마다의 마릿수)를 표로 줄 세우는 도구. 무엇이 그대로인지는 말하지 않는다 -->
           <button id="cups-notes" class="btn wide" type="button" aria-pressed="false" hidden>세어서 적어 보기</button>
           <div id="cups-notes-table" class="cups-notes" aria-live="polite" hidden></div>
+          <!-- 주사위 미로: 맨 위에서부터 칸을 눌러 길을 그리면 차례대로 적어 주는 도구. 같은 길은 두 번 적지 않는다. 쓰라고 권하지 않는다 -->
+          <button id="maze-paths" class="btn wide" type="button" aria-pressed="false" hidden>길 그려 보기</button>
+          <div id="maze-path-box" class="mz-path-box" hidden>
+            <p class="pad-note">맨 위에서부터 칸을 차례로 눌러요. 출구에 닿으면 적혀요. 끝 칸을 한 번 더 누르면 거기까지 적어요.</p>
+            <strong id="maze-path-count" aria-live="polite"></strong>
+            <ol id="maze-path-list" class="mz-path-list"></ol>
+            <button id="maze-path-clear" class="btn wide" type="button">적은 길 모두 지우기</button>
+          </div>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -344,6 +365,8 @@
             <div id="cups-board" hidden></div>
             <!-- 민들레와 바람: 네모 칸들과 꽃, 씨앗. 빈칸을 누르면 꽃을 심는다. 방금 분 바람은 판 위의 큰 화살표로 보인다 -->
             <div id="dandelion-board" hidden></div>
+            <!-- 주사위 미로: 세모꼴로 놓인 갈림길과 맨 아래 출구. 실험 판에서는 출구 아래에 손님 막대가 쌓인다. 세는 판에서는 칸마다 자물쇠가 있다 -->
+            <div id="maze-board" hidden></div>
             <!-- 숫자 추리: 추측과 답의 표, 그 아래에 메모판(골라서 쓴다) -->
             <div id="code-board" class="code-board" hidden>
               <div id="code-table" class="code-scroll"></div>
@@ -369,6 +392,15 @@
               <span class="block-numbers">
                 <span>심은 꽃 <strong id="dandelion-flowers">0</strong>송이</span>
                 <span>남은 빈칸 <strong id="dandelion-empty">0</strong>칸</span>
+              </span>
+            </span>
+            <!-- 주사위 미로: 윗줄에 방금 일어난 일(손님이 어디로 갔는지, 자물쇠가 열렸는지), 그 아래에 보낸 손님, 남은 자물쇠, 칠한 칸의 수 -->
+            <span id="maze-count" class="count tile-count block-count" hidden>
+              <span id="maze-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span id="maze-sent-line">보낸 손님 <strong id="maze-sent">0</strong>명</span>
+                <span id="maze-locks-line" hidden>남은 자물쇠 <strong id="maze-locks">0</strong>개</span>
+                <span id="maze-painted-line" hidden>칠한 칸 <strong id="maze-painted">0</strong>칸</span>
               </span>
             </span>
             <!-- 컵 뒤집기와 세 색 무리: 윗줄에 같은 색을 눌렀는지(또는 끝났는지), 그 아래에 뒤집은 횟수나 만난 횟수 -->
@@ -428,6 +460,51 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 주사위 미로: 실험은 출구 고르기와 손님 보내기, 세는 판은 고른 칸의 물음과 숫자판과 "열어 보기",
+               칠하는 판은 칠하기와 수 넣기 가운데 고르는 단추와 "다 칠했어요". 막힌 갈림길이 있는 판에서는 손님도 보내 볼 수 있다 -->
+          <div id="maze-pad" class="pad" hidden>
+            <div id="maze-busy" class="choices">
+              <h2>어느 출구로 가장 많이 갈까요?</h2>
+              <p class="pad-note">판의 출구를 누르거나 여기서 골라요. 고른 뒤에 손님을 보내요.</p>
+              <div id="maze-picks" class="picks"></div>
+              <p id="maze-picked" class="pad-note best-line" hidden></p>
+            </div>
+            <div id="maze-even" class="choices" hidden>
+              <h2 id="maze-even-title"></h2>
+              <div id="maze-tools" class="segment">
+                <button class="btn" type="button" data-tool="paint">칠하기</button>
+                <button class="btn" type="button" data-tool="number">수 넣기</button>
+              </div>
+            </div>
+            <div id="maze-lock" class="choices" hidden>
+              <h2 id="maze-ask"></h2>
+              <div class="answer-line"><strong id="maze-typed" class="answer-box" aria-live="polite"></strong> 가지</div>
+              <div id="maze-keys" class="keys four">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="maze-open" class="btn good huge" type="button" disabled>열어 보기</button>
+            </div>
+            <!-- 칠하는 판: 다 칠했으면 누른다. 수 넣기를 고르면 숫자판 아래로 내려간다 -->
+            <div id="maze-check-box" class="choices" hidden>
+              <button id="maze-check" class="btn good huge" type="button">다 칠했어요</button>
+            </div>
+            <div id="maze-send" class="choices" hidden>
+              <p class="pad-note">주사위 눈이 1, 2, 3이면 왼쪽, 4, 5, 6이면 오른쪽으로 가요.</p>
+              <button id="maze-send-one" class="btn primary huge" type="button">손님 1명 보내기</button>
+              <button id="maze-send-many" class="btn huge" type="button">손님 100명 보내기</button>
+            </div>
+          </div>
+
           <!-- 민들레와 바람: 게임은 꽃이 될지 바람이 될지 고르고, 차례가 오면 판의 빈칸을 누르거나 바람 단추를 누른다.
                혼자 덮기는 바람의 차례와 "바람 불기" 단추, 다 덮은 뒤에 다시 해 볼지 여기까지 할지 고르는 단추가 있다 -->
           <div id="dandelion-pad" class="pad" hidden>
@@ -704,6 +781,9 @@
             <!-- 민들레와 바람의 게임에서만 보인다. 누가 이길까처럼, 끝난 뒤에 "같은 단계 새 판"(진 판 뒤)이나 "직접 만들기" 앞으로 옮겨 놓는다 -->
             <button id="dandelion-swap" class="btn wide after-extra" type="button" hidden>자리를 바꿔서 다시 두기</button>
             <button id="dandelion-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
+            <!-- 주사위 미로에서만 보인다. 실험 판은 "더 많이 해 보기"(손님 100명을 더 보낸다), 표시한 출구가 있는 판은 "전부 보여 줘"(모든 길을 그린다). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
+            <button id="maze-more" class="btn wide after-extra primary" type="button" hidden>더 많이 해 보기</button>
+            <button id="maze-all" class="btn wide after-extra" type="button" hidden>전부 보여 줘</button>
           </div>
         </section>
       </main>
@@ -1287,6 +1367,33 @@
             <button id="dandelion-make-solve" class="btn primary huge" type="button">선생님, 누가 이길까요?</button>
             <p id="dandelion-make-result" class="make-result" aria-live="polite"></p>
             <button id="dandelion-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-maze" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>갈림길의 줄 수</h2>
+          <div class="stepper">
+            <button id="maze-make-rows-fewer" class="btn" type="button" aria-label="갈림길 한 줄 줄이기">−</button>
+            <strong id="maze-make-rows"></strong>
+            <button id="maze-make-rows-more" class="btn" type="button" aria-label="갈림길 한 줄 늘리기">＋</button>
+          </div>
+          <p class="pad-note">갈림길을 누르면 돌이 놓여 막혀요. 다시 누르면 열려요. 맨 위 갈림길과 출구는 막을 수 없어요.</p>
+          <button id="maze-make-open-all" class="btn wide" type="button">막은 갈림길 모두 열기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">줄 수를 정하고 막을 갈림길을 골라요. 선생님이 칸마다 오는 길을 세어 주고, 손님 100명도 보내 줘요. 길이 많은 출구에 손님도 많이 갈까요?</p>
+          <div class="board-area"><div id="maze-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="maze-make-solve" class="btn primary huge" type="button">선생님, 길을 세어 주세요</button>
+            <button id="maze-make-send" class="btn huge" type="button">손님 100명 보내기</button>
+            <p id="maze-make-result" class="make-result" aria-live="polite"></p>
+            <button id="maze-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>
