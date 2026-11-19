@@ -8,6 +8,7 @@
 //     (안 되는 판부터 내면 첫 작은 판만 보고도 원래 판이 안 되는 판인 줄 알게 된다. 그래서 첫 판은 늘 되는 판이다.)
 //   - 한 번에 끝나는 판은 피한다. 더 줄일 수 없으면 가장 작은 뜻 있는 판을 낸다.
 //   - 원래 판이 이미 가장 작은 판이면 null을 낸다.
+import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from './block.js';
 import { allCodes, checkBoard as checkCode, solveTable } from './code.js';
 import { makeTable } from './code-ladder.js';
 import { RULES, checkBoard as checkCoins, fromMask, headCount, solve as solveCoins } from './coins.js';
@@ -304,4 +305,35 @@ export function smallerLogic(origin, turn = 0) {
   return { board: road ? { kind: 'road', people, says, ask: 'road' } : { kind: 'folk', people, says, ask: 'kinds' } };
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic };
+// ---- 조각 못 들어가게 막기: 같은 조각, 칸 수가 절반 이하인 네모 판 ----
+
+/** 작은 판의 칸 수는 원래 판의 이만큼 이하다(눈에 띄게 작게) */
+export const BLOCK_SHRINK = 1 / 2;
+
+/**
+ * 같은 조각의 더 작은 네모 판들. 가로와 세로가 원래 판을 넘지 않고, 칸 수는 절반 이하다.
+ * 가로가 긴 판에서는 가로가 긴 판만(세로가 긴 판에서는 세로가 긴 판만) 낸다.
+ * 한 칸만 막으면 끝나는 판은 뺀다. 큰 것부터, 같으면 정사각형에 가까운 것부터 줄 세운다.
+ */
+export function smallBlockBoards(board) {
+  const found = [];
+  const wide = board.w >= board.h;
+  for (let w = 2; w <= board.w; w++) {
+    for (let h = 2; h <= board.h; h++) {
+      if (w * h > board.w * board.h * BLOCK_SHRINK || (wide ? w < h : w > h)) continue;
+      const small = { w, h, piece: board.piece, holes: [] };
+      if (blockSpots(small).length === 0) continue;
+      const solution = solveBlock(small);
+      if (solution.exact && solution.best >= 2) found.push(small);
+    }
+  }
+  return found.sort((a, b) => b.w * b.h - a.w * a.h || Math.abs(a.w - a.h) - Math.abs(b.w - b.h) || b.w - a.w);
+}
+
+export function smallerBlock(origin, turn = 0) {
+  if (checkBlock(origin.board) !== null) return null;
+  const list = smallBlockBoards(origin.board);
+  return list.length > 0 ? { board: list[turn % list.length] } : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock };

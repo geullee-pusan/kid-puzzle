@@ -16,7 +16,9 @@ import * as coinLadder from '../src/core/ladder.js';
 import * as logicLadder from '../src/core/logic-ladder.js';
 import { boxBoards } from '../src/core/logic-ladder.js';
 import { checkBoard as checkLogic, isLean as isLeanLogic, solve as solveLogic } from '../src/core/logic.js';
-import { COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
+import * as blockLadder from '../src/core/block-ladder.js';
+import { allPlacements as blockSpots, checkBoard as checkBlock, solve as solveBlock } from '../src/core/block.js';
+import { BLOCK_SHRINK, COIN_FLOOR, LOGIC_SMALL, SMALLER, SMALL_CODE, TAX_SIZES, TILE_DOWN, TRACE_COUNTS, pickByTurn, smallBlockBoards, smallerBlock, smallerCode, smallerCoins, smallerDuel, smallerLogic, smallerSwap, smallerTax, smallerTile, smallerTrace } from '../src/core/smaller.js';
 import * as swapLadder from '../src/core/swap-ladder.js';
 import { checkBoard as checkSwap, solve as solveSwap } from '../src/core/swap.js';
 import * as taxLadder from '../src/core/tax-ladder.js';
@@ -29,7 +31,7 @@ import { checkFigure, fixesOf, isTidy, solve as solveTrace } from '../src/core/t
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Array.from({ length: 100 }, (_, index) => index + 1);
 const TURNS = [0, 1, 2, 3];
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block'];
 
 /** 사다리의 판마다(단계마다 판 번호 1~100) 일을 시킨다. */
 function eachBoard(ladder, visit) {
@@ -332,6 +334,42 @@ test('참말 섬: 주민 셋은 주민 둘로, 상자 셋은 같은 꼴의 글�
   assert.equal(smallerLogic({ board: null }), null);
 });
 
+test('조각 못 들어가게 막기: 같은 조각, 칸 수가 절반 이하인 네모 판. 한 칸만 막으면 끝나는 판은 내지 않는다', () => {
+  assert.equal(BLOCK_SHRINK, 1 / 2);
+  let none = 0;
+  eachBoard(blockLadder, (board, rung, where) => {
+    for (const turn of TURNS) {
+      const small = smallerBlock({ mode: rung.mode, board }, turn);
+      if (!small) {
+        none += 1;
+        continue;
+      }
+      assert.equal(checkBlock(small.board), null, where);
+      assert.equal(small.board.piece, board.piece, where);
+      assert.deepEqual(small.board.holes, [], where);
+      assert.ok(small.board.w <= board.w && small.board.h <= board.h, where);
+      assert.ok(small.board.w * small.board.h <= (board.w * board.h) / 2, `${where}: ${small.board.w}×${small.board.h}`);
+      assert.ok(small.board.w >= small.board.h, `${where}: 가로가 긴 판`);
+      const solved = solveBlock(small.board);
+      assert.equal(solved.exact, true, where);
+      assert.ok(solved.best >= 2, `${where}: 한 칸이면 끝나는 판`);
+      assert.deepEqual(smallerBlock({ mode: rung.mode, board }, turn), small, `${where}: 같은 판에서는 같은 작은 판`);
+    }
+  });
+  assert.equal(none, 0, '사다리의 판에는 모두 작은 판이 있다');
+  // 첫 작은 판은 그 가운데 가장 큰 판이다. 이어서 여는 두 판은 다르다.
+  const tee = blockLadder.generateBoard(4, 6).board;
+  assert.deepEqual(smallBlockBoards(tee)[0], { w: 6, h: 3, piece: 'tee', holes: [] });
+  assert.notDeepEqual(smallerBlock({ board: tee }, 0), smallerBlock({ board: tee }, 1));
+  // 가장 작은 판(3×2 도미노)에는 더 작은 판이 없다. 빠진 칸이 있는 직접 만든 판에서는 빠진 칸 없는 네모 판을 낸다.
+  assert.equal(smallerBlock({ board: { w: 3, h: 2, piece: 'domino', holes: [] } }), null);
+  const holed = smallerBlock({ board: { w: 6, h: 6, piece: 'bar', holes: [0, 7, 14] } });
+  assert.ok(holed && holed.board.holes.length === 0 && blockSpots(holed.board).length > 0);
+  // 세로가 긴 판에서는 세로가 긴 작은 판을 낸다.
+  assert.ok(smallBlockBoards({ w: 3, h: 6, piece: 'bar', holes: [] }).every((item) => item.h >= item.w));
+  assert.equal(smallerBlock({ board: null }), null);
+});
+
 test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은 작은 판에서 이 단추를 내지 않는다)', () => {
   // 숫자 추리의 작은 판은 가장 작은 판이다. 다른 형식도 한두 단이면 바닥에 닿는다.
   const chain = (name, origin) => {
@@ -350,4 +388,5 @@ test('작은 판에서 다시 "더 작은 판"을 물으면 대개 없다(틀은
   assert.ok(chain('trace', { mode: 'draw', board: traceLadder.generateBoard(2, 1).board }) <= 3);
   assert.ok(chain('duel', { board: { kind: 'piles', piles: [8, 8] } }) <= 3);
   assert.equal(chain('logic', { board: logicLadder.generateBoard(3, 1).board }), 2);
+  assert.ok(chain('block', { board: blockLadder.generateBoard(4, 6).board }) <= 3);
 });

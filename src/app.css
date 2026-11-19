@@ -332,8 +332,10 @@ a.btn {
 .door-picture > .figure,
 .door-picture > .swap-row,
 .door-picture > .tile-board,
+.door-picture > .block-board,
 .board-area > .figure,
-.board-area > .tile-board {
+.board-area > .tile-board,
+.board-area > .block-board {
   align-self: stretch;
   height: auto;
 }
@@ -431,7 +433,8 @@ a.btn {
   height: 60px;
 }
 
-.resume .tile-board.small {
+.resume .tile-board.small,
+.resume .block-board.small {
   width: 90px;
   height: 60px;
   justify-content: flex-start;
@@ -538,6 +541,7 @@ a.btn {
 /* 하던 판 띠의 작은 그림은 왼쪽에 붙는다. 공책에서는 가운데에 둔다 */
 .resume.note-picture .coins.small.line,
 .resume.note-picture .tile-board.small,
+.resume.note-picture .block-board.small,
 .resume.note-picture .code-mini,
 .resume.note-picture .code-mini-row,
 .resume.note-picture .duel-game.small,
@@ -659,7 +663,8 @@ a.btn {
   height: 76px;
 }
 
-.menu-picture > .tile-board {
+.menu-picture > .tile-board,
+.menu-picture > .block-board {
   height: 76px;
 }
 
@@ -803,7 +808,8 @@ a.btn {
   height: 58px;
 }
 
-.level .tile-board.small {
+.level .tile-board.small,
+.level .block-board.small {
   width: 80px;
   height: 64px;
   justify-content: flex-start;
@@ -1710,6 +1716,196 @@ div.coin {
 }
 
 .tile-card .strip-note {
+  text-align: center;
+}
+
+/* ---- 조각 못 들어가게 막기: 네모 판, 막은 칸, 조각이 들어갈 수 있는 자리 ----
+   색만으로 알리지 않는다. 막은 칸은 어둡게 메우고 가위표를 긋는다. 판에서 빠진 칸은 칸을 그리지 않고 가는 점선 테두리만 남긴다.
+   조각이 들어갈 수 있는 자리(도구로 보는 자리)는 옅게 메우고 둘레에 굵은 점선을 두른다. 그림에서 짚는 자리는 둘레에 굵은 실선을 두른다. */
+.block-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.block-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 104px);
+  max-height: calc(var(--h) * 104px);
+}
+
+.block-board.small .block-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.block-board.live .block-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.block-board.live .block-cell-group {
+  cursor: pointer;
+}
+
+.block-cell {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.block-cell.shut {
+  fill: #495057;
+  stroke: #212529;
+}
+
+.block-cross {
+  stroke: #f1f3f5;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.block-hole {
+  fill: none;
+  stroke: #adb5bd;
+  stroke-width: 3;
+  stroke-dasharray: 8 8;
+}
+
+.block-ghost-fill {
+  fill: rgba(252, 196, 25, 0.35);
+}
+
+.block-ghost {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 18;
+  stroke-dasharray: 18 10;
+}
+
+.block-spot {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 18;
+  stroke-linejoin: round;
+}
+
+/* 짚는 자리마다 옅은 색을 번갈아 칠해 하나하나 갈라 보이게 한다(둘레의 실선이 먼저다) */
+.block-spot-fill.tint-0 {
+  fill: #c5f6fa;
+}
+
+.block-spot-fill.tint-1 {
+  fill: #ffec99;
+}
+
+.block-spot-fill.tint-2 {
+  fill: #d3f9d8;
+}
+
+.block-spot-fill.tint-3 {
+  fill: #e5dbff;
+}
+
+.block-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+/* 판 아래: 윗줄에 짧은 글, 그 아래에 막은 칸의 수와 이 판에서 가장 적게 막은 수 */
+.block-count {
+  flex: 1 1 100%;
+  min-width: 0;
+  line-height: 24px;
+  word-break: keep-all;
+}
+
+.block-count .tile-status {
+  white-space: normal;
+}
+
+.block-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #block-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+.block-count strong {
+  font-size: 22px;
+}
+
+/* 답하는 칸에 그리는 이 판의 조각 */
+.block-piece-picture {
+  flex: none;
+  width: calc(var(--w) * 32px);
+  height: calc(var(--h) * 32px);
+}
+
+.block-piece-picture .block-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.block-piece-cell {
+  fill: rgba(11, 79, 92, 0.3);
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.block-piece {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 16;
+}
+
+/* 직접 만들기의 조각 고르기: 단추마다 조각의 작은 그림과 이름 */
+.block-pieces .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+}
+
+.block-make-picture {
+  display: block;
+  height: 26px;
+}
+
+.block-piece-picture.mini {
+  width: calc(var(--w) * 13px);
+  height: calc(var(--h) * 13px);
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 */
+.block-card {
+  width: min(100%, 216px);
+}
+
+.block-card > .block-board {
+  height: 200px;
+}
+
+.block-card.big {
+  width: min(100%, 420px);
+}
+
+.block-card.big > .block-board {
+  height: 330px;
+}
+
+.block-card .strip-note {
   text-align: center;
 }
 
