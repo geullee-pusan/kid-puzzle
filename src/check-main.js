@@ -53,6 +53,7 @@ function drawCounts() {
     ['rooms', '방 한 번씩 돌기'],
     ['machine', '규칙 기계와 규칙이 깨지는 판'],
     ['split', '똑같이 섞이게 자르기'],
+    ['eyeball', '눈대중'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

@@ -28,6 +28,8 @@ import { checkBoard as checkRulehunt, smallBoards as smallRuleBoards } from './r
 import { smallBoards as smallRoomBoards } from './rooms-ladder.js';
 import { checkBoard as checkRooms } from './rooms.js';
 import { smallBoards as smallSplitBoards } from './split-ladder.js';
+import { smallBoards as smallEyeBoards } from './eyeball-ladder.js';
+import { checkBoard as checkEyeball, solve as solveEyeball } from './eyeball.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -679,4 +681,16 @@ export function smallerSplit(origin, turn = 0) {
   return wrap(pickByTurn(smallSplitBoards(origin), solveSplit(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit };
+// ---- 눈대중: 칸이 적은 얼룩, 짧은 선과 수 하나, 수가 둘이거나 작은 어림 ----
+
+/**
+ * 원래 판보다 작은 판을 낸다(src/core/eyeball-ladder.js의 smallBoards). 얼룩은 칸이 4분의 3 이하인 판(덮기는 직사각형 수가 같다),
+ * 선은 찍을 수가 하나뿐이고 가운데 눈금이 보이는 짧은 선, 어림은 수가 둘인 판이나 더 작은 수의 판이다.
+ * 어림에서 알 수 없는 판에서 왔으면 정해지는 판부터 알 수 없는 판과 번갈아 낸다(만들 수 있을 때). 더 줄일 수 없으면 null이다.
+ */
+export function smallerEyeball(origin, turn = 0) {
+  if (!origin.board || checkEyeball(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallEyeBoards(origin), solveEyeball(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball };

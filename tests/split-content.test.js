@@ -90,7 +90,7 @@ test('규칙 설명은 세 문장 안이다. 안 되는 판이 섞이는 판만 
   assert.match(T.rules.four, /선 세 개로/);
   assert.match(code, /const ruleKey = \(round\) => \(round\.custom \? 'made' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 19);
+  assert.equal(guides.length, 20);
   assert.ok(sentenceCount(guides[18]) <= 3, guides[18]);
   assert.match(guides[18], /아무리 잘라도 안 되는 판도 만들 수 있을까요\?$/);
 });
@@ -291,8 +291,8 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   // 카드는 규칙 기계 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="machine-title"') < html.indexOf('id="split-title"'));
   assert.ok(html.indexOf('id="split-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 규칙 기계 다음)
-  assert.match(read('src/main.js'), /machine: createMachine\(frame\), split: createSplit\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 규칙 기계 다음)
+  assert.match(read('src/main.js'), /machine: createMachine\(frame\), split: createSplit\(frame\), /);
   assert.match(read('src/check-main.js'), /\['split', '똑같이 섞이게 자르기'\]/);
   // 켜질 때 앞의 형식(규칙 기계 등)이 감춰 둔 무르기와 되돌리기를 보이게 한다. 규칙 글은 왼쪽 칸 맨 위에 둔다
   assert.match(code, /if \(on\) \{\s*\/\/[^\n]*\n\s*\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

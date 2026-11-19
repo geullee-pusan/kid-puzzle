@@ -7849,3 +7849,423 @@ button.mc-gcell {
   height: 64px;
   justify-content: flex-start;
 }
+
+
+/* ---- 눈대중: 모눈 위의 얼룩, 덮은 직사각형, 수직선과 찍은 곳, 어림 카드와 막대 ----
+   색만으로 알리지 않는다: 얼룩은 굵은 테두리, 덮지 않은 얼룩 칸은 큰 고리 점, 덮은 얼룩 칸은 작은 점, 얼룩이 아닌데 덮은 칸은 빗금,
+   찍은 곳은 세모, 진짜 자리는 동그라미와 기둥, 가린 숫자 때문에 길이를 다 모르는 막대는 점선으로 그린다. */
+.es-board,
+.es-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.es-board .es-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 96px);
+  max-height: calc(var(--h) * 96px);
+  overflow: visible;
+}
+
+.es-line .es-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+}
+
+.es-board.small .es-svg,
+.es-line.small .es-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.es-board.live .es-svg,
+.es-line.live .es-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.board-area > .es-board,
+.board-area > .es-line,
+.door-picture > .es-board,
+.door-picture > .es-line {
+  align-self: stretch;
+  height: auto;
+}
+
+.es-paper {
+  fill: #fff;
+}
+
+.es-blob {
+  fill: #b2dfdb;
+}
+
+.es-blob-edge {
+  fill: none;
+  stroke: #00796b;
+  stroke-width: 16;
+}
+
+.es-counted {
+  fill: #ffd43b;
+  fill-opacity: 0.4;
+}
+
+.es-grid {
+  stroke: #adb5bd;
+  stroke-width: 3;
+}
+
+.es-frame {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 8;
+}
+
+.es-rect-fill {
+  fill: #74c0fc;
+  fill-opacity: 0.22;
+}
+
+.es-rect {
+  fill: none;
+  stroke: #1864ab;
+  stroke-width: 10;
+}
+
+.es-extra line {
+  stroke: #1864ab;
+  stroke-width: 5;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.es-preview {
+  fill: #74c0fc;
+  fill-opacity: 0.18;
+  stroke: #1864ab;
+  stroke-width: 8;
+  stroke-dasharray: 18 12;
+}
+
+.es-dot {
+  fill: #212529;
+}
+
+.es-dot.open {
+  fill: #fff;
+  stroke: #e8590c;
+  stroke-width: 9;
+}
+
+.es-centre {
+  stroke: #212529;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+/* 누를 수 있는 칸: 보이지 않는 네모(글자판으로 고를 때만 테두리가 보인다) */
+.es-key {
+  fill: transparent;
+}
+
+.es-key:focus-visible,
+.es-key.es-anchor {
+  outline: none;
+  stroke: var(--gold);
+  stroke-width: 8;
+}
+
+/* 수직선 */
+.es-line-paper {
+  fill: #fff;
+}
+
+.es-axis {
+  stroke: #343a40;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.es-end {
+  stroke: #343a40;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.es-tenth {
+  stroke: #868e96;
+  stroke-width: 4;
+}
+
+.es-line-num,
+.es-true-num,
+.es-pin-num {
+  font-size: 46px;
+  font-weight: 800;
+  fill: #212529;
+}
+
+.es-true-num {
+  fill: #0b7285;
+}
+
+.es-pin-num {
+  fill: #c2410c;
+}
+
+.es-pin {
+  fill: #fd7e14;
+  stroke: #7c2d12;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.es-pin.now {
+  fill: #ffa94d;
+  stroke-dasharray: 8 5;
+}
+
+.es-true {
+  fill: #fff;
+  stroke: #0b7285;
+  stroke-width: 9;
+}
+
+.es-true-stem {
+  stroke: #0b7285;
+  stroke-width: 5;
+}
+
+.es-gap {
+  stroke: #495057;
+  stroke-width: 5;
+  stroke-dasharray: 10 7;
+}
+
+.es-pin.old,
+.es-true.old,
+.es-true-stem.old,
+.es-gap.old,
+.es-true-num.old,
+.es-pin-num.old {
+  opacity: 0.45;
+}
+
+.es-target {
+  margin: 0;
+  text-align: center;
+  font-size: 44px;
+  font-weight: 900;
+}
+
+/* 어림 카드: 윗줄에 수, 가운데에 화살표, 아랫줄에 어림한 수와 어림한 값(svg라서 자리에 맞게 줄어든다) */
+.board-area > .es-side-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+}
+
+.es-side {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.es-side-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+}
+
+.es-side-num,
+.es-side-op {
+  font-size: 60px;
+  font-weight: 800;
+  fill: #212529;
+}
+
+.es-side-num.est {
+  fill: #1864ab;
+}
+
+.es-side-name {
+  font-size: 34px;
+  font-weight: 700;
+  fill: #495057;
+}
+
+.es-side-arrow {
+  font-size: 44px;
+  fill: #868e96;
+}
+
+.es-side-box {
+  fill: none;
+  stroke: #1864ab;
+  stroke-width: 5;
+}
+
+.es-side.small .es-side-svg {
+  max-height: none;
+  height: 100%;
+}
+
+.es-bars {
+  width: min(100%, 640px);
+}
+
+.es-bars-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.es-bar.up {
+  fill: #74c0fc;
+  stroke: #1864ab;
+  stroke-width: 4;
+}
+
+.es-bar.down {
+  fill: #ffc078;
+  stroke: #c2410c;
+  stroke-width: 4;
+}
+
+.es-bar-maybe {
+  fill: none;
+  stroke-width: 5;
+  stroke-dasharray: 12 8;
+}
+
+.es-bar-maybe.up {
+  stroke: #1864ab;
+}
+
+.es-bar-maybe.down {
+  stroke: #c2410c;
+}
+
+.es-bar-name {
+  font-size: 40px;
+  font-weight: 800;
+  fill: #343a40;
+}
+
+.es-bar-num {
+  font-size: 40px;
+  font-weight: 900;
+  fill: #212529;
+}
+
+/* 풀이, "왜 그럴까?", 직접 만들기의 그림 */
+.es-card {
+  width: min(100%, 300px);
+}
+
+.es-card > .es-board,
+.es-card > .es-line {
+  height: 170px;
+}
+
+.es-card.big {
+  width: min(100%, 560px);
+}
+
+.es-card.big > .es-board {
+  height: 300px;
+}
+
+.es-card.big > .es-line {
+  height: 190px;
+}
+
+.es-card .strip-note {
+  text-align: center;
+}
+
+.es-found {
+  display: grid;
+  gap: 8px;
+}
+
+.es-found:empty {
+  display: none;
+}
+
+#make-eyeball .es-found .es-card {
+  width: 100%;
+}
+
+#make-eyeball .es-found .es-card > .es-board {
+  height: 150px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .es-board.small,
+.resume .es-line.small {
+  width: 90px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume.note-picture .es-board.small,
+.resume.note-picture .es-line.small {
+  width: 100%;
+  height: 110px;
+  justify-content: center;
+}
+
+.menu-picture > .es-board {
+  display: flex;
+  height: 76px;
+}
+
+.level .es-board.small,
+.level .es-line.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}
+
+.level .es-side.small,
+.resume .es-side.small {
+  width: 80px;
+  height: 64px;
+}
+
+.resume .es-side.small {
+  width: 110px;
+  height: 60px;
+}
+
+.resume.note-picture .es-side.small {
+  width: 100%;
+  height: 110px;
+}
+
+.door-picture > .es-side.small {
+  height: 100%;
+}
+
+/* 작은 수직선은 선과 세모가 굵게 보이게 한다 */
+.es-line.small .es-axis,
+.es-line.small .es-end {
+  stroke-width: 18;
+}
