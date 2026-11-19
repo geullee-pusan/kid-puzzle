@@ -1,7 +1,8 @@
 // 자리 바꾸기의 판을 그린다: 한 줄로 이어진 칸과 그 위의 말(개구리와 두꺼비), 한 줄로 놓인 돌.
 // 누를 수 있는 판과 보기만 하는 그림을 같은 모양으로 그린다.
 // 색만으로 알리지 않는다. 개구리는 둥글고 두꺼비는 네모나고 등에 점이 있다. 둘 다 눈과 뾰족한 코가 보는 쪽에 있다.
-// 짝이 된 돌은 두 개를 포개어 그리고, 돌이 떠난 자리는 작은 점선 고리로 남긴다.
+// 짝이 된 돌은 두 개를, 셋이 쌓인 돌은 세 개를 포개어 그리고, 돌이 떠난 자리는 작은 점선 고리로 남긴다.
+// 묶어 옮기기의 돌은 검은 돌과 흰 돌이다. 흰 돌에는 안쪽에 고리가 하나 더 있어서 밝기만으로 가르지 않는다.
 // 못 가는 말을 누르면 그 앞에 굵은 막대를 세우고 길을 막은 칸에 테두리를 두른다. 글자는 대본에서 받는다.
 // 누르는 것은 pointer 이벤트로 받는다. 말을 끌어다 놓아도 된다.
 
@@ -66,10 +67,13 @@ function toadShape() {
   return group;
 }
 
-/** 돌: 혼자 있는 돌은 하나, 짝이 된 돌은 둘을 포개어 그린다. */
+/** 돌: 혼자 있는 돌은 하나, 짝이 된 돌은 둘을, 셋이 쌓인 돌은 셋을 포개어 그린다. */
 function stoneShape(pile) {
-  const group = make('g', {}, pile === 2 ? 'swap-stone pair' : 'swap-stone');
-  if (pile === 2) {
+  const group = make('g', {}, pile === 2 ? 'swap-stone pair' : pile === 3 ? 'swap-stone pile' : 'swap-stone');
+  if (pile === 3) {
+    for (const cy of [24, 0, -24]) group.append(make('circle', { cx: 0, cy, r: 26 }, 'swap-disc'));
+    group.append(make('path', { d: 'M -15 -32 Q -7 -41 5 -43' }, 'swap-shine'));
+  } else if (pile === 2) {
     group.append(make('circle', { cx: 0, cy: 12, r: 30 }, 'swap-disc'));
     group.append(make('circle', { cx: 0, cy: -12, r: 30 }, 'swap-disc'));
     group.append(make('path', { d: 'M -17 -22 Q -8 -32 6 -34' }, 'swap-shine'));
@@ -77,6 +81,16 @@ function stoneShape(pile) {
     group.append(make('circle', { cx: 0, cy: 0, r: 30 }, 'swap-disc'));
     group.append(make('path', { d: 'M -17 -10 Q -8 -20 6 -22' }, 'swap-shine'));
   }
+  return group;
+}
+
+/** 묶어 옮기기의 돌: 검은 돌과 흰 돌(흰 돌은 안쪽 고리가 있다) */
+function colorStone(cell) {
+  const white = cell === 'W';
+  const group = make('g', {}, `swap-stone ${white ? 'white' : 'black'}`);
+  group.append(make('circle', { cx: 0, cy: 0, r: 32 }, 'swap-disc'));
+  if (white) group.append(make('circle', { cx: 0, cy: 0, r: 17 }, 'swap-inner'));
+  group.append(make('path', { d: 'M -18 -11 Q -9 -21 6 -23' }, 'swap-shine'));
   return group;
 }
 
@@ -174,21 +188,25 @@ function boardOf(root) {
  * 판을 그린다.
  * @param {HTMLElement} root 그릴 자리(안의 것을 모두 바꾼다)
  * @param {object} view
- *   kind     'frogs' | 'pairs'
+ *   kind     'frogs' | 'pairs' | 'carry'
  *   cells    칸의 모습. 개구리 판은 'R'(오른쪽을 보는 말), 'L'(왼쪽을 보는 말), '_'(빈칸).
- *            짝 짓기 판은 '1'(혼자 있는 돌), '2'(짝이 된 돌), '0'(빈자리)
+ *            짝 짓기 판은 '1'(혼자 있는 돌), '2'(짝이 된 돌), '3'(셋이 쌓인 돌), '0'(빈자리)
+ *            묶어 옮기기 판은 'B'(검은 돌), 'W'(흰 돌), '_'(빈칸)
  *   label    (칸 번호) → 읽어 줄 이름(누를 수 있는 판에서만)
  *   onTap    (칸 번호) → 눌렀을 때. 없으면 그림으로만 그린다
  *   onDrop   (떠난 칸, 놓은 칸) → 말을 끌어다 놓았을 때
- *   picked   집어 든 돌의 칸(없으면 null)
- *   targets  얹을 수 있는 칸들(점선 고리)
+ *   picked   집어 든 돌의 칸(없으면 null). 묶어 옮기기는 고른 돌들의 칸 목록
+ *   targets  얹을 수 있는 칸들, 옮겨 갈 수 있는 빈칸들(점선 고리)
  *   block    { at, cells } 못 가는 말의 칸과 길을 막은 칸들(막대와 테두리로 보인다). 없으면 null
- *   last     { from, to } 방금 한 움직임. arrow가 true면 화살표로 보인다
+ *   last     { from, to } 방금 한 움직임. arrow가 true면 화살표로 보인다(묶어 옮기기는 돌 둘의 가운데에서 빈칸 둘의 가운데로)
  *   arrow    방금 한 움직임을 화살표로 그린다(그림용). 화살표가 없는 그림도 위에 같은 자리를 둔다
  *   small    작은 그림으로 그린다
  */
 export function drawRow(root, view) {
   const { kind, cells, picked = null, targets = [], block = null, last = null, arrow = false, small = false } = view;
+  const pickedCells = picked === null ? [] : [].concat(picked);
+  // 묶어 옮기기는 움직임 하나가 두 칸이다(떠난 두 칸, 닿은 두 칸).
+  const span = kind === 'carry' ? 1 : 0;
   const live = Boolean(view.onTap);
   root.className = `swap-row ${kind}${small ? ' small' : ''}${live ? ' live' : ''}`;
   root.style.setProperty('--n', String(cells.length));
@@ -208,7 +226,18 @@ export function drawRow(root, view) {
   [...cells].forEach((cell, index) => {
     const x = centerOf(index);
     const group = make('g', { 'data-cell': index }, 'swap-cell-group');
-    if (kind === 'frogs') {
+    if (kind === 'carry') {
+      group.append(make('rect', { x: index * UNIT + 6, y: MIDDLE - 52, width: UNIT - 12, height: 104, rx: 18 }, 'swap-cell'));
+      if (cell !== '_') {
+        const lifted = pickedCells.includes(index);
+        const piece = make('g', { transform: `translate(${x} ${MIDDLE - (lifted ? 14 : 0)})` }, 'swap-piece');
+        if (last && !arrow && (index === last.to || index === last.to + 1)) piece.classList.add('moved');
+        piece.append(colorStone(cell));
+        group.append(piece);
+        if (lifted) group.append(make('circle', { cx: x, cy: MIDDLE - 14, r: 42 }, 'swap-ring picked'));
+      }
+      if (targets.includes(index)) group.append(make('circle', { cx: x, cy: MIDDLE, r: 40 }, 'swap-ring target'));
+    } else if (kind === 'frogs') {
       const names = ['swap-cell'];
       if (block?.cells.includes(index)) names.push('blocking');
       group.append(make('rect', { x: index * UNIT + 6, y: MIDDLE - 52, width: UNIT - 12, height: 104, rx: 18 }, names.join(' ')));
@@ -221,8 +250,9 @@ export function drawRow(root, view) {
     } else if (cell === '0') {
       group.append(make('circle', { cx: x, cy: MIDDLE + 20, r: 11 }, 'swap-gone'));
     } else {
-      const lifted = picked === index;
-      const piece = make('g', { transform: `translate(${x} ${MIDDLE + (cell === '2' ? 4 : 14) - (lifted ? 22 : 0)})` }, 'swap-piece');
+      const lifted = pickedCells.includes(index);
+      const lift = { 1: 14, 2: 4, 3: -2 }[cell] ?? 14;
+      const piece = make('g', { transform: `translate(${x} ${MIDDLE + lift - (lifted ? 22 : 0)})` }, 'swap-piece');
       if (last && last.to === index && !arrow) piece.classList.add('moved');
       piece.append(stoneShape(Number(cell)));
       group.append(piece);
@@ -247,8 +277,8 @@ export function drawRow(root, view) {
 
   // 방금 한 움직임을 위쪽 화살표로 보인다(그림용).
   if (arrow && last) {
-    const x1 = centerOf(last.from);
-    const x2 = centerOf(last.to);
+    const x1 = centerOf(last.from) + (span * UNIT) / 2;
+    const x2 = centerOf(last.to) + (span * UNIT) / 2;
     const tip = x2 > x1 ? -1 : 1;
     nodes.push(make('path', { d: `M ${x1} ${MIDDLE - 56} Q ${(x1 + x2) / 2} ${MIDDLE - 118} ${x2} ${MIDDLE - 58}` }, 'swap-arrow'));
     nodes.push(make('polygon', { points: `${x2},${MIDDLE - 50} ${x2 + tip * 20},${MIDDLE - 60} ${x2 + tip * 4},${MIDDLE - 74}` }, 'swap-arrow-tip'));

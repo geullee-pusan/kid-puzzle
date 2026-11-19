@@ -216,7 +216,7 @@ test('숫자 추리: 숫자 1~4로 만든 두 자리 암호. 표는 답이 꼭 �
   assert.equal(smallerCode({ mode: 'guess', board: { mode: 'guess', length: 3, digits: '123456' } }), null);
 });
 
-test('자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 짓기는 돌을 둘 줄인 판', () => {
+test('자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 짓기와 묶어 옮기기는 돌을 둘(셋씩 쌓기는 셋) 줄인 판', () => {
   eachBoard(swapLadder, (board, rung, where) => {
     const origin = { mode: rung.mode, board };
     for (const turn of TURNS) {
@@ -231,6 +231,25 @@ test('자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 
         // 좌우를 뒤집은 판을 번갈아 낸다.
         assert.deepEqual([small.board.left, small.board.right], turn % 2 === 1 ? want.slice().reverse() : want, `${where} ${turn}번째`);
         assert.equal(solveSwap(small.board).possible, true, where);
+      } else if (board.kind === 'carry') {
+        // 묶어 옮기기: 돌을 둘씩 줄인 판(모두 되는 판). 되는 가장 작은 판(6개)에는 없다.
+        if (board.n === 6) {
+          assert.equal(small, null, `${where}: 돌 6개`);
+          continue;
+        }
+        const sizes = [];
+        for (let n = board.n - 2; n >= 6; n -= 2) sizes.push(n);
+        assert.deepEqual(small.board, { kind: 'carry', n: sizes[turn % sizes.length] }, `${where} ${turn}번째`);
+        assert.equal(solveSwap(small.board).possible, true, where);
+      } else if (board.group === 3) {
+        // 셋씩 쌓기: 돌을 셋씩 줄인 판. 12개(되는 가장 작은 판)와 6개에는 없고, 15개는 12개, 안 되는 9개는 안 되는 6개다.
+        const want = { 15: 12, 9: 6 }[board.n];
+        if (!want) {
+          assert.equal(small, null, `${where}: 돌 ${board.n}개`);
+          continue;
+        }
+        assert.deepEqual(small.board, { kind: 'pairs', n: want, skip: board.skip, group: 3 }, where);
+        assert.equal(swapLadder.solveOnce(small.board).possible, swapLadder.solveOnce(board).possible, where);
       } else {
         const from = solveSwap(board).possible;
         // 되는 가장 작은 판(8개)과 건너뛸 수 있는 가장 작은 판(4개)에는 없다.

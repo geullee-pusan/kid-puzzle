@@ -29,7 +29,8 @@ import { smallBoards as smallRoomBoards } from './rooms-ladder.js';
 import { checkBoard as checkRooms } from './rooms.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
-import { checkBoard as checkSwap, solve as solveSwap } from './swap.js';
+import { checkBoard as checkSwap } from './swap.js';
+import { solveOnce as solveSwapOnce } from './swap-ladder.js';
 import { cardsUpTo, checkBoard as checkTax, plainN } from './tax.js';
 import { MIN_SIZE, checkBoard as checkTile, deadCells, solve as solveTile, xyOf } from './tile.js';
 import { famousShape, plainBridges, randomBridges, randomFigure, randomTwin, tooPlain } from './trace-ladder.js';
@@ -212,7 +213,7 @@ export function smallerCode(origin, turn = 0) {
   return null;
 }
 
-// ---- 자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 짓기는 돌을 둘씩 줄인 판 ----
+// ---- 자리 바꾸기: 개구리는 양쪽에서 한 마리씩 줄인 판, 짝 짓기와 묶어 옮기기는 돌을 둘씩(셋씩 쌓기는 셋씩) 줄인 판 ----
 
 export function smallerSwap(origin, turn = 0) {
   const { board } = origin;
@@ -224,18 +225,29 @@ export function smallerSwap(origin, turn = 0) {
     // 양쪽 수가 다른 판은 한 번씩 좌우를 뒤집어 낸다.
     return { board: turn % 2 === 1 ? { kind: 'frogs', left: right, right: left } : { kind: 'frogs', left, right } };
   }
-  // 짝 짓기: 돌이 건너뛸 수 있는 가장 작은 판(건너뛰는 수 + 2개)까지만 줄인다.
+  // 묶어 옮기기: 돌을 둘씩 줄인 판(모두 되는 판). 돌 6개(4번)가 되는 가장 작은 판이다.
+  if (board.kind === 'carry') {
+    const yes = [];
+    for (let n = board.n - 2; n >= SWAP_CARRY_FLOOR; n -= 2) yes.push({ kind: 'carry', n });
+    return wrap(pickByTurn({ yes, no: [] }, true, turn));
+  }
+  // 짝 짓기와 셋씩 쌓기: 돌이 건너뛸 수 있는 가장 작은 판(건너뛰는 수 + 2개)까지만 줄인다.
   const { skip } = board;
-  const possible = solveSwap(board).possible;
+  const group = board.group ?? 2;
+  const shape = (n) => (group === 3 ? { kind: 'pairs', n, skip, group } : { kind: 'pairs', n, skip });
+  const possible = solveSwapOnce(board).possible;
   const lists = { yes: [], no: [] };
   for (let n = board.n - 1; n >= skip + 2; n--) {
-    const small = { kind: 'pairs', n, skip };
-    const works = solveSwap(small).possible;
-    // 같은 쪽(되는 판이면 되는 판)은 돌을 둘씩 줄인 판만, 안 되는 판에서 견줘 볼 되는 판은 더 작은 판이면 어느 것이나
-    if (works === possible ? (board.n - n) % 2 === 0 : works) lists[works ? 'yes' : 'no'].push(small);
+    const small = shape(n);
+    const works = solveSwapOnce(small).possible;
+    // 같은 쪽(되는 판이면 되는 판)은 돌을 둘씩(셋씩 쌓기는 셋씩) 줄인 판만, 안 되는 판에서 견줘 볼 되는 판은 더 작은 판이면 어느 것이나
+    if (works === possible ? (board.n - n) % group === 0 : works) lists[works ? 'yes' : 'no'].push(small);
   }
   return wrap(pickByTurn(lists, possible, turn));
 }
+
+/** 묶어 옮기기의 작은 판의 돌의 수의 아래 끝(4개는 안 되는 판이다) */
+export const SWAP_CARRY_FLOOR = 6;
 
 // ---- 조각 덮기: 같은 조각, 한 단 작은 판. 뺀 칸은 원래 판과 닮은 자리 ----
 

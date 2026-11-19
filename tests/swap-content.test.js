@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { TUNING, recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
-import { LADDER, MAKE_LEVEL, generateBoard, rungOf } from '../src/core/swap-ladder.js';
+import { LADDER, MAKE_LEVEL, OLD_MAKE_LEVEL, generateBoard, rungOf } from '../src/core/swap-ladder.js';
 import { MAX_FROGS, SKIPS, allWays, checkBoard, deadEnds, isDone, isStuck, movesOf, replay, solve, stuckKind } from '../src/core/swap.js';
 import { fill, ordinal, sentenceCount } from '../src/core/text.js';
 
@@ -19,9 +19,9 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const css = read('src/app.css');
 
-const MODES = ['frogs', 'fewest', 'pairs'];
+const MODES = ['frogs', 'fewest', 'pairs', 'carry', 'threes'];
 const GUESS_KEYS = ['impossible-no-try', 'impossible-same-first', 'impossible-other-way'];
-const STUCK_KEYS = ['plain', 'pair-again', 'same', 'same-start', 'pairs', 'pairs-same', 'pairs-same-start'];
+const STUCK_KEYS = ['plain', 'pair-again', 'same', 'same-start', 'pairs', 'pairs-same', 'pairs-same-start', 'threes'];
 const RIGHT_KEYS = [
   'swapped-clean',
   'swapped-back',
@@ -35,6 +35,13 @@ const RIGHT_KEYS = [
   'impossible-tried',
   'impossible-some',
   'impossible-untried',
+  'carry-fewest',
+  'carry-stopped',
+  'piled-clean',
+  'piled-back',
+  'impossible-threes-tried',
+  'impossible-threes-some',
+  'impossible-threes-untried',
   'after-retry',
   'why-invite',
 ];
@@ -72,9 +79,11 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다', () => {
   assert.equal(T.title, '자리 바꾸기');
 });
 
-test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·도전이다', () => {
+test('단계 목록이 사다리와 같고, 표시는 기본·응용·응용·도전·응용·도전·도전이다', () => {
   assert.deepEqual(T.levels.map((entry) => entry.level), LADDER.map((rung) => rung.level));
-  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '도전']);
+  assert.deepEqual(LADDER.map((rung) => C.tags[rung.tag]), ['기본', '응용', '응용', '도전', '응용', '도전', '도전']);
+  assert.equal(T.levels[4].name, '둘씩 묶어 옮기기');
+  assert.equal(T.levels[5].name, '셋씩 쌓기');
   assert.equal(T.levels.at(-1).level, MAKE_LEVEL);
   assert.equal(T.levels.at(-1).name, '직접 만들기');
   assert.match(T.levels[2].name, /무르지 않고/);
@@ -199,7 +208,7 @@ test('막혔을 때 하는 말은 본 것 하나와 할 수 있는 일 하나다
     }
   }
   // 판 아래에 적는 짧은 글
-  for (const key of ['stuck', 'swapped', 'blocked', 'edge', 'backward', 'pairs-stuck', 'paired', 'no-landing', 'is-pair', 'far']) {
+  for (const key of ['stuck', 'swapped', 'blocked', 'edge', 'backward', 'pairs-stuck', 'paired', 'no-landing', 'is-pair', 'far', 'gathered', 'piled', 'is-pile', 'carry-pick', 'carry-two']) {
     assert.match(T.status[key], /요$/, key);
     assert.ok([...T.status[key]].length <= 20, key);
   }
@@ -265,6 +274,9 @@ test('화면 글은 "~요"로 끝나는 말투다(대본의 문장)', () => {
     T.solution.frogs,
     T.solution.pairs,
     T.solution.impossible,
+    T.solution.carry,
+    T.solution.threes,
+    T.solution['threes-impossible'],
     T.make.intro,
     T.make.frogs,
     T.make.pairs,
@@ -425,7 +437,10 @@ test('판 고르기의 그림: 단계마다 그 단계의 판이고, 그림 속�
       assert.equal(picture.blank, true);
       continue;
     }
-    const board = rung.mode === 'pairs' ? { kind: 'pairs', n: picture.n, skip: picture.skip } : frogs(picture.left, picture.right);
+    let board = frogs(picture.left, picture.right);
+    if (rung.mode === 'pairs') board = { kind: 'pairs', n: picture.n, skip: picture.skip };
+    if (rung.mode === 'threes') board = { kind: 'pairs', n: picture.n, skip: picture.skip, group: picture.group };
+    if (rung.mode === 'carry') board = { kind: 'carry', n: picture.carry };
     assert.equal(checkBoard(board), null, `${rung.level}단계`);
     assert.equal(replay(board, picture.trail ?? []).ok, true, `${rung.level}단계의 그림`);
     // 그 단계에서 실제로 나오는 판이다.
@@ -436,7 +451,7 @@ test('판 고르기의 그림: 단계마다 그 단계의 판이고, 그림 속�
   assert.equal(fill(T.cellLabel, { no: ordinal(2), what: T.pieces.toad }), '2번째 칸, 두꺼비');
   assert.equal(fill(T.cellLabel, { no: ordinal(1), what: T.pieces.frog }), '첫 번째 칸, 개구리');
   assert.match(read('src/formats/swap.js'), /fill\(T\.cellLabel, \{ no: ordinal\(index \+ 1\), what: /);
-  assert.deepEqual(Object.keys(T.pieces), ['frog', 'toad', 'empty', 'single', 'pair', 'gone']);
+  assert.deepEqual(Object.keys(T.pieces), ['frog', 'toad', 'empty', 'single', 'pair', 'gone', 'two', 'three', 'black', 'white']);
 });
 
 test('풀이와 직접 만들기의 글: 가장 적은 횟수와 되는지를 알려 준다', () => {
@@ -482,6 +497,7 @@ test('index.html: 자리 바꾸기의 카드, 판, 답하는 칸, 직접 만들�
   ]) {
     assert.ok(html.includes(`id="${id}"`), id);
   }
+  assert.ok(html.includes('id="swap-carry"') && html.includes('id="swap-record"'));
   for (const side of ['left', 'right', 'n']) for (const way of ['fewer', 'more']) assert.ok(html.includes(`id="swap-make-${side}-${way}"`), `${side}-${way}`);
   for (const skip of SKIPS) assert.ok(html.includes(`data-skip="${skip}"`), `건너뛰는 수 ${skip}`);
   for (const kind of ['frogs', 'pairs']) assert.ok(html.includes(`data-kind="${kind}"`), kind);
@@ -569,7 +585,7 @@ test('자리 바꾸기의 수준 맞추기 값은 임시값이고, 처음 보여
   const tuning = tuningFor('swap');
   assert.equal(tuning.startLevel, 1);
   assert.equal(tuning.bottomLevel, 1);
-  assert.equal(tuning.topLevel, 4);
+  assert.equal(tuning.topLevel, 6);
   assert.equal(tuning.hintCount, 2);
   assert.equal(tuning.whyAfter, 'fewest');
   for (const rung of LADDER.filter((item) => item.mode !== 'make')) assert.ok(tuning.expectedSeconds[rung.level] > 0, `${rung.level}단계의 예상 시간`);
@@ -632,4 +648,32 @@ test('"왜 그럴까?"는 가장 적은 횟수로 한 판을 끝낸 뒤에 열�
   assert.equal(whyUnlocked([{ ...swap(), format: 'code' }], 'code'), true);
   assert.equal(whyUnlocked([{ ...swap(), format: 'trace', solution: { possible: false } }], 'trace'), true);
   assert.equal(whyUnlocked([{ ...swap(), format: 'trace' }], 'trace'), false);
+});
+
+test('둘씩 묶어 옮기기: 더 많이 옮겼으면 몇 번이었는지 말하고 "더 적게 할 수 있을까요?"라고 묻는다. 가장 좋은 기록은 공책에 남긴다', () => {
+  const code = read('src/formats/swap.js');
+  assert.equal(fill(T.play['carry-more'], { m: 6 }), '6번 옮겨서 모았어요. 더 적게 할 수 있을까요?');
+  assert.equal(fill(T.right['carry-fewest'], { m: 4 }), '4번 옮겨서 같은 색끼리 모았어요. 이보다 적게는 할 수 없어요.');
+  assert.equal(fill(T.notebook.best, { k: 5 }), '가장 적게 옮긴 횟수 5번');
+  assert.ok(code.includes("bestOf: (round) => (round.mode !== 'carry' || round.best === null ? null :"));
+  // 규칙에서 횟수를 묻지 않는다(짝 수만큼이라는 것은 아이가 찾는다).
+  assert.doesNotMatch(T.rules.carry, /횟수|가장 적|몇 번|번에/);
+  assert.doesNotMatch(T.home.ask.carry, /횟수|가장 적|몇 번|번에/);
+  // 횟수는 지금 길의 길이다(무른 것은 빠진다).
+  assert.ok(code.includes('const movesNow = (round) => (isCarry(round.board) ? round.trail.length : round.count);'));
+  // 셋씩 쌓기의 글
+  assert.equal(fill(T.rules.threes, { k: 3 }).split('. ')[0], '돌 하나를 집어 돌 3개를 건너뛰고, 셋이 안 된 돌 더미 위에 얹어요');
+  assert.equal(fill(T.solution.threes, { k: 8 }), '8번 얹으면 모두 셋씩 쌓여요. 한 가지 방법을 보여 줄게요.');
+});
+
+test('직접 만들기는 7단계다. 예전 번호(5단계)로 적어 둔 직접 만든 판도 하던 판으로 받고, 만들어 낸 판은 단계의 판의 종류와 맞아야 받는다', () => {
+  const code = read('src/formats/swap.js');
+  assert.equal(OLD_MAKE_LEVEL, 5);
+  assert.equal(MAKE_LEVEL, 7);
+  assert.ok(code.includes("if (saved.custom === true) return [MAKE_LEVEL, OLD_MAKE_LEVEL].includes(saved.level) && ['frogs', 'pairs'].includes(saved.mode) && saved.board.group === undefined;"));
+  assert.ok(code.includes('saved.level <= TOP_LEVEL && rungOf(saved.level).mode === saved.mode;'));
+  assert.equal(rungOf(OLD_MAKE_LEVEL).mode, 'carry');
+  // 직접 만든 판의 기록(예전 번호)은 수준 맞추기에서 세지 않는다.
+  const custom = () => swap({ level: OLD_MAKE_LEVEL, custom: true, outcome: 'left', answers: [], moveCount: 4 });
+  assert.equal(recommend([custom(), custom()], 'swap').reason, 'start');
 });

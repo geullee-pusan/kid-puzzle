@@ -1,7 +1,7 @@
 // 자리 바꾸기: 판, 움직이는 규칙, 풀이 프로그램(너비 우선 탐색), 막힌 모양 가리기, 오답 짐작.
 // 순수 함수만 둔다. 화면에 손대지 않고, 무작위 수와 지금 시각을 쓰지 않는다. 같은 입력은 늘 같은 출력을 낸다.
 //
-// 한 형식에 판이 두 가지다.
+// 한 형식에 판이 세 가지다(짝 짓기 판에는 셋씩 쌓는 판도 있다).
 //
 // 가. 개구리 자리 바꾸기: { kind: 'frogs', left, right }
 //   한 줄로 이어진 칸. 왼쪽에 left마리(오른쪽을 본다), 오른쪽에 right마리(왼쪽을 본다), 그 사이에 빈칸 하나.
@@ -14,7 +14,16 @@
 //   칸의 모습은 글자열로 적는다. '1'은 혼자 있는 돌, '2'는 짝이 된 돌, '0'은 돌이 떠난 빈자리다(빈자리는 세지 않는다).
 //   모두 짝을 지으면 끝이다.
 //
-// 움직임(move): { from, to, jump }. jump는 개구리 판에서 뛰어넘었는가이다(짝 짓기에서는 늘 true).
+//   셋씩 쌓기: { kind: 'pairs', n, skip, group: 3 }. 규칙은 같고, 셋이 안 된 더미(혼자 있는 돌이나 둘이 쌓인 돌) 위에 얹는다.
+//   칸의 '3'은 셋이 쌓인 돌이다. 모두 셋씩 쌓으면 끝이다. 움직이는 것은 혼자 있는 돌뿐이다. group이 없으면 둘씩(짝 짓기)이다.
+//
+// 다. 둘씩 묶어 옮기기: { kind: 'carry', n }
+//   검은 돌과 흰 돌 n개(짝수)가 검은 돌부터 번갈아 한 줄로 놓이고, 오른쪽 끝에 빈칸 둘이 있다.
+//   칸의 모습은 글자열로 적는다. 'B'는 검은 돌, 'W'는 흰 돌, '_'는 빈칸이다. 빈칸 둘은 늘 붙어 있다.
+//   이웃한 돌 둘을 차례 그대로 빈칸 둘로 옮긴다(움직임의 from은 두 돌 가운데 왼쪽 칸, to는 빈칸 둘 가운데 왼쪽 칸).
+//   돌 사이에 빈칸이 없고 검은 돌끼리, 흰 돌끼리 모여 있으면 끝이다(어느 색이 왼쪽이어도 된다. 빈칸 둘은 어느 끝에 있어도 된다).
+//
+// 움직임(move): { from, to, jump }. jump는 개구리 판에서 뛰어넘었는가이다(짝 짓기에서는 늘 true, 묶어 옮기기에서는 늘 false).
 // 지나온 길(trail)은 [from, to]의 목록이다.
 
 /** 개구리 판에서 한쪽에 놓을 수 있는 마릿수의 위 끝 */
@@ -22,8 +31,16 @@ export const MAX_FROGS = 5;
 /** 짝 짓기 판에 놓을 수 있는 돌의 수의 아래 끝과 위 끝 */
 export const MIN_STONES = 2;
 export const MAX_STONES = 12;
+/** 셋씩 쌓기 판에 놓을 수 있는 돌의 수의 위 끝 */
+export const MAX_PILE_STONES = 15;
 /** 짝 짓기에서 건너뛰는 수로 고를 수 있는 것 */
 export const SKIPS = [1, 2, 3];
+/** 묶어 옮기기 판의 돌의 수의 아래 끝과 위 끝(짝수만) */
+export const MIN_CARRY = 4;
+export const MAX_CARRY = 14;
+
+/** 짝 짓기 판의 한 더미에 쌓는 수(둘씩 또는 셋씩) */
+export const groupOf = (board) => board.group ?? 2;
 
 /**
  * 뛰어넘기 규칙.
@@ -37,7 +54,7 @@ export const SKIPS = [1, 2, 3];
 export const JUMP_RULES = ['other', 'any'];
 export const JUMP_RULE = 'other';
 
-export const KINDS = ['frogs', 'pairs'];
+export const KINDS = ['frogs', 'pairs', 'carry'];
 
 /** 판이 규격에 맞는지 본다. 맞으면 null, 아니면 무엇이 틀렸는지 알리는 열쇠 */
 export function checkBoard(board) {
@@ -49,8 +66,14 @@ export function checkBoard(board) {
     return null;
   }
   if (board.kind === 'pairs') {
-    if (!Number.isInteger(board.n) || board.n < MIN_STONES || board.n > MAX_STONES) return 'bad-count';
+    if (board.group !== undefined && board.group !== 3) return 'bad-group';
+    const most = board.group === 3 ? MAX_PILE_STONES : MAX_STONES;
+    if (!Number.isInteger(board.n) || board.n < MIN_STONES || board.n > most) return 'bad-count';
     if (!SKIPS.includes(board.skip)) return 'bad-skip';
+    return null;
+  }
+  if (board.kind === 'carry') {
+    if (!Number.isInteger(board.n) || board.n < MIN_CARRY || board.n > MAX_CARRY || board.n % 2 !== 0) return 'bad-count';
     return null;
   }
   return 'bad-kind';
@@ -59,6 +82,7 @@ export function checkBoard(board) {
 /** 처음 모습 */
 export function startCells(board) {
   if (board.kind === 'frogs') return `${'R'.repeat(board.left)}_${'L'.repeat(board.right)}`;
+  if (board.kind === 'carry') return `${'BW'.repeat(board.n / 2)}__`;
   return '1'.repeat(board.n);
 }
 
@@ -67,10 +91,15 @@ export function goalCells(board) {
   return `${'L'.repeat(board.right)}_${'R'.repeat(board.left)}`;
 }
 
-/** 끝났는가: 개구리는 자리를 맞바꿨다, 짝 짓기는 혼자 있는 돌이 없다 */
+/** 끝났는가: 개구리는 자리를 맞바꿨다, 짝 짓기는 다 쌓이지 않은 더미가 없다, 묶어 옮기기는 같은 색끼리 빈칸 없이 모였다 */
 export function isDone(board, cells) {
   if (board.kind === 'frogs') return cells === goalCells(board);
-  return !cells.includes('1');
+  if (board.kind === 'carry') {
+    const stones = cells.replace(/^_+|_+$/g, '');
+    return !stones.includes('_') && /^(B+W+|W+B+)$/.test(stones);
+  }
+  const group = groupOf(board);
+  return ![...cells].some((cell) => cell !== '0' && Number(cell) < group);
 }
 
 function frogMoves(cells, rule) {
@@ -88,34 +117,47 @@ function frogMoves(cells, rule) {
   return moves;
 }
 
-/** 짝 짓기에서 from의 돌이 dir 쪽으로 뛰어 얹힐 자리. 없으면 -1 */
-function landing(cells, skip, from, dir) {
+/** 짝 짓기에서 from의 돌이 dir 쪽으로 뛰어 얹힐 자리. 없으면 -1. 다 쌓인 더미(group개)에는 얹지 못한다 */
+function landing(cells, skip, from, dir, group) {
   let passed = 0;
   for (let at = from + dir; at >= 0 && at < cells.length; at += dir) {
     const pile = Number(cells[at]);
     if (pile === 0) continue;
-    if (passed === skip) return pile === 1 ? at : -1;
+    if (passed === skip) return pile < group ? at : -1;
     passed += pile;
     if (passed > skip) return -1;
   }
   return -1;
 }
 
-function pairMoves(cells, skip) {
+function pairMoves(cells, skip, group) {
   const moves = [];
   for (let from = 0; from < cells.length; from++) {
     if (cells[from] !== '1') continue;
     for (const dir of [-1, 1]) {
-      const to = landing(cells, skip, from, dir);
+      const to = landing(cells, skip, from, dir, group);
       if (to >= 0) moves.push({ from, to, jump: true });
     }
   }
   return moves;
 }
 
+/** 묶어 옮기기: 이웃한 돌 둘(from, from + 1)을 빈칸 둘(to, to + 1)로 */
+function carryMoves(cells) {
+  const to = cells.indexOf('__');
+  if (to < 0) return [];
+  const moves = [];
+  for (let from = 0; from + 1 < cells.length; from++) {
+    if (cells[from] !== '_' && cells[from + 1] !== '_') moves.push({ from, to, jump: false });
+  }
+  return moves;
+}
+
 /** 지금 모습에서 할 수 있는 움직임 모두 */
 export function movesOf(board, cells, rule = JUMP_RULE) {
-  return board.kind === 'frogs' ? frogMoves(cells, rule) : pairMoves(cells, board.skip);
+  if (board.kind === 'frogs') return frogMoves(cells, rule);
+  if (board.kind === 'carry') return carryMoves(cells);
+  return pairMoves(cells, board.skip, groupOf(board));
 }
 
 /** from의 말이 할 수 있는 움직임들(개구리는 하나까지, 짝 짓기는 둘까지) */
@@ -129,9 +171,14 @@ export function applyMove(board, cells, move) {
   if (board.kind === 'frogs') {
     next[move.to] = cells[move.from];
     next[move.from] = '_';
+  } else if (board.kind === 'carry') {
+    next[move.from] = '_';
+    next[move.from + 1] = '_';
+    next[move.to] = cells[move.from];
+    next[move.to + 1] = cells[move.from + 1];
   } else {
     next[move.from] = '0';
-    next[move.to] = '2';
+    next[move.to] = String(Number(cells[move.to]) + 1);
   }
   return next.join('');
 }
@@ -166,8 +213,9 @@ export function isStuck(board, cells, rule = JUMP_RULE) {
  * 누른 말이 왜 못 가는지. 갈 수 있으면 null.
  * @returns {null | {reason: string, cells: number[]}}
  *   reason  'empty'(말이 없는 칸) | 'edge'(줄의 끝이다) | 'blocked'(앞이 막혔다)
- *           | 'paired'(짝이 된 돌이다) | 'no-landing'(얹을 자리가 없다)
+ *           | 'paired'(짝이 된 돌이다) | 'piled'(셋씩 쌓기에서 쌓인 돌이다) | 'no-landing'(얹을 자리가 없다)
  *   cells   길을 막고 있는 칸들(판에서 보여 준다)
+ * 묶어 옮기기 판에서는 쓰지 않는다(돌 둘을 골라야 움직인다).
  */
 export function blockOf(board, cells, from, rule = JUMP_RULE) {
   const piece = cells[from];
@@ -175,7 +223,8 @@ export function blockOf(board, cells, from, rule = JUMP_RULE) {
   if (movesFrom(board, cells, from, rule).length > 0) return null;
   if (board.kind === 'pairs') {
     if (piece === '0') return { reason: 'empty', cells: [] };
-    return { reason: piece === '2' ? 'paired' : 'no-landing', cells: [] };
+    if (piece === '1') return { reason: 'no-landing', cells: [] };
+    return { reason: groupOf(board) === 3 ? 'piled' : 'paired', cells: [] };
   }
   if (piece === '_') return { reason: 'empty', cells: [] };
   const step = piece === 'R' ? 1 : -1;
@@ -228,6 +277,7 @@ export function solve(board, rule = JUMP_RULE) {
 /**
  * 끝까지 가는 모든 길을 따져, 길마다의 움직인 횟수와 뛰어넘은 횟수가 어떤 값들인지 모은다.
  * 개구리 판은 말이 앞으로만 가므로 같은 모습으로 돌아오지 않는다(길이 끝없이 이어지지 않는다).
+ * 묶어 옮기기 판은 같은 모습으로 돌아올 수 있어서 이 함수와 randomFinishRate를 쓰지 않는다.
  * @returns {{ways: number, lengths: number[], jumps: number[]}}
  *   ways     끝까지 가는 길의 수
  *   lengths  그 길들의 움직인 횟수(서로 다른 값만, 작은 것부터)

@@ -7,7 +7,10 @@ import { test } from 'node:test';
 import {
   JUMP_RULE,
   JUMP_RULES,
+  MAX_CARRY,
   MAX_FROGS,
+  MAX_PILE_STONES,
+  MIN_CARRY,
   MAX_STONES,
   MIN_STONES,
   SKIPS,
@@ -28,7 +31,7 @@ import {
   startCells,
   stuckKind,
 } from '../src/core/swap.js';
-import { bruteFrogs, brutePairs } from './helpers/brute-swap.js';
+import { bruteCarry, bruteFrogs, brutePairs, brutePiles } from './helpers/brute-swap.js';
 
 const frogs = (left, right) => ({ kind: 'frogs', left, right });
 const pairs = (n, skip = 2) => ({ kind: 'pairs', n, skip });
@@ -270,4 +273,85 @@ test('오답 짐작: 되는 판에 "불가능해요"', () => {
   assert.deepEqual(diagnoseImpossible(can), { correct: false, guess: 'impossible-no-try' });
   assert.deepEqual(diagnoseImpossible(can, { moves: 5, firsts: ['0-3'] }), { correct: false, guess: 'impossible-same-first' });
   assert.deepEqual(diagnoseImpossible(can, { moves: 9, firsts: ['0-3', '3-6'] }), { correct: false, guess: 'impossible-other-way' });
+});
+
+// ---- 둘씩 묶어 옮기기와 셋씩 쌓기(2026-11-20에 더한 판) ----
+const carry = (n) => ({ kind: 'carry', n });
+const piles = (n, skip = 3) => ({ kind: 'pairs', n, skip, group: 3 });
+
+test('묶어 옮기기의 규격과 움직임: 돌 4~14개(짝수), 이웃한 돌 둘을 차례 그대로 빈칸 둘로', () => {
+  assert.deepEqual([MIN_CARRY, MAX_CARRY, MAX_PILE_STONES], [4, 14, 15]);
+  assert.equal(checkBoard(carry(8)), null);
+  assert.equal(checkBoard(carry(14)), null);
+  assert.equal(checkBoard(carry(7)), 'bad-count');
+  assert.equal(checkBoard(carry(16)), 'bad-count');
+  assert.equal(checkBoard(carry(2)), 'bad-count');
+  assert.equal(startCells(carry(6)), 'BWBWBW__');
+  // 빈칸 둘은 오른쪽 끝에 있고, 이웃한 돌 둘이면 어느 것이나 옮길 수 있다.
+  assert.deepEqual(
+    movesOf(carry(6), 'BWBWBW__').map((move) => move.from),
+    [0, 1, 2, 3, 4],
+  );
+  assert.equal(applyMove(carry(6), 'BWBWBW__', { from: 1, to: 6 }), 'B__WBWWB');
+  assert.deepEqual(movesOf(carry(6), 'B__WBWWB').map((move) => [move.from, move.to]), [[3, 1], [4, 1], [5, 1], [6, 1]]);
+  // 끝: 돌 사이에 빈칸이 없고 같은 색끼리 모여 있다. 어느 색이 왼쪽이어도, 빈칸이 어느 끝에 있어도 된다.
+  assert.equal(isDone(carry(6), 'BBBWWW__'), true);
+  assert.equal(isDone(carry(6), '__WWWBBB'), true);
+  assert.equal(isDone(carry(6), 'BBB__WWW'), false, '돌 사이에 빈칸');
+  assert.equal(isDone(carry(6), 'BBWBWW__'), false);
+  assert.equal(isStuck(carry(6), 'BWBWBW__'), false);
+  assert.equal(replay(carry(6), [[1, 6], [4, 1]]).cells, 'BBWW__WB');
+  assert.equal(replay(carry(6), [[0, 1]]).ok, false, '빈칸이 아닌 곳으로 옮기기');
+});
+
+test('묶어 옮기기의 가장 적은 횟수: 돌 6개는 4번, 8개부터는 둘씩의 짝 수만큼(4~7번), 4개는 안 된다. 다른 방법으로 구해도 같다', () => {
+  const table = [];
+  for (let n = MIN_CARRY; n <= MAX_CARRY; n += 2) {
+    const solved = solve(carry(n));
+    const brute = bruteCarry(n);
+    assert.deepEqual([solved.possible, solved.min], [brute.possible, brute.min], `${n}개`);
+    // 따져 본 모습의 수도 같다(빈칸이 늘 붙어 있으니 두 방법이 같은 모습들을 지난다). 안 되는 판에서는 모든 모습이다.
+    if (!solved.possible) assert.equal(solved.states, brute.states, `${n}개`);
+    if (solved.possible) {
+      const played = replay(carry(n), solved.moves);
+      assert.equal(played.ok && isDone(carry(n), played.cells), true, `${n}개`);
+    }
+    table.push(solved.min);
+  }
+  assert.deepEqual(table, [null, 4, 4, 5, 6, 7]);
+});
+
+test('셋씩 쌓기: 셋을 건너뛰면 12개와 15개가 되고 3, 6, 9개는 안 된다. 하나나 둘을 건너뛰면 15개까지 되는 판이 없다', () => {
+  assert.equal(checkBoard(piles(15)), null);
+  assert.equal(checkBoard(piles(16)), 'bad-count');
+  assert.equal(checkBoard({ kind: 'pairs', n: 9, skip: 3, group: 4 }), 'bad-group');
+  for (const skip of SKIPS) {
+    for (let n = 3; n <= MAX_PILE_STONES; n += 3) {
+      const solved = solve(piles(n, skip));
+      assert.equal(solved.possible, brutePiles(n, skip, 3).possible, `${skip}개씩 ${n}개`);
+      assert.equal(solved.possible, skip === 3 && n >= 12, `${skip}개씩 ${n}개`);
+      // 한 번에 돌 하나가 얹히므로 얹는 횟수는 늘 돌의 수의 3분의 2다.
+      if (solved.possible) {
+        assert.equal(solved.min, (2 * n) / 3);
+        const played = replay(piles(n, skip), solved.moves);
+        assert.equal(played.ok && isDone(piles(n, skip), played.cells), true);
+      }
+    }
+  }
+  // 셋이 쌓인 더미 위에는 얹지 못하고, 둘이 쌓인 더미 위에는 얹는다. 쌓인 돌은 움직이지 못한다.
+  assert.deepEqual(movesFrom(piles(6), '111111', 0), [{ from: 0, to: 4, jump: true }]);
+  assert.equal(applyMove(piles(6), '111121', { from: 0, to: 4 }), '011131');
+  assert.deepEqual(movesFrom(piles(6), '111121', 0), [{ from: 0, to: 4, jump: true }]);
+  assert.deepEqual(movesFrom(piles(6), '011211', 1), [{ from: 1, to: 4, jump: true }]);
+  assert.deepEqual(movesFrom(piles(6), '111130', 0), []);
+  assert.deepEqual(blockOf(piles(6), '111121', 4), { reason: 'piled', cells: [] });
+  assert.deepEqual(blockOf(pairs(6), '111121', 4), { reason: 'paired', cells: [] });
+  assert.equal(isDone(piles(6), '033000'), true);
+  assert.equal(isDone(piles(6), '032100'), false);
+});
+
+test('짝 짓기: 넷을 건너뛰면 12개부터 된다(직접 만들기에는 없는 건너뛰는 수. 다른 방법으로만 따진다)', () => {
+  const works = [];
+  for (let n = 2; n <= 14; n++) if (brutePairs(n, 4).possible) works.push(n);
+  assert.deepEqual(works, [12, 14]);
 });

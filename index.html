@@ -994,14 +994,21 @@
             <div id="swap-fewest" class="choices" hidden>
               <h2>가장 적은 횟수로</h2>
               <p class="pad-note">개구리나 두꺼비를 누르면 보는 쪽으로 가요. 물렀던 움직임도 횟수에 들어가요.</p>
-              <p id="swap-best-line" class="pad-note best-line" hidden>지금까지 가장 적게 <strong id="swap-best"></strong>번</p>
-              <button id="swap-again" class="btn good huge" type="button" hidden>처음부터 다시 해 볼래요</button>
-              <button id="swap-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+            </div>
+            <div id="swap-carry" class="choices" hidden>
+              <h2>검은 돌끼리, 흰 돌끼리</h2>
+              <p class="pad-note">이웃한 돌 두 개를 차례로 누르고, 빈칸을 누르면 옮겨져요. 고른 돌을 다시 누르면 빠져요.</p>
             </div>
             <div id="swap-pairs" class="choices" hidden>
               <h2>답하기</h2>
               <p class="pad-note">옮길 돌을 누르고, 그 돌을 올려놓을 돌을 눌러요. 안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="swap-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <!-- 횟수를 견주는 판(개구리 3단계, 묶어 옮기기)에서 끝낸 뒤에 보이는 것 -->
+            <div id="swap-record" class="choices">
+              <p id="swap-best-line" class="pad-note best-line" hidden>지금까지 가장 적게 <strong id="swap-best"></strong>번</p>
+              <button id="swap-again" class="btn good huge" type="button" hidden>처음부터 다시 해 볼래요</button>
+              <button id="swap-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
             </div>
           </div>
 

@@ -97,3 +97,89 @@ export function brutePairs(n, skip) {
   };
   return visit(Array.from({ length: n }, (_, at) => ({ at, size: 1 })));
 }
+
+/**
+ * 셋씩 쌓기(또는 group개씩 쌓기)를 따로 풀어 본다. 짝 짓기와 같이 더미의 목록으로 적고, 혼자 있는 돌만 움직인다.
+ * 꼭 skip개를 지난 바로 다음 더미가 group개보다 적으면 얹는다.
+ * @returns {{possible: boolean}}
+ */
+export function brutePiles(n, skip, group) {
+  const memo = new Map();
+  const visit = (piles) => {
+    const key = piles.map((pile) => `${pile.at}:${pile.size}`).join(' ');
+    if (memo.has(key)) return memo.get(key);
+    let possible = piles.every((pile) => pile.size === group);
+    if (!possible) {
+      piles.forEach((pile, index) => {
+        if (possible || pile.size !== 1) return;
+        for (const dir of [-1, 1]) {
+          const line = dir > 0 ? piles.slice(index + 1) : piles.slice(0, index).reverse();
+          let passed = 0;
+          let target = null;
+          for (const other of line) {
+            if (passed === skip) {
+              target = other;
+              break;
+            }
+            passed += other.size;
+            if (passed > skip) break;
+          }
+          if (!target || target.size >= group) continue;
+          const next = piles.filter((item) => item !== pile).map((item) => (item === target ? { at: item.at, size: item.size + 1 } : item));
+          if (visit(next).possible) possible = true;
+        }
+      });
+    }
+    const result = { possible };
+    memo.set(key, result);
+    return result;
+  };
+  return visit(Array.from({ length: n }, (_, at) => ({ at, size: 1 })));
+}
+
+/**
+ * 둘씩 묶어 옮기기를 따로 풀어 본다. 칸을 수의 배열(1 검은 돌, 2 흰 돌, 0 빈칸)로 적고,
+ * 이웃한 돌 둘을 이웃한 빈칸 둘 어디로든(빈칸이 한 곳에 몰려 있다고 미리 보지 않는다) 옮겨 본다.
+ * 끝: 돌이 모두 붙어 있고 색이 한 번만 바뀐다.
+ * @returns {{possible: boolean, min: number|null, states: number}}
+ */
+export function bruteCarry(n) {
+  const start = [...Array.from({ length: n }, (_, at) => (at % 2 === 0 ? 1 : 2)), 0, 0];
+  const done = (cells) => {
+    const stones = cells.filter((cell) => cell !== 0);
+    const first = cells.findIndex((cell) => cell !== 0);
+    const last = cells.length - 1 - [...cells].reverse().findIndex((cell) => cell !== 0);
+    if (last - first + 1 !== stones.length) return false;
+    let changes = 0;
+    for (let at = 1; at < stones.length; at++) if (stones[at] !== stones[at - 1]) changes += 1;
+    return changes === 1;
+  };
+  const key = (cells) => cells.join('');
+  const dist = new Map([[key(start), 0]]);
+  let layer = [start];
+  let found = done(start) ? 0 : null;
+  while (found === null && layer.length > 0) {
+    const next = [];
+    for (const cells of layer) {
+      for (let a = 0; a + 1 < cells.length; a++) {
+        if (cells[a] === 0 || cells[a + 1] === 0) continue;
+        for (let b = 0; b + 1 < cells.length; b++) {
+          if (cells[b] !== 0 || cells[b + 1] !== 0) continue;
+          const after = cells.slice();
+          after[b] = cells[a];
+          after[b + 1] = cells[a + 1];
+          after[a] = 0;
+          after[a + 1] = 0;
+          const name = key(after);
+          if (dist.has(name)) continue;
+          dist.set(name, dist.get(key(cells)) + 1);
+          if (found === null && done(after)) found = dist.get(name);
+          next.push(after);
+        }
+      }
+    }
+    layer = next;
+  }
+  if (found === null) return { possible: false, min: null, states: dist.size };
+  return { possible: true, min: found, states: dist.size };
+}
