@@ -390,12 +390,21 @@ function showPlay(line) {
     : round.custom
       ? C.customTitle
       : fill(C.levelTitle, { level: round.level, tag: C.tags[F.ladder.rungOf(round.level).tag] });
+  placeRule(Boolean(F.ruleAside));
   $('rule').textContent = F.ruleLine(round);
   showPanel('pad');
   drawHints();
   F.draw();
   startClock();
   talkers.play.say(line);
+}
+
+/** 규칙 글의 자리: 보통은 판 바로 위, 판이 위아래로 긴 형식(ruleAside)은 왼쪽 칸 맨 위 */
+function placeRule(aside) {
+  const rule = $('rule');
+  const home = aside ? document.querySelector('#play .side') : document.querySelector('#play .table');
+  if (rule.parentElement !== home) home.prepend(rule);
+  rule.classList.toggle('aside', aside);
 }
 
 /** 오른쪽 칸에 보여 줄 것: 'pad'(답 넣기), 'leave-ask'(나갈 때), 'after'(끝난 뒤) */
@@ -486,6 +495,13 @@ function toggleStuck(open = !stuckOpen) {
   drawHints();
   persist();
   if (!open) $('stuck').focus();
+  // 왼쪽 칸 위에 규칙 글이 있는 형식에서는 펼친 고르기가 칸 아래로 밀릴 수 있다. 다 보이게 굴린다
+  else showInSide($('stuck-menu'));
+}
+
+/** 왼쪽 칸 안의 것이 칸 밖으로 밀려 있으면 보이게 왼쪽 칸을 굴린다 */
+function showInSide(element) {
+  element?.scrollIntoView?.({ block: 'nearest' });
 }
 
 /**
@@ -515,7 +531,9 @@ function pickHelp(choice) {
   showWhy();
   persist();
   $('stuck').focus();
+  if (fresh) showInSide($('hints').children[seenHints().slice().sort((a, b) => a - b).indexOf(index)]);
   if (choice === 'rule') {
+    showInSide($('rule'));
     flash($('rule'));
     talkers.play.say(F.ruleLine(round), 'point');
     return;

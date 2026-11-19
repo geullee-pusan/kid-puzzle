@@ -852,6 +852,8 @@ export function createMaze(frame) {
     T,
     padId: 'maze-pad',
     makeId: 'make-maze',
+    /** 판이 위아래로 길어서, 규칙 글을 판 위가 아니라 왼쪽 칸 맨 위에 둔다(판이 놓일 자리를 넓힌다) */
+    ruleAside: true,
     homeIds: { sample: 'home-maze-sample', blank: 'home-maze-blank', ask: 'home-maze-ask', play: 'home-maze-play', pick: 'home-maze-pick', make: 'home-maze-make' },
     ladder: { LADDER, TOP_LEVEL, MAKE_LEVEL, rungOf, generateBoard, nextSeed },
 

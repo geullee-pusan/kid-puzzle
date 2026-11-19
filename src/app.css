@@ -1021,6 +1021,14 @@ a.btn {
   word-break: keep-all;
 }
 
+/* 왼쪽 칸 맨 위에 놓인 규칙 글(판이 위아래로 긴 형식). 칸이 좁아 글자를 조금 줄인다 */
+.rule.aside {
+  flex: none;
+  padding: 10px 12px;
+  font-size: 19px;
+  line-height: 1.45;
+}
+
 .board-area {
   flex: 1;
   min-height: 0;
