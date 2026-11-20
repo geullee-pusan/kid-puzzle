@@ -114,7 +114,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules.fixed, /돌리거나 뒤집어야 겹치는 것은 다른 조각으로 쳐요\./);
   assert.match(T.rules.row, /줄은 가로나 세로로 곧게 이어진 칸이에요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 30);
+  assert.equal(guides.length, 31);
   assert.ok(sentenceCount(guides[23]) <= 3, guides[23]);
   assert.match(guides[23], /^칸 수와 같은 조각의 약속을 정해요\./);
   assert.match(guides[23], /약속을 바꾸면 가짓수는 얼마나 달라질까요\?$/);

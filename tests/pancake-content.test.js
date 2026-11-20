@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="pancake-title"', 'id="make-title"'), part('id="pancake-board"', '</div>\n          <div class="board-foot">'), part('id="pancake-count"', 'id="domino-count"'), part('id="pancake-pad"', 'id="domino-pad"'), part('id="make-pancake"', '<script')].map(visibleText).join(' ');
+const own = [part('id="pancake-title"', 'id="product-title"'), part('id="pancake-board"', 'id="product-board"'), part('id="pancake-count"', 'id="product-count"'), part('id="pancake-pad"', 'id="product-pad"'), part('id="make-pancake"', 'id="make-product"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -105,7 +105,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 두
   assert.match(code, /const ruleKey = \(round\) => \(isBurnt\(round\.board\) \? \(isRecord\(round\) \? 'burnt-fewest' : 'burnt'\) : isRecord\(round\) \? 'fewest' : 'sort'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 30);
+  assert.equal(guides.length, 31);
   assert.ok(sentenceCount(guides[29]) <= 3, guides[29]);
   assert.match(guides[29], /가장 적게 뒤집어도 여러 번 걸리는 더미를 만들 수 있을까요\?$/);
 });
@@ -207,7 +207,7 @@ test('풀이와 직접 만들기: 가장 적은 횟수와 한 가지 방법을 �
   assert.equal(fill(T.solution.path, { k: 3 }), '가장 적게 뒤집으면 3번이에요. 한 가지 방법을 보여 줄게요.');
   assert.match(code, /const worst = result\.fewest === worstOf\(board\.stack\.length, isBurnt\(board\)\)\.worst;/);
   assert.equal(fill(T.make.worst, { n: 6 }), '6장 더미 가운데 가장 많이 뒤집어야 하는 더미예요.');
-  const make = part('id="make-pancake"', '<script');
+  const make = part('id="make-pancake"', 'id="make-product"');
   for (const id of ['pancake-make-fewer', 'pancake-make-n', 'pancake-make-more', 'pancake-make-burnt', 'pancake-make-turn', 'pancake-make-clear', 'pancake-make-board', 'pancake-make-solve', 'pancake-make-result', 'pancake-make-play', 'pancake-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="pancake-make-solve"[^>]*>선생님, 가장 적게 몇 번이에요\?</);
   assert.match(make, /id="pancake-make-play"[^>]*>내가 해 볼래요</);
@@ -228,7 +228,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.match(part('id="pancake-title"', '</section>'), /<h2 id="pancake-title">팬케이크 뒤집기<\/h2>/);
   assert.ok(visibleText(part('id="pancake-title"', '</section>')).includes(T.home.ask.small));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-pancake-make" class="menu-item"/);
-  const pad = part('id="pancake-pad"', 'id="domino-pad"');
+  const pad = part('id="pancake-pad"', 'id="product-pad"');
   assert.match(visibleText(pad), /누른 팬케이크부터 맨 위까지 한꺼번에 뒤집혀서 차례가 거꾸로 돼요\./);
   assert.match(pad, /id="pancake-again"[^>]*>처음 더미로 다시 해 볼래요</);
   assert.match(pad, /id="pancake-stop"[^>]*>여기까지 할래요</);
@@ -236,10 +236,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   // 카드는 수열 길 퍼즐 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="seqpath-title"') < html.indexOf('id="pancake-title"'));
   assert.ok(html.indexOf('id="pancake-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 수열 길 퍼즐 다음)
-  assert.match(read('src/main.js'), /seqpath: createSeqpath\(frame\), pancake: createPancake\(frame\) \};/);
+  // 틀이 형식을 안다(수열 길 퍼즐 다음)
+  assert.match(read('src/main.js'), /seqpath: createSeqpath\(frame\), pancake: createPancake\(frame\), /);
   assert.match(read('src/check-main.js'), /\['pancake', '팬케이크 뒤집기'\]/);
-  assert.match(read('src/core/smaller.js'), /seqpath: smallerSeqpath, pancake: smallerPancake \};/);
+  assert.match(read('src/core/smaller.js'), /seqpath: smallerSeqpath, pancake: smallerPancake, /);
   assert.match(code, /smaller: \(round, turn\) => smallerPancake\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 여덟 장 더미는 위아래로 커서 규칙 글은 왼쪽 칸에 둔다

@@ -64,6 +64,7 @@ function drawCounts() {
     ['cipher', '암호 놀이'],
     ['seqpath', '수열 길 퍼즐'],
     ['pancake', '팬케이크 뒤집기'],
+    ['product', '곱 단서 퍼즐'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

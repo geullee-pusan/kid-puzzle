@@ -71,7 +71,7 @@ test('규칙 설명은 세 문장 안이고, 두 방향·겹치지 않기·지�
   assert.match(T.rules.game, /자기 차례에 놓을 곳이 없는 쪽이 져요\.$/);
   assert.match(code, /ruleLine: \(\) => T\.rules\.game,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 30);
+  assert.equal(guides.length, 31);
   assert.ok(sentenceCount(guides[22]) <= 3, guides[22]);
   assert.match(guides[22], /^가로와 세로의 칸 수를 정하고, 칸을 누르면 구멍이 뚫리거나 메워져요\./);
   assert.match(guides[22], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?$/);

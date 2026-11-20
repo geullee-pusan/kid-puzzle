@@ -46,6 +46,8 @@ import { smallBoards as smallSeqpathBoards } from './seqpath-ladder.js';
 import { checkBoard as checkSeqpath } from './seqpath.js';
 import { smallBoards as smallPancakeBoards } from './pancake-ladder.js';
 import { checkBoard as checkPancake } from './pancake.js';
+import { smallBoards as smallProductBoards } from './product-ladder.js';
+import { checkBoard as checkProduct } from './product.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -832,4 +834,15 @@ export function smallerPancake(origin, turn = 0) {
   return wrap(pickByTurn(smallPancakeBoards(origin), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake };
+// ---- 곱 단서 퍼즐: 한 줄이 적고 답이 하나뿐인 판 ----
+
+/**
+ * 한 줄이 적은 판을 낸다(4×4 → 3×3, 5×5 → 4×4. src/core/product-ladder.js의 smallBoards). 답이 하나뿐인 판만 낸다.
+ * 원래 판에 숨은 단서가 있으면 작은 판도 가로줄 하나와 세로줄 하나의 단서를 숨긴다. 3×3 판에는 더 작은 판이 없다.
+ */
+export function smallerProduct(origin, turn = 0) {
+  if (!origin.board || checkProduct(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallProductBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct };

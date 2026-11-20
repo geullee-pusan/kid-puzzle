@@ -52,7 +52,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="cipher-title"', 'id="seqpath-title"'), part('id="cipher-counts"', 'id="why"'), part('id="cipher-count"', 'id="seqpath-count"'), part('id="cipher-pad"', 'id="seqpath-pad"'), part('id="make-cipher"', 'id="make-seqpath"')].map(visibleText).join(' ');
+const own = [part('id="cipher-title"', 'id="seqpath-title"'), part('id="cipher-counts"', 'id="product-pairs"'), part('id="cipher-count"', 'id="seqpath-count"'), part('id="cipher-pad"', 'id="seqpath-pad"'), part('id="make-cipher"', 'id="make-seqpath"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const readmePart = readme.slice(readme.indexOf('암호 놀이'));
@@ -123,7 +123,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(T.rules.added, /14를 넘으면 14를 빼서 앞으로 돌아가요\./);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[keyOf\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 30);
+  assert.equal(guides.length, 31);
   assert.ok(sentenceCount(guides[27]) <= 3, guides[27]);
   assert.match(guides[27], /자주 나오는 글자로는 열쇠를 찾을 수 없는 편지도 쓸 수 있을까요\?$/);
 });
@@ -224,7 +224,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(part('id="cipher-title"', '</section>'), /<h2 id="cipher-title">암호 놀이<\/h2>/);
   assert.ok(visibleText(part('id="cipher-title"', '</section>')).includes(T.home.ask.decode));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-cipher-make" class="menu-item"/);
-  assert.match(part('id="cipher-counts"', 'id="why"'), /aria-pressed="false" hidden>글자 세어 보기</);
+  assert.match(part('id="cipher-counts"', 'id="product-pairs"'), /aria-pressed="false" hidden>글자 세어 보기</);
   assert.match(part('id="cipher-pad"', 'id="seqpath-pad"'), /id="cipher-this"[^>]*>이 열쇠예요</);
   assert.deepEqual([...part('id="cipher-keys"', 'id="seqpath-pad"').matchAll(/data-n="(\w+)"/g)].map((match) => match[1]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'erase']);
   // 카드는 열쇠 미로 다음, 수열 길 퍼즐 앞이다

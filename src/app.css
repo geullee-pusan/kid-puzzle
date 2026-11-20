@@ -11360,3 +11360,355 @@ button.mc-gcell {
 .board-foot:has(> #pancake-count:not([hidden])) {
   justify-content: flex-end;
 }
+
+/* ---- 곱 단서 퍼즐: n×n 칸과 판 밖의 단서(가로줄은 오른쪽, 세로줄은 아래쪽) ----
+   색만으로 알리지 않는다. 고른 칸은 아주 굵은 테두리와 안쪽 점선 고리, 그 칸의 가로줄과 세로줄은 옅은 칠이다.
+   단서의 테두리: 수가 둘보다 적은 줄은 가는 실선, 두 수의 곱이 단서와 같은 줄은 아주 굵은 실선, 다르거나 수가 셋 이상인 줄은 굵은 점선이다.
+   숨은 단서는 물음표와 점선 테두리다. 숫자판에서 판에 놓은 수는 밑줄 무늬가 붙는다.
+   칸 하나는 판 칸의 가로와 세로 가운데 작은 쪽에 맞추고 92픽셀을 넘지 않는다(5×5여도 44픽셀보다 크다). */
+.pd-board.live {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  --s: min(92px, calc((100cqh - 24px) / (var(--n) + 1.15)), calc((100cqw - 24px) / (var(--n) + 1.15)));
+}
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--s)) calc(var(--s) * 1.15);
+  grid-template-rows: repeat(var(--n), var(--s)) calc(var(--s) * 1.15);
+  gap: 0;
+}
+
+.pd-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #868e96;
+  margin-right: -2px;
+  margin-bottom: -2px;
+  background: #fff;
+  font: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.pd-cell {
+  cursor: pointer;
+}
+
+.pd-number {
+  font-size: calc(var(--s) * 0.48);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.pd-cell.cross {
+  background: #e7f5ff;
+}
+
+.pd-cell.picked {
+  position: relative;
+  z-index: 2;
+  border: 5px solid var(--accent);
+  background: #d0ebff;
+}
+
+.pd-cell.picked::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 3px dashed var(--accent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.pd-cell:focus-visible {
+  outline: 4px solid var(--gold);
+  outline-offset: -6px;
+}
+
+.pd-clue {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 6px;
+  padding: 0;
+  border: 2px solid #868e96;
+  border-radius: 12px;
+  background: #fff9db;
+  color: var(--ink);
+  font: inherit;
+  font-size: calc(var(--s) * 0.34);
+  font-weight: 800;
+  line-height: 1;
+}
+
+button.pd-clue {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pd-clue.at-row {
+  margin-left: 10px;
+}
+
+.pd-clue.at-col {
+  margin-top: 10px;
+}
+
+.pd-clue.is-ok {
+  border: 5px solid #2b8a3e;
+}
+
+.pd-clue.is-off,
+.pd-clue.is-many {
+  border: 4px dashed #e8590c;
+}
+
+.pd-clue.hidden-clue {
+  border-style: dashed;
+  background: #f1f3f5;
+}
+
+/* 직접 만들기: 아직 단서가 없는 줄(수가 둘이 아니다)은 빈 점선 상자 */
+.pd-clue.none {
+  border: 2px dashed #ced4da;
+  background: transparent;
+}
+
+/* 직접 만들기에서 숨긴 단서: 물음표 아래에 원래 곱을 작게 적는다 */
+.pd-clue-under {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.pd-clue.focus {
+  outline: 4px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* 숫자판: 판에 쓰는 수만 보인다. 판에 놓은 수는 아래에 굵은 밑줄 무늬 */
+.pd-keys,
+.pd-make-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pd-make-keys {
+  gap: 6px;
+  width: 100%;
+}
+
+.pd-make-keys .key {
+  min-height: 52px;
+  font-size: 24px;
+}
+
+.pd-keys .key.used,
+.pd-make-keys .key.used {
+  background: #e9ecef;
+  color: var(--muted);
+  text-decoration: underline 4px;
+  text-underline-offset: 6px;
+}
+
+.pd-keys .key.word,
+.pd-make-keys .key.word {
+  grid-column: span 2;
+  font-size: 20px;
+}
+
+/* "곱이 되는 두 수 보기": 누른 단서의 두 수를 칩으로 늘어놓는다 */
+.pd-pair-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+}
+
+.pd-pair-box h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.pd-pair-title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 20px;
+}
+
+.pd-pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pd-pairs li {
+  padding: 4px 12px;
+  border: 2px solid #8f6b00;
+  border-radius: 999px;
+  background: #fff3bf;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* 작은 그림(SVG): 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책, 풀이와 "왜 그럴까?" */
+.pd-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .pd-board.small,
+.door-picture > .pd-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.pd-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pd-art-ground {
+  fill: #fff;
+}
+
+.pd-art-cell {
+  fill: none;
+  stroke: #868e96;
+  stroke-width: 2;
+}
+
+.pd-art-mark {
+  fill: #a5d8ff;
+}
+
+.pd-art-number {
+  fill: var(--ink);
+  font-weight: 800;
+}
+
+.pd-art-clue {
+  fill: #fff9db;
+  stroke: #868e96;
+  stroke-width: 2;
+}
+
+.pd-art-clue.hidden-clue {
+  fill: #f1f3f5;
+  stroke-dasharray: 5 4;
+}
+
+.pd-art-clue.none {
+  fill: none;
+  stroke: #ced4da;
+  stroke-dasharray: 5 4;
+}
+
+.pd-art-clue-text {
+  fill: var(--ink);
+  font-weight: 800;
+}
+
+.pd-art-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+.resume .pd-board.small {
+  width: 80px;
+  height: 80px;
+}
+
+.level .pd-board.small {
+  width: 80px;
+  height: 80px;
+}
+
+.menu-picture > .pd-board {
+  height: 76px;
+}
+
+.resume.note-picture .pd-board.small {
+  width: 100%;
+  height: 140px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드와 표 */
+.pd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 230px);
+}
+
+.pd-card > .pd-svg {
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+}
+
+.pd-card.big,
+.pd-card.big > .pd-svg {
+  width: min(100%, 360px);
+  max-width: 360px;
+}
+
+.pd-make-picture .pd-card {
+  width: min(100%, 220px);
+}
+
+.pd-card.with-table,
+.pd-card.with-table > .pd-svg {
+  width: min(100%, 180px);
+  max-width: 180px;
+}
+
+.pd-why-table {
+  display: flex;
+  align-items: center;
+}
+
+.pd-table {
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.pd-table th,
+.pd-table td {
+  padding: 3px 10px;
+  border: 2px solid var(--line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #product-count:not([hidden])) {
+  justify-content: flex-end;
+}

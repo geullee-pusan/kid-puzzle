@@ -165,7 +165,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 묻는 것으로 끝난다',
   // 상자: 글은 참일 수도 거짓일 수도 있고, 판 위의 한 줄은 늘 참이다.
   assert.equal(T.rules.box, '보물은 상자 하나에만 있어요. 상자의 글은 참일 수도 거짓일 수도 있지만, 판 위의 한 줄은 늘 참이에요. 보물은 어느 상자에 있을까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 30, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 31, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[7]) <= 3, guides[7]);
   assert.match(guides[7], /누가 참말쟁이이고 누가 거짓말쟁이인지 하나로 정해지는 판을 만들 수 있을까요\?/);
   assert.match(guides[7], /이 주민들이 모두 할 수는 없는 말도 만들어 볼 수 있어요\./);
