@@ -156,6 +156,10 @@ export function createCipher(frame) {
     drawCipher($('cipher-board'), viewOf(round, playing));
     $('cipher-status').textContent = flash?.line ?? statusOf(round, playing);
     $('cipher-tap-box').hidden = !isTap(round);
+    // 자물쇠 번호 판은 글자가 아니라 숫자를 푼다
+    const digitBoard = round.board.kind === 'digits';
+    $('cipher-tap-note').hidden = digitBoard;
+    $('cipher-tap-note-d').hidden = !digitBoard;
     $('cipher-find-box').hidden = !isFind(round);
     $('cipher-sum-box').hidden = round.mode !== 'sum';
     $('cipher-this').disabled = !playing;

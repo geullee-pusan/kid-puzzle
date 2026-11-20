@@ -306,6 +306,8 @@ export function createKeymaze(frame) {
     frame.note('undo');
     draw();
     frame.persist();
+    // 앞의 걸음에 한 말(열쇠를 주웠어요, 더 갈 곳이 없어요)은 이제 맞지 않으니 덮는다
+    frame.say(T.play.undo);
   }
 
   /** 처음으로: 처음 방으로 돌아간다. 무르기로 돌아올 수 있다 */
@@ -319,6 +321,7 @@ export function createKeymaze(frame) {
     frame.note('reset');
     draw();
     frame.persist();
+    frame.say(T.play.reset);
   }
 
   /** "나갈 수 있는 방 보기": 나가는 문에서 거꾸로 따라가 나갈 수 있는 방에 빗금을 긋는다 */
