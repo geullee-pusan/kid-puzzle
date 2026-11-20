@@ -279,6 +279,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="fold-title">
+            <h2 id="fold-title">접히는 모양 가리기</h2>
+            <div class="door-picture"><div id="home-fold-sample"></div></div>
+            <p id="home-fold-ask" class="door-ask">접으면 정육면체가 될까요?</p>
+            <div class="door-foot">
+              <button id="home-fold-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-fold-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -360,6 +370,9 @@
               </li>
               <li>
                 <button id="home-cutpaste-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-cutpaste-blank"></span></span><span class="menu-name">자르고 붙이기</span></button>
+              </li>
+              <li>
+                <button id="home-fold-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-fold-blank"></span></span><span class="menu-name">접히는 모양 가리기</span></button>
               </li>
             </ul>
           </div>
@@ -506,8 +519,15 @@
             <div id="eyeball-board" hidden></div>
             <!-- 자르고 붙이기: 칸으로 된 조각들(과 그림자), 또는 막대 빵과 사람마다의 접시 -->
             <div id="cutpaste-board" hidden></div>
+            <!-- 접히는 모양 가리기: 펼친 모양(접히는 입체), 여러 모양의 카드, 쌓은 주사위, 또는 칸을 눌러 모양을 만드는 모눈 -->
+            <div id="fold-board" hidden></div>
           </div>
           <div class="board-foot">
+            <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
+            <span id="fold-count" class="count tile-count" hidden>
+              <span id="fold-status" class="tile-status" aria-live="polite"></span>
+            </span>
+            <button id="fold-flip" class="btn" type="button" hidden></button>
             <!-- 자르고 붙이기: 윗줄에 할 일(남은 자르기, 겹친 칸, 나눠 주지 않은 조각), 나누기에서는 그 아래에 조각 수와 이 판에서 가장 적은 조각 수. 몇 번 옮겼는지는 적지 않는다 -->
             <span id="cutpaste-count" class="count tile-count block-count" hidden>
               <span id="cutpaste-status" class="tile-status" aria-live="polite"></span>
@@ -648,6 +668,51 @@
 
         <!-- 오른쪽: 답 넣기 / 나갈 때 / 끝난 뒤 -->
         <section class="answer" aria-label="답과 고르기">
+          <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
+               주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
+          <div id="fold-pad" class="pad" hidden>
+            <div id="fold-fold-box" class="choices">
+              <h2 id="fold-ask">정육면체가 될까요?</h2>
+              <button id="fold-yes" class="btn huge" type="button">돼요</button>
+              <button id="fold-no" class="btn huge" type="button">안 돼요</button>
+              <p class="pad-note">고르면 선생님이 접어 보여 줘요. 접은 뒤에는 판을 끌면 돌아가요.</p>
+            </div>
+            <div id="fold-many-box" class="choices" hidden>
+              <h2>정육면체가 될 모양</h2>
+              <p class="pad-note">모양을 누르면 고른 표시가 생겨요. 다시 누르면 빠져요.</p>
+              <button id="fold-many-go" class="btn good huge" type="button">접어 보기</button>
+            </div>
+            <div id="fold-opposite-box" class="choices" hidden>
+              <h2>맞은편에 올 칸</h2>
+              <p class="pad-note">굵은 점선 테두리를 두른 칸이 표시한 칸이에요.</p>
+              <p class="pad-note">칸을 누르면 그 칸을 골라요. 선생님이 접어서 보여 줘요.</p>
+            </div>
+            <div id="fold-dice-box" class="choices" hidden>
+              <h2>안 보이는 면의 눈</h2>
+              <div class="answer-line"><strong id="fold-typed" class="answer-box" aria-live="polite"></strong></div>
+              <div id="fold-keys" class="keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="fold-dice-go" class="btn good huge" type="button" disabled>이 수예요</button>
+            </div>
+            <div id="fold-all-box" class="choices" hidden>
+              <button id="fold-all-go" class="btn good huge" type="button" disabled>접어 보기</button>
+              <button id="fold-clear" class="btn" type="button">모두 지우기</button>
+              <h2 id="fold-shelf-title"></h2>
+              <div id="fold-shelf" class="fd-shelf"></div>
+              <button id="fold-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+            </div>
+          </div>
           <!-- 자르고 붙이기: 판의 종류마다 상자 하나를 보인다. 네모는 가위와 손 고르기, 그림자는 누르는 법, 나누기는 받을 사람 고르기와 "여기까지 할래요".
                안 되는 판이 섞이는 판에는 "불가능해요" 단추가 있다 -->
           <div id="cutpaste-pad" class="pad" hidden>
@@ -2250,6 +2315,28 @@
             <button id="cutpaste-make-solve" class="btn primary huge" type="button">선생님, 나눠 주세요</button>
             <p id="cutpaste-make-result" class="make-result" aria-live="polite"></p>
             <button id="cutpaste-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-fold" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>놓은 칸</h2>
+          <p id="fold-make-count" class="fd-make-count"></p>
+          <button id="fold-make-clear" class="btn wide" type="button">모두 지우기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 눌러 정사각형 여섯 칸을 이어 붙여요. 선생님이 접어 보여 줘요. 정육면체가 될 것 같은데 안 되는 모양도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="fold-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="fold-make-solve" class="btn primary huge" type="button">선생님, 접어 주세요</button>
+            <p id="fold-make-result" class="make-result" aria-live="polite"></p>
+            <div id="fold-make-picture" class="fd-made"></div>
+            <button id="fold-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

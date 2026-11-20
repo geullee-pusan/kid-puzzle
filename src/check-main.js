@@ -55,6 +55,7 @@ function drawCounts() {
     ['split', '똑같이 섞이게 자르기'],
     ['eyeball', '눈대중'],
     ['cutpaste', '자르고 붙이기'],
+    ['fold', '접히는 모양 가리기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

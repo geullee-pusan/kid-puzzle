@@ -98,7 +98,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 조각이 어떤 칸을 덮�
   assert.match(pad, /칸을 따라 그으면 조각이 놓여요\. 칸을 하나씩 눌러도 돼요\. 놓인 조각을 누르면 빠져요\./);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 21, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 22, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[4]) <= 3, guides[4]);
   assert.match(guides[4], /덮을 수 없는 판도 만들 수 있을까요\?/);
 });

@@ -32,6 +32,8 @@ import { smallBoards as smallEyeBoards } from './eyeball-ladder.js';
 import { checkBoard as checkEyeball, solve as solveEyeball } from './eyeball.js';
 import { smallBoards as smallCutBoards } from './cutpaste-ladder.js';
 import { checkBoard as checkCutpaste, solve as solveCutpaste } from './cutpaste.js';
+import { smallBoards as smallFoldBoards } from './fold-ladder.js';
+import { checkBoard as checkFold, solve as solveFold } from './fold.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -707,4 +709,16 @@ export function smallerCutpaste(origin, turn = 0) {
   return wrap(pickByTurn(smallCutBoards(origin), solveCutpaste(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste };
+// ---- 접히는 모양 가리기: 다섯 칸 모양, 셋 가운데 고르기, 네 칸 한 줄의 맞은편, 주사위 하나 적게, 네 칸이 놓인 모눈 ----
+
+/**
+ * 원래 판보다 작은 판을 낸다(src/core/fold-ladder.js의 smallBoards). 모양 하나는 다섯 칸 모양(뚜껑 없는 상자가 될까.
+ * 안 되는 모양에서 왔으면 되는 모양부터 번갈아), 여럿 고르기는 모양 셋, 맞은편은 네 칸이 한 줄인 모양에서 그 줄의 칸,
+ * 주사위는 하나 적게, 모두 찾기는 네 칸 한 줄이 놓인 4×3 모눈이다. 더 줄일 수 없으면 null이다.
+ */
+export function smallerFold(origin, turn = 0) {
+  if (!origin.board || checkFold(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallFoldBoards(origin), solveFold(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold };

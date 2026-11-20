@@ -100,7 +100,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 안 되
   assert.match(T.rules.shadow, /‘불가능해요’를 눌러요\.$/);
   assert.match(code, /const hasImpossible = \(round\) => round\.mode === 'shadow' \|\| \(round\.mode === 'move' && round\.board\.cuts >= 2\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 21);
+  assert.equal(guides.length, 22);
   assert.ok(sentenceCount(guides[20]) <= 3, guides[20]);
   assert.match(guides[20], /^빵의 수와 사람의 수를 정해요\./);
 });
@@ -228,8 +228,8 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   // 카드는 눈대중 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="eyeball-title"') < html.indexOf('id="cutpaste-title"'));
   assert.ok(html.indexOf('id="cutpaste-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 눈대중 다음)
-  assert.match(read('src/main.js'), /eyeball: createEyeball\(frame\), cutpaste: createCutpaste\(frame\) \};/);
+  // 틀이 형식을 안다(형식 목록에서 눈대중 다음)
+  assert.match(read('src/main.js'), /eyeball: createEyeball\(frame\), cutpaste: createCutpaste\(frame\), /);
   assert.match(read('src/check-main.js'), /\['cutpaste', '자르고 붙이기'\]/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.doesNotMatch(code, /hintsOpened/);
