@@ -88,6 +88,7 @@ const SCREEN_CODE = [
   'src/formats/eyeball.js',
   'src/formats/cutpaste.js',
   'src/formats/fold.js',
+  'src/formats/domino.js',
   'src/ui/coin-board.js',
   'src/ui/trace-board.js',
   'src/ui/code-board.js',
@@ -111,9 +112,10 @@ const SCREEN_CODE = [
   'src/ui/cutpaste-board.js',
   'src/ui/fold-board.js',
   'src/ui/solid.js',
+  'src/ui/domino-board.js',
 ];
 // 대본: 형식마다 하나씩
-const SCRIPTS = ['src/content/coins.json', 'src/content/trace.json', 'src/content/code.json', 'src/content/swap.json', 'src/content/tile.json', 'src/content/duel.json', 'src/content/tax.json', 'src/content/logic.json', 'src/content/block.json', 'src/content/river.json', 'src/content/cups.json', 'src/content/dandelion.json', 'src/content/maze.json', 'src/content/rulehunt.json', 'src/content/untangle.json', 'src/content/lamps.json', 'src/content/rooms.json', 'src/content/machine.json', 'src/content/split.json', 'src/content/eyeball.json', 'src/content/cutpaste.json', 'src/content/fold.json'];
+const SCRIPTS = ['src/content/coins.json', 'src/content/trace.json', 'src/content/code.json', 'src/content/swap.json', 'src/content/tile.json', 'src/content/duel.json', 'src/content/tax.json', 'src/content/logic.json', 'src/content/block.json', 'src/content/river.json', 'src/content/cups.json', 'src/content/dandelion.json', 'src/content/maze.json', 'src/content/rulehunt.json', 'src/content/untangle.json', 'src/content/lamps.json', 'src/content/rooms.json', 'src/content/machine.json', 'src/content/split.json', 'src/content/eyeball.json', 'src/content/cutpaste.json', 'src/content/fold.json', 'src/content/domino.json'];
 
 test('검사 목록에 모든 형식의 코드와 대본이 들어 있다', () => {
   for (const { path } of sources) {

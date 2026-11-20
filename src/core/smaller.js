@@ -34,6 +34,7 @@ import { smallBoards as smallCutBoards } from './cutpaste-ladder.js';
 import { checkBoard as checkCutpaste, solve as solveCutpaste } from './cutpaste.js';
 import { smallBoards as smallFoldBoards } from './fold-ladder.js';
 import { checkBoard as checkFold, solve as solveFold } from './fold.js';
+import { checkBoard as checkDomino, playable as playableDomino, smallBoards as smallDominoBoards } from './domino.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -721,4 +722,17 @@ export function smallerFold(origin, turn = 0) {
   return wrap(pickByTurn(smallFoldBoards(origin), solveFold(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold };
+// ---- 도미노 가로세로: 빈칸이 더 적고, 잘 두면 이기는 꼴이 같은 판 ----
+
+/**
+ * 원래 판에서 잘라 낸 판(구멍은 그대로)을 빈칸이 많은 것부터, 그다음에 정해 둔 작은 판들을 낸다(src/core/domino.js의 smallBoards).
+ * 잘 두면 이기는 꼴(먼저 두는 쪽, 나중, 늘 세로, 늘 가로)이 같아서 아이가 서 있던 자리는 작은 판에서도 이기거나 지는 것이 같다.
+ * 그런 판이 없으면 null이다.
+ */
+export function smallerDomino(origin, turn = 0) {
+  if (!origin.board || checkDomino(origin.board) !== null || !playableDomino(origin.board)) return null;
+  const list = smallDominoBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino };

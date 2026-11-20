@@ -52,7 +52,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="cutpaste-title"', 'id="make-title"'), part('id="cutpaste-tally"', 'id="why"'), part('id="cutpaste-count"', 'id="eyeball-count"'), part('id="cutpaste-pad"', 'id="eyeball-pad"'), part('id="make-cutpaste"', '<script')].map(visibleText).join(' ');
+const own = [part('id="cutpaste-title"', 'id="fold-title"'), part('id="cutpaste-tally"', 'id="domino-safe"'), part('id="cutpaste-count"', 'id="eyeball-count"'), part('id="cutpaste-pad"', 'id="eyeball-pad"'), part('id="make-cutpaste"', 'id="make-fold"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -100,7 +100,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 안 되
   assert.match(T.rules.shadow, /‘불가능해요’를 눌러요\.$/);
   assert.match(code, /const hasImpossible = \(round\) => round\.mode === 'shadow' \|\| \(round\.mode === 'move' && round\.board\.cuts >= 2\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 22);
+  assert.equal(guides.length, 23);
   assert.ok(sentenceCount(guides[20]) <= 3, guides[20]);
   assert.match(guides[20], /^빵의 수와 사람의 수를 정해요\./);
 });
@@ -199,7 +199,7 @@ test('"왜 그럴까?"는 나누기 판에는 없는 칸 수 이야기다. 그�
 });
 
 test('직접 만들기: 빵의 수와 사람의 수를 정하면 선생님이 가장 적은 조각 수를 말하고 나누는 그림을 그린다', () => {
-  const make = part('id="make-cutpaste"', '<script');
+  const make = part('id="make-cutpaste"', 'id="make-fold"');
   for (const id of ['cutpaste-make-m', 'cutpaste-make-n', 'cutpaste-make-m-fewer', 'cutpaste-make-m-more', 'cutpaste-make-n-fewer', 'cutpaste-make-n-more', 'cutpaste-make-board', 'cutpaste-make-solve', 'cutpaste-make-result', 'cutpaste-make-play']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }

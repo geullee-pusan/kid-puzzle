@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="fold-title"', 'id="make-title"'), part('id="fold-count"', 'id="cutpaste-count"'), part('id="fold-pad"', 'id="cutpaste-pad"'), part('id="make-fold"', '<script')].map(visibleText).join(' ');
+const own = [part('id="fold-title"', 'id="domino-title"'), part('id="fold-count"', 'id="cutpaste-count"'), part('id="fold-pad"', 'id="cutpaste-pad"'), part('id="make-fold"', 'id="make-domino"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const cellsOf = (rows) => rows.flatMap((row, y) => [...row].flatMap((mark, x) => (mark === '#' ? [[x, y]] : [])));
@@ -92,7 +92,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   for (const key of ['dice', 'dice-one']) assert.match(T.rules[key], /마주 보는 두 면의 눈을 더하면 7개예요\./);
   assert.match(T.rules.all, /돌리거나 뒤집어 같은 모양은 하나로 세요\.$/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 22);
+  assert.equal(guides.length, 23);
   assert.ok(sentenceCount(guides[21]) <= 3, guides[21]);
   assert.match(guides[21], /^칸을 눌러 정사각형 여섯 칸을 이어 붙여요\./);
   assert.match(guides[21], /안 되는 모양도 만들 수 있을까요\?$/);
@@ -198,7 +198,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.ok(html.indexOf('id="cutpaste-title"') < html.indexOf('id="fold-title"'));
   assert.ok(html.indexOf('id="fold-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(형식 목록의 맨 뒤, 자르고 붙이기 다음)
-  assert.match(read('src/main.js'), /cutpaste: createCutpaste\(frame\), fold: createFold\(frame\) \};/);
+  assert.match(read('src/main.js'), /cutpaste: createCutpaste\(frame\), fold: createFold\(frame\), /);
   assert.match(read('src/check-main.js'), /\['fold', '접히는 모양 가리기'\]/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.doesNotMatch(code, /hintsOpened/);

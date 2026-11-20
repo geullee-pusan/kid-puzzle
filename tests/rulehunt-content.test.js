@@ -110,7 +110,7 @@ test('규칙 설명은 세 문장 안이고, 묻는 법과 "알 것 같아요"�
   // 형식이 단계(직접 만든 판은 목록)로 규칙 글과 힌트를 고른다.
   assert.match(code, /const hintKey = \(round\) => \(round\.custom \? \(round\.board\.lib === 'two' \? 'both' : 'one'\) : rungOf\(round\.level\)\.hint\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 22);
+  assert.equal(guides.length, 23);
   assert.ok(sentenceCount(guides[13]) <= 3, guides[13]);
   assert.match(guides[13], /선생님이 오래 물어야 찾는 규칙도 만들 수 있을까요\?$/);
 });
