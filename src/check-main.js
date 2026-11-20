@@ -67,6 +67,7 @@ function drawCounts() {
     ['product', '곱 단서 퍼즐'],
     ['sim', '세모 피하기'],
     ['matches', '성냥개비'],
+    ['fair', '공정한 게임일까'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

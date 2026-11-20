@@ -51,6 +51,8 @@ import { checkBoard as checkProduct } from './product.js';
 import { checkBoard as checkSim, smallBoards as smallSimBoards, solve as solveSim } from './sim.js';
 import { smallBoards as smallMatchesBoards } from './matches-ladder.js';
 import { checkBoard as checkMatches } from './matches.js';
+import { smallBoards as smallFairBoards } from './fair-ladder.js';
+import { checkBoard as checkFair } from './fair.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -872,4 +874,15 @@ export function smallerMatches(origin, turn = 0) {
   return wrap(pickByTurn(smallMatchesBoards(origin), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches };
+// ---- 공정한 게임일까: 경우가 더 적은 던지는 것의 판 ----
+
+/**
+ * 같은 종류(공정한지 고르기, 규칙 고치기)에서 경우가 더 적은 던지는 것의 판을 낸다(src/core/fair-ladder.js의 smallBoards).
+ * 주사위 둘 → 주사위 하나나 동전 둘, 주사위 하나와 동전 셋 → 동전 둘. 동전 둘의 판에는 더 작은 판이 없다.
+ */
+export function smallerFair(origin, turn = 0) {
+  if (!origin.board || checkFair(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallFairBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair };

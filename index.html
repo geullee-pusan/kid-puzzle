@@ -399,6 +399,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="fair-title">
+            <h2 id="fair-title">공정한 게임일까</h2>
+            <div class="door-picture"><div id="home-fair-sample"></div></div>
+            <p id="home-fair-ask" class="door-ask">동전 게임은 누가 유리할까요?</p>
+            <div class="door-foot">
+              <button id="home-fair-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-fair-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -517,6 +527,9 @@
               <li>
                 <button id="home-matches-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-matches-blank"></span></span><span class="menu-name">성냥개비</span></button>
               </li>
+              <li>
+                <button id="home-fair-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-fair-blank"></span></span><span class="menu-name">공정한 게임일까</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -620,6 +633,8 @@
           <button id="product-pairs" class="btn wide" type="button" aria-pressed="false" hidden>곱이 되는 두 수 보기</button>
           <!-- 성냥개비: 판에서 찾은 정사각형마다 테두리를 그리는 도구(크기마다 선의 모양이 다르다). 크기마다의 수는 오른쪽에 적는다 -->
           <button id="matches-outline" class="btn wide" type="button" aria-pressed="false" hidden>정사각형 모두 보기</button>
+          <!-- 공정한 게임일까: 판에 모든 경우의 표(칸마다 누가 가져가는지)와 몇 가지씩인지를 그리는 도구. 이 형식의 중심 도구라 힌트로 세지 않는다 -->
+          <button id="fair-table" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 세어 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -703,6 +718,8 @@
             <div id="sim-board" hidden></div>
             <!-- 성냥개비: 모눈의 점과 변마다 놓인 성냥. 성냥을 누르면 빠지거나(빼기) 고르고, 빈 자리를 누르면 고른 성냥이 옮겨진다(옮기기) -->
             <div id="matches-board" hidden></div>
+            <!-- 공정한 게임일까: 규칙의 칸(값마다 누가 가져가는지), 방금 던진 동전이나 주사위, 열 번의 자리, 컴퓨터가 던진 수의 막대. 또는 모든 경우의 표 -->
+            <div id="fair-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -776,6 +793,15 @@
                 <span>지금 정사각형 <strong id="matches-squares">0</strong>개</span>
                 <span id="matches-removed-line">뺀 성냥 <strong id="matches-removed">0</strong>개</span>
                 <span id="matches-moved-line" hidden>옮긴 성냥 <strong id="matches-moved">0</strong>개</span>
+              </span>
+            </span>
+            <!-- 공정한 게임일까: 윗줄에 할 일이나 사실 한 줄(누가 가져갔는지, 바꾼 칸), 그 아래에 던진 수와 둘이 가져간 수(공정한지 고르기 판만) -->
+            <span id="fair-count" class="count tile-count block-count" hidden>
+              <span id="fair-status" class="tile-status" aria-live="polite"></span>
+              <span id="fair-numbers" class="block-numbers">
+                <span>던진 수 <strong id="fair-played">0</strong>번</span>
+                <span>다람쥐 <strong id="fair-a">0</strong>번</span>
+                <span>고슴도치 <strong id="fair-b">0</strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1116,6 +1142,40 @@
             <div id="matches-size-box" class="mt-size-box" hidden>
               <h2>찾은 정사각형</h2>
               <div id="matches-size-list" aria-live="polite"></div>
+            </div>
+          </div>
+          <!-- 공정한 게임일까: 먼저 짐작을 고르고(맞다 틀리다 하지 않는다), 던지기와 컴퓨터에게 던지게 하기를 해 본 뒤 답을 고른다.
+               규칙 고치기 판은 판 위의 칸을 눌러 바꾸고 "이렇게 바꿀래요"를 누른다 -->
+          <div id="fair-pad" class="pad" hidden>
+            <p class="pad-note best-line fr-legend">동그라미는 다람쥐, 세모는 고슴도치가 가져가는 것이에요.</p>
+            <p id="fair-note" class="pad-note" hidden></p>
+            <div id="fair-guess-box" class="choices">
+              <h2>던지기 전에 짐작해 볼까요?</h2>
+              <div id="fair-guesses" class="choices fr-choices">
+                <button class="btn big" type="button" data-choice="fair">공정해요</button>
+                <button class="btn big" type="button" data-choice="a">다람쥐가 유리해요</button>
+                <button class="btn big" type="button" data-choice="b">고슴도치가 유리해요</button>
+              </div>
+            </div>
+            <p id="fair-guessed" class="pad-note best-line" hidden></p>
+            <div id="fair-throw-box" class="choices" hidden>
+              <button id="fair-throw" class="btn primary huge" type="button">던지기</button>
+            </div>
+            <div id="fair-many-box" class="choices" hidden>
+              <button id="fair-many" class="btn big" type="button">컴퓨터가 1,000번 던져 보기</button>
+            </div>
+            <div id="fair-answer-box" class="choices" hidden>
+              <h2>이 게임은 어떤가요?</h2>
+              <div id="fair-answers" class="choices fr-choices">
+                <button class="btn big" type="button" data-choice="fair">공정해요</button>
+                <button class="btn big" type="button" data-choice="a">다람쥐가 유리해요</button>
+                <button class="btn big" type="button" data-choice="b">고슴도치가 유리해요</button>
+              </div>
+            </div>
+            <div id="fair-fix-box" class="choices" hidden>
+              <h2>규칙 고치기</h2>
+              <p class="pad-note">판 위쪽 칸을 누르면 그 값을 다른 쪽이 가져가요. 한 군데만 바꿀 수 있어요.</p>
+              <button id="fair-submit" class="btn good huge" type="button">이렇게 바꿀래요</button>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -1825,6 +1885,11 @@
             <!-- 세모 피하기의 게임에서만 보인다. 도미노 가로세로처럼 끝난 뒤에 "같은 단계 새 판"(진 판 뒤)이나 "직접 만들기" 앞으로 옮겨 놓는다 -->
             <button id="sim-swap" class="btn wide after-extra" type="button" hidden>자리를 바꿔서 다시 두기</button>
             <button id="sim-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
+            <!-- 공정한 게임일까의 도전 판에서만 보인다. 까닭을 적어 남길 수 있다(안 써도 된다). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
+            <div id="fair-reason-box" class="after-extra fr-reason" hidden>
+              <label for="fair-reason">까닭 남기기</label>
+              <textarea id="fair-reason" rows="2" maxlength="200" placeholder="안 써도 돼요"></textarea>
+            </div>
           </div>
         </section>
       </main>
@@ -3267,6 +3332,33 @@
             <button id="matches-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 그린 그림: 할 일대로 되는 한 가지 방법(점선 테두리는 뺀 자리나 처음 자리, 금빛 띠는 옮겨 온 성냥) -->
             <div id="matches-make-picture" class="ap-make-picture mt-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-fair" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>던질 것</h2>
+          <div id="fair-make-devices" class="fr-make-pair">
+            <button class="btn" type="button" data-device="coin2" aria-pressed="false">동전 둘</button>
+            <button class="btn" type="button" data-device="coin3" aria-pressed="false">동전 셋</button>
+            <button class="btn" type="button" data-device="die1" aria-pressed="false">주사위 하나</button>
+            <button class="btn" type="button" data-device="die2" aria-pressed="true">주사위 둘</button>
+          </div>
+          <h2>볼 것</h2>
+          <div id="fair-make-measures" class="fr-make-pair"></div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">위쪽 칸을 누를 때마다 그 값을 가져가는 쪽이 다람쥐와 고슴도치로 바뀌어요. 주사위 둘로 공정한 규칙을 몇 가지나 만들 수 있을까요?</p>
+          <div class="board-area"><div id="fair-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="fair-make-solve" class="btn primary huge" type="button">선생님, 누가 유리해요?</button>
+            <p id="fair-make-result" class="make-result" aria-live="polite"></p>
+            <button id="fair-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

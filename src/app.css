@@ -1385,6 +1385,7 @@ div.coin {
   max-width: calc(var(--n) * 130px);
   max-height: 100cqh;
   margin: 0 auto;
+  word-break: keep-all;
 }
 
 .swap-row.small .swap-svg {
@@ -12191,4 +12192,631 @@ button.pd-clue {
 .mt-make-now {
   margin: 4px 0 0;
   text-align: center;
+}
+
+/* ---- 공정한 게임일까: 규칙의 칸, 던진 동전과 주사위, 열 번의 자리, 컴퓨터가 던진 수의 막대, 모든 경우의 표 ----
+   색만으로 알리지 않는다. 다람쥐는 주황 동그라미, 고슴도치는 파란 세모다(칸과 표의 바탕도 옅은 주황과 빗금 친 옅은 파랑).
+   왼쪽 주사위는 노란 바탕, 오른쪽 주사위는 하늘색 바탕이고, 표에서는 가로줄의 머리가 왼쪽, 세로줄의 머리가 오른쪽이다(대본의 표 설명).
+   오른쪽 동전은 테두리가 점선이다. 바꾼 칸은 굵은 금빛 점선 테두리다.
+   던질 때만 동전과 주사위가 0.4초 흔들리고, 움직임을 줄이는 설정이면 흔들리지 않는다. */
+.fr-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 100cqh;
+  margin: 0 auto;
+}
+
+.fr-token {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.fr-token.own-a {
+  fill: #e8590c;
+  stroke: #7a2e06;
+  stroke-width: 1.5;
+}
+
+.fr-token.own-b {
+  fill: #1971c2;
+  stroke: #0b3a66;
+  stroke-width: 1.5;
+}
+
+.own-a.fr-chip,
+.own-a.fr-cell {
+  background: #ffe8cc;
+}
+
+.fr-cell.own-a {
+  border-color: #e8590c;
+}
+
+.own-b.fr-chip,
+.own-b.fr-cell {
+  background: repeating-linear-gradient(135deg, #e7f5ff 0 6px, #d0ebff 6px 9px);
+}
+
+/* 규칙의 칸: 값마다 하나. 규칙 고치기와 직접 만들기에서는 단추(44픽셀 넘게) */
+.fr-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.fr-chip-head {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fr-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+.fr-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 56px;
+  padding: 3px 6px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+button.fr-chip {
+  cursor: pointer;
+}
+
+/* 값이 많은 규칙(합 2~12)은 보기만 하는 칸을 좁혀 한 줄에 놓는다. 누르는 칸(단추)은 그대로 44픽셀이 넘는다 */
+.fr-chip-row.many {
+  gap: 4px;
+}
+
+.fr-chip-row.many span.fr-chip {
+  min-width: 38px;
+  padding-inline: 2px;
+}
+
+.fr-chip.changed,
+.fr-cell.changed {
+  outline: 4px dashed #b08900;
+  outline-offset: -2px;
+}
+
+/* 던진 동전과 주사위, 가져간 쪽 */
+.fr-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 96px;
+}
+
+.fr-faces {
+  display: inline-flex;
+  gap: 10px;
+}
+
+.fr-faces > svg,
+.fr-face-slot {
+  width: 84px;
+  height: 84px;
+}
+
+.fr-face-slot {
+  border: 3px dashed var(--line);
+  border-radius: 16px;
+}
+
+.fr-face-slot.coin {
+  border-radius: 50%;
+}
+
+.fr-stage.rolling .fr-faces > svg {
+  animation: fr-roll 0.4s ease-out;
+}
+
+@keyframes fr-roll {
+  0% {
+    transform: rotate(-30deg) scale(0.8);
+  }
+  50% {
+    transform: rotate(18deg) scale(1.05);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fr-stage.rolling .fr-faces > svg {
+    animation: none;
+  }
+}
+
+.fr-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.fr-result {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.fr-who-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.fr-who .fr-token {
+  width: 34px;
+  height: 34px;
+}
+
+.fr-die-body {
+  fill: #ffffff;
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.fr-die.left .fr-die-body {
+  fill: #fff3bf;
+}
+
+.fr-die.right .fr-die-body {
+  fill: #d0ebff;
+}
+
+.fr-pip {
+  fill: var(--ink);
+}
+
+.fr-coin-body {
+  fill: #f1f3f5;
+  stroke: #495057;
+  stroke-width: 4;
+}
+
+.fr-coin.face-1 .fr-coin-body {
+  fill: #ffe066;
+  stroke: #7a5c00;
+}
+
+.fr-coin-ring {
+  fill: none;
+  stroke: #7a5c00;
+  stroke-width: 3;
+}
+
+.fr-coin.right .fr-coin-body {
+  stroke-dasharray: 10 5;
+}
+
+.fr-coin-text {
+  font-size: 40px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--ink);
+}
+
+/* 열 번의 자리 */
+.fr-plays {
+  display: flex;
+  gap: 6px;
+}
+
+.fr-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+}
+
+.fr-play.empty {
+  border-style: dashed;
+}
+
+.fr-play .fr-token {
+  width: 26px;
+  height: 26px;
+}
+
+/* 컴퓨터가 던진 수의 막대 */
+.fr-many {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 520px);
+}
+
+.fr-bar-line {
+  display: grid;
+  grid-template-columns: 26px 92px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+}
+
+.fr-bar {
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.fr-bar-fill {
+  display: block;
+  height: 100%;
+}
+
+.fr-bar-fill.own-a {
+  background: #ff922b;
+}
+
+.fr-bar-fill.own-b {
+  background: repeating-linear-gradient(135deg, #4dabf7 0 6px, #1971c2 6px 9px);
+}
+
+.fr-bar-n {
+  font-size: 22px;
+  text-align: right;
+}
+
+.fr-many-total {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  text-align: center;
+}
+
+/* 모든 경우의 표 */
+.fr-table-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.fr-caption,
+.fr-count-line {
+  margin: 0;
+  font-size: 18px;
+  text-align: center;
+}
+
+.fr-count-line {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.fr-table {
+  /* 판 칸의 높이에서 규칙의 칸(두 줄일 수 있다), 표 설명, 센 수를 뺀 만큼 */
+  --cell: min(44px, calc((100cqh - 230px) / 7));
+  display: grid;
+  gap: 3px;
+}
+
+.fr-board.tight .fr-table {
+  --cell: min(40px, calc((100cqh - 290px) / 7));
+}
+
+/* 직접 만들기의 표에는 설명과 센 수가 없다(선생님에게 물으면 센다) */
+#make-fair .fr-board.tight .fr-table {
+  --cell: min(40px, calc((100cqh - 190px) / 7));
+}
+
+.fr-table.grid-7 {
+  grid-template-columns: repeat(7, minmax(var(--cell), 58px));
+  grid-auto-rows: var(--cell);
+}
+
+.fr-table.grid-3 {
+  --cell: 64px;
+  grid-template-columns: repeat(3, 110px);
+  grid-auto-rows: var(--cell);
+}
+
+.fr-table.list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 560px;
+}
+
+.fr-head,
+.fr-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fr-head > svg {
+  width: calc(var(--cell) - 8px);
+  height: calc(var(--cell) - 8px);
+}
+
+.fr-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fr-cell .fr-token {
+  width: 18px;
+  height: 18px;
+}
+
+.fr-table.list .fr-cell {
+  padding: 4px 6px;
+  gap: 6px;
+}
+
+.fr-cell-faces {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.fr-cell-faces > svg {
+  width: 34px;
+  height: 34px;
+}
+
+.fr-table.grid-3 .fr-cell-faces > svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기, 처음 화면의 작은 그림 */
+.fr-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fr-mini {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fr-mini-chip {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.fr-mini-chip.own-a {
+  fill: #fff4e6;
+}
+
+.fr-mini-chip.own-b {
+  fill: #d0ebff;
+}
+
+.fr-mini-chip.empty {
+  fill: none;
+  stroke-dasharray: 5 4;
+  stroke-width: 2;
+}
+
+.fr-mini-token.own-a {
+  fill: #e8590c;
+}
+
+.fr-mini-token.own-b {
+  fill: #1971c2;
+}
+
+.door-picture > .fr-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .fr-board.small {
+  width: 100px;
+  height: 70px;
+}
+
+.level .fr-board.small {
+  width: 90px;
+  height: 64px;
+}
+
+.menu-picture > .fr-board {
+  height: 76px;
+}
+
+.resume.note-picture .fr-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드. 그림 두 장은 종이에 나란히 들어간다 */
+.fr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(100%, 210px);
+}
+
+.fr-card.big {
+  width: min(100%, 560px);
+}
+
+.fr-card .strip-note {
+  text-align: center;
+}
+
+.fr-card .fr-table.grid-7 {
+  --cell: 26px;
+  grid-template-columns: repeat(7, 28px);
+  grid-auto-rows: 26px;
+  gap: 2px;
+}
+
+.fr-card.big .fr-table.grid-7 {
+  --cell: 36px;
+  grid-template-columns: repeat(7, 50px);
+  grid-auto-rows: 36px;
+}
+
+.fr-card .fr-cell {
+  font-size: 18px;
+}
+
+.fr-card .fr-table.grid-3 {
+  --cell: 44px;
+  grid-template-columns: repeat(3, 66px);
+  grid-auto-rows: 44px;
+}
+
+.fr-card .fr-table.grid-3 .fr-cell-faces > svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fr-card.big .fr-cell {
+  font-size: 18px;
+}
+
+/* 작은 표에서는 칸이 좁아 세모와 동그라미를 빼고 바탕(옅은 주황, 빗금 친 옅은 파랑)으로만 가른다 */
+.fr-card .fr-cell .fr-token {
+  display: none;
+}
+
+.fr-card.big .fr-cell .fr-token {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* "왜 그럴까?"의 합마다의 막대 */
+.fr-sum-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 260px;
+}
+
+.fr-sum-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  width: 38px;
+  height: 100%;
+}
+
+.fr-sum-bar {
+  width: 100%;
+  min-height: 2px;
+  border: 2px solid var(--bar);
+  border-radius: 4px 4px 0 0;
+  background: #99e9f2;
+}
+
+.fr-sum-n {
+  font-size: 18px;
+}
+
+.fr-sum-at {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 오른쪽 칸: 고르는 세 단추는 한 줄씩 */
+.fr-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fr-legend {
+  margin-top: 0;
+}
+
+.board-foot:has(> #fair-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 끝난 뒤의 까닭 칸(도전 판) */
+.fr-reason {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fr-reason label {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fr-reason textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 18px;
+}
+
+/* 직접 만들기: 던질 것과 볼 것의 단추. 눌린 쪽이 굵은 테두리 */
+.fr-make-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fr-make-pair .btn {
+  min-height: 52px;
+  padding-inline: 4px;
+  font-size: 18px;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.fr-make-pair .btn[aria-pressed='true'] {
+  border: 5px solid var(--bar);
+  font-weight: 700;
+}
+
+#make-fair .board-area > .fr-board {
+  align-self: stretch;
 }

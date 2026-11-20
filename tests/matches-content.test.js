@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="matches-title"', 'id="make-title"'), part('id="matches-outline"', 'id="why"'), part('id="matches-count"', 'id="domino-count"'), part('id="matches-pad"', 'id="domino-pad"'), part('id="make-matches"', '<script')].map(visibleText).join(' ');
+const own = [part('id="matches-title"', 'id="fair-title"'), part('id="matches-outline"', 'id="fair-table"'), part('id="matches-count"', 'id="fair-count"'), part('id="matches-pad"', 'id="fair-pad"'), part('id="make-matches"', 'id="make-fair"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -82,8 +82,8 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.doesNotMatch(board, /Math\.random/);
   // 판 아래에는 지금 정사각형과 뺀(옮긴) 성냥의 수만 적는다. 무른 수나 해 본 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /undoCount|resetCount|limitCount|fullCount|wrongCount|moveCount|takeCount|backCount|shiftCount/, line.trim());
-  assert.equal([...part('id="matches-count"', 'id="domino-count"').matchAll(/<strong/g)].length, 3);
-  assert.match(visibleText(part('id="matches-count"', 'id="domino-count"')), /지금 정사각형\s+0\s+개/);
+  assert.equal([...part('id="matches-count"', 'id="fair-count"').matchAll(/<strong/g)].length, 3);
+  assert.match(visibleText(part('id="matches-count"', 'id="fair-count"')), /지금 정사각형\s+0\s+개/);
 });
 
 test('무르기와 처음으로 뒤에는 앞의 말을 덮는 한마디를 한다. 선생님이 모습에 기댄 말을 한 뒤 모습이 바뀌면 지금 정사각형의 수로 덮는다', () => {
@@ -111,7 +111,7 @@ test('규칙 설명은 세 문장 안이다. 큰 정사각형도 센다고, 약�
   assert.match(code, /const ruleKey = \(board\) => \(board\.tidy \? `\$\{board\.kind\}-tidy` : board\.kind\);/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\.board\)\], \{ k: round\.board\.k, n: round\.board\.n \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 33);
+  assert.equal(guides.length, 34);
   assert.ok(sentenceCount(guides[32]) <= 3, guides[32]);
   assert.match(guides[32], /^빈 자리를 누르면 성냥이 놓이고, 성냥을 누르면 없어져요\./);
   assert.match(guides[32], /할 일대로 되는 방법이 딱 하나뿐인 판도 만들 수 있을까요\?$/);
@@ -213,7 +213,7 @@ test('풀이와 직접 만들기: 방법의 수와 한 가지 방법을 보이�
   assert.match(code, /if \(result\.count === 0\) line = fill\(T\.make\.none, \{ total: result\.ways \}\);/);
   // 할 일대로 되는 방법이 있는 판만 해 보거나 공책에 남긴다
   assert.match(code, /return solutionOf\(board\)\.possible \? board : null;/);
-  const make = part('id="make-matches"', '<script');
+  const make = part('id="make-matches"', 'id="make-fair"');
   for (const id of ['matches-make-fewer', 'matches-make-n', 'matches-make-more', 'matches-make-full', 'matches-make-clear', 'matches-make-now', 'matches-make-remove', 'matches-make-move', 'matches-make-k-less', 'matches-make-k', 'matches-make-k-more', 'matches-make-n-less', 'matches-make-target', 'matches-make-n-more', 'matches-make-tidy', 'matches-make-board', 'matches-make-solve', 'matches-make-result', 'matches-make-play', 'matches-make-picture']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -234,15 +234,15 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="matches-title"', '</section>'), /<h2 id="matches-title">성냥개비<\/h2>/);
   assert.ok(visibleText(part('id="matches-title"', '</section>')).includes(T.home.ask.little));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-matches-make" class="menu-item"/);
-  assert.doesNotMatch(visibleText(part('id="matches-pad"', 'id="domino-pad"')), /불가능해요|안 돼요/);
-  assert.match(part('id="matches-outline"', 'id="why"'), /aria-pressed="false" hidden>정사각형 모두 보기</);
+  assert.doesNotMatch(visibleText(part('id="matches-pad"', 'id="fair-pad"')), /불가능해요|안 돼요/);
+  assert.match(part('id="matches-outline"', 'id="fair-table"'), /aria-pressed="false" hidden>정사각형 모두 보기</);
   // 카드는 세모 피하기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="sim-title"') < html.indexOf('id="matches-title"'));
   assert.ok(html.indexOf('id="matches-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 세모 피하기 다음)
-  assert.match(read('src/main.js'), /sim: createSim\(frame\), matches: createMatches\(frame\) \};/);
+  // 틀이 형식을 안다(세모 피하기 다음)
+  assert.match(read('src/main.js'), /sim: createSim\(frame\), matches: createMatches\(frame\), /);
   assert.match(read('src/check-main.js'), /\['matches', '성냥개비'\]/);
-  assert.match(read('src/core/smaller.js'), /sim: smallerSim, matches: smallerMatches \};/);
+  assert.match(read('src/core/smaller.js'), /sim: smallerSim, matches: smallerMatches, /);
   assert.match(code, /smaller: \(round, turn\) => smallerMatches\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 정사각형에 가까워 규칙 글은 왼쪽 칸에 둔다
