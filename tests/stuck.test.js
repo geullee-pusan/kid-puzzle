@@ -16,7 +16,7 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const frame = read('src/main.js');
 const css = read('src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher'];
 const scripts = FORMATS.map((name) => read(`src/content/${name}.json`));
 const part = (from, to) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
 const side = part('<section class="side" aria-label="힌트">', '</section>');
@@ -161,5 +161,5 @@ test('하던 판은 그대로 간직한다: 작은 판은 기기에 적어 두�
   // 수준 맞추기와 "왜 그럴까?"와 다음 판 번호는 작은 판의 기록을 빼고 본다.
   assert.match(frame, /const records = \(\) => withoutSide\(log\.allRecords\(\)\);/);
   assert.equal([...frame.matchAll(/log\.allRecords\(\)/g)].length, 1);
-  for (const name of ['code', 'swap', 'tile', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze']) assert.doesNotMatch(read(`src/formats/${name}.js`), /log\.allRecords\(\)/, name);
+  for (const name of ['code', 'swap', 'tile', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher']) assert.doesNotMatch(read(`src/formats/${name}.js`), /log\.allRecords\(\)/, name);
 });

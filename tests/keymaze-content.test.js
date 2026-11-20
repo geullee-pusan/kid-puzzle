@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="keymaze-title"', 'id="make-title"'), part('id="keymaze-marks"', 'id="why"'), part('id="keymaze-count"', 'id="domino-count"'), part('id="keymaze-pad"', 'id="domino-pad"'), part('id="make-keymaze"', '<script')].map(visibleText).join(' ');
+const own = [part('id="keymaze-title"', 'id="cipher-title"'), part('id="keymaze-marks"', 'id="cipher-counts"'), part('id="keymaze-count"', 'id="cipher-count"'), part('id="keymaze-pad"', 'id="cipher-pad"'), part('id="make-keymaze"', 'id="make-cipher"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -108,7 +108,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(round\.board\.keep === 'used' \? 'used' : 'mixed'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 27);
+  assert.equal(guides.length, 28);
   assert.ok(sentenceCount(guides[26]) <= 3, guides[26]);
   assert.match(guides[26], /나갈 수 없는 미로도 만들 수 있을까요\?$/);
   assert.match(T.keepNote.kept, /열쇠를 써도 없어지지 않아요\.$/);
@@ -215,7 +215,7 @@ test('풀이와 직접 만들기: 나갈 수 있으면 가장 적은 걸음과 �
   assert.equal(fill(T.solution.possible, { k: 9 }), '가장 적은 걸음은 9걸음이에요. 한 가지 길을 보여 줄게요.');
   assert.deepEqual(Object.keys(T.solution.reasons).sort(), ['arrows', 'nokey-far', 'nokey-none', 'search', 'trap', 'twice']);
   assert.match(code, /if \(reason === 'nokey'\) return fill\(lines\[detail\.none \? 'nokey-none' : 'nokey-far'\], \{ face: faceOf\(detail\.color\) \}\);/);
-  const make = part('id="make-keymaze"', '<script');
+  const make = part('id="make-keymaze"', 'id="make-cipher"');
   for (const id of ['keymaze-make-keep', 'keymaze-make-w-fewer', 'keymaze-make-w', 'keymaze-make-w-more', 'keymaze-make-h-fewer', 'keymaze-make-h', 'keymaze-make-h-more', 'keymaze-make-clear', 'keymaze-make-tools', 'keymaze-make-colors', 'keymaze-make-board', 'keymaze-make-solve', 'keymaze-make-result', 'keymaze-make-play', 'keymaze-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="keymaze-make-solve"[^>]*>선생님, 나갈 수 있어요\?</);
   assert.match(make, /id="keymaze-make-play"[^>]*>내가 해 볼래요</);
@@ -239,18 +239,18 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.ok(visibleText(part('id="keymaze-title"', '</section>')).includes(T.home.ask.oneway));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-keymaze-make" class="menu-item"/);
   assert.match(part('id="keymaze-marks"', 'id="why"'), /aria-pressed="false" hidden>나갈 수 있는 방 보기</);
-  const pad = part('id="keymaze-pad"', 'id="domino-pad"');
+  const pad = part('id="keymaze-pad"', 'id="cipher-pad"');
   assert.match(pad, /id="keymaze-impossible"[^>]*>불가능해요</);
   assert.match(pad, /id="keymaze-again"[^>]*>처음부터 다시 걸어 볼래요</);
   assert.match(pad, /id="keymaze-stop"[^>]*>여기까지 할래요</);
   assert.match(visibleText(pad), /한쪽 문: 화살표 쪽으로만 지나가요/);
-  // 카드는 닿지 않게 놓기와 구역 긋기 다음, 퍼즐 만들기 앞이다
+  // 카드는 닿지 않게 놓기와 구역 긋기 다음, 암호 놀이 앞이다
   assert.ok(html.indexOf('id="apart-title"') < html.indexOf('id="keymaze-title"'));
-  assert.ok(html.indexOf('id="keymaze-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 닿지 않게 놓기와 구역 긋기 다음)
-  assert.match(read('src/main.js'), /apart: createApart\(frame\), keymaze: createKeymaze\(frame\) \};/);
+  assert.ok(html.indexOf('id="keymaze-title"') < html.indexOf('id="cipher-title"'));
+  // 틀이 형식을 안다(닿지 않게 놓기와 구역 긋기 다음)
+  assert.match(read('src/main.js'), /apart: createApart\(frame\), keymaze: createKeymaze\(frame\), /);
   assert.match(read('src/check-main.js'), /\['keymaze', '열쇠 미로'\]/);
-  assert.match(read('src/core/smaller.js'), /apart: smallerApart, keymaze: smallerKeymaze \};/);
+  assert.match(read('src/core/smaller.js'), /apart: smallerApart, keymaze: smallerKeymaze, /);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 도구를 켜 본 판은 힌트 하나를 연 것으로 센다. 판이 위아래로 커서 규칙 글은 왼쪽 칸에 둔다
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

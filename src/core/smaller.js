@@ -40,6 +40,8 @@ import { checkBoard as checkMagic, smallLists as smallMagicLists, solve as solve
 import { checkBoard as checkApart, smallBoards as smallApartBoards } from './apart.js';
 import { smallBoards as smallKeymazeBoards } from './keymaze-ladder.js';
 import { checkBoard as checkKeymaze, solve as solveKeymaze } from './keymaze.js';
+import { smallBoards as smallCipherBoards } from './cipher-ladder.js';
+import { checkBoard as checkCipher } from './cipher.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -789,4 +791,17 @@ export function smallerKeymaze(origin, turn = 0) {
   return wrap(pickByTurn(smallKeymazeBoards(origin), solveKeymaze(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze };
+// ---- 암호 놀이: 같은 종류의 더 짧은 글(같은 열쇠)이나 두 자리 세로셈 ----
+
+/**
+ * 원래 판과 같은 종류의 더 작은 판을 낸다(src/core/cipher-ladder.js의 smallBoards). 판의 글은 대본의 글 묶음(book)에서 고른다.
+ * 미는 암호 풀기와 직접 만든 판은 같은 열쇠의 더 짧은 글, 숫자 판은 세 자리, 열쇠 찾기는 더 짧은 글, 글자를 수로는 같은 표의 더 짧은 글,
+ * 자주 나오는 글자는 더 짧은 세 문장 글, 달아난 숫자는 같은 셈의 두 자리 세로셈. 모두 되는 판이다.
+ * 더 짧은 글이 없는 판(가장 짧은 글, 세 자리 숫자, 두 자리 세로셈)에는 없다.
+ */
+export function smallerCipher(origin, turn = 0) {
+  if (!origin.board || checkCipher(origin.board) !== null || !origin.book) return null;
+  return wrap(pickByTurn(smallCipherBoards(origin, origin.book), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher };
