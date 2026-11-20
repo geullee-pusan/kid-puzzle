@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="product-title"', 'id="make-title"'), part('id="product-pairs"', 'id="why"'), part('id="product-count"', 'id="domino-count"'), part('id="product-pad"', 'id="domino-pad"'), part('id="make-product"', '<script')].map(visibleText).join(' ');
+const own = [part('id="product-title"', 'id="sim-title"'), part('id="product-pairs"', 'id="why"'), part('id="product-count"', 'id="sim-count"'), part('id="product-pad"', 'id="sim-pad"'), part('id="make-product"', 'id="make-sim"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -109,7 +109,7 @@ test('규칙 설명은 세 문장 안이다. 숨은 단서가 있는 판은 물�
   assert.match(code, /const ruleKey = \(round\) => \(hiddenCount\(round\.board\) > 0 \? 'hidden' : 'full'\);/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\)\], \{ n: numbersOf\(round\.board\.n\) \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 31);
+  assert.equal(guides.length, 32);
   assert.ok(sentenceCount(guides[30]) <= 3, guides[30]);
   assert.match(guides[30], /곱을 몇 개 숨겨도 답이 한 가지뿐인 판을 만들 수 있을까요\?$/);
 });
@@ -231,7 +231,7 @@ test('풀이와 직접 만들기: 답이 하나뿐인지 여럿인지 말하고,
   assert.match(code, /const other = result\.examples\.find\(\(cells\) => !sameCells\(cells, draft\.cells\)\) \?\? null;/);
   assert.equal(fill(T.make.over, { n: 20 }), '이 단서에 맞는 답이 20가지가 넘어요. 다른 답 하나를 그려 볼게요.');
   assert.equal(fill(T.make.veiled, { n: 2 }), '단서를 2개 숨겼어요.');
-  const make = part('id="make-product"', '<script');
+  const make = part('id="make-product"', 'id="make-sim"');
   for (const id of ['product-make-fewer', 'product-make-n', 'product-make-more', 'product-make-clear', 'product-make-show', 'product-make-keys', 'product-make-board', 'product-make-solve', 'product-make-result', 'product-make-play', 'product-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="product-make-solve"[^>]*>선생님, 답이 몇 가지예요\?</);
   assert.match(make, /id="product-make-play"[^>]*>내가 해 볼래요</);
@@ -249,7 +249,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 숫자판, 도구, 직�
   assert.match(part('id="product-title"', '</section>'), /<h2 id="product-title">곱 단서 퍼즐<\/h2>/);
   assert.ok(visibleText(part('id="product-title"', '</section>')).includes(T.home.ask.small));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-product-make" class="menu-item"/);
-  const pad = part('id="product-pad"', 'id="domino-pad"');
+  const pad = part('id="product-pad"', 'id="sim-pad"');
   assert.match(visibleText(pad), /판에 놓은 수를 고르면 그 수가 고른 칸으로 옮겨 와요\./);
   assert.deepEqual([...pad.matchAll(/data-n="(\w+)"/g)].map((match) => match[1]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'erase']);
   assert.doesNotMatch(pad, /불가능해요/);
@@ -257,10 +257,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 숫자판, 도구, 직�
   // 카드는 팬케이크 뒤집기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="pancake-title"') < html.indexOf('id="product-title"'));
   assert.ok(html.indexOf('id="product-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 팬케이크 뒤집기 다음)
-  assert.match(read('src/main.js'), /pancake: createPancake\(frame\), product: createProduct\(frame\) \};/);
+  // 틀이 형식을 안다(팬케이크 뒤집기 다음)
+  assert.match(read('src/main.js'), /pancake: createPancake\(frame\), product: createProduct\(frame\), /);
   assert.match(read('src/check-main.js'), /\['product', '곱 단서 퍼즐'\]/);
-  assert.match(read('src/core/smaller.js'), /pancake: smallerPancake, product: smallerProduct \};/);
+  assert.match(read('src/core/smaller.js'), /pancake: smallerPancake, product: smallerProduct, /);
   assert.match(code, /smaller: \(round, turn\) => smallerProduct\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 5×5 판은 위아래로 커서 규칙 글은 왼쪽 칸에 둔다

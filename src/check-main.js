@@ -65,6 +65,7 @@ function drawCounts() {
     ['seqpath', '수열 길 퍼즐'],
     ['pancake', '팬케이크 뒤집기'],
     ['product', '곱 단서 퍼즐'],
+    ['sim', '세모 피하기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

@@ -93,7 +93,7 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   assert.match(T.rules.referee, /들어 있는 숫자와 자리도 맞는 것을 세어서 알려 주세요\.$/);
   // 직접 만들기 화면의 안내 글도 같다. 답이 하나뿐인 표를 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 31, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 32, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[2]) <= 3, guides[2]);
   assert.match(guides[2], /답이 하나뿐인 표를 만들 수 있을까요\?/);
   assert.match(T.make.intro, /답이 하나뿐인 표를 만들 수 있을까요\?/);
@@ -408,7 +408,7 @@ test('index.html: 숫자 추리의 카드, 숫자판, 메모판, 직접 만들�
   // 처음 화면의 물음은 대본에 있는 것과 같은 글로 시작한다.
   assert.ok(screenText.includes(T.home.ask.guess));
   // 처음 화면의 카드는 여섯이다. 퍼즐 만들기의 "만들기" 목록에는 형식마다 단추가 하나씩 있다.
-  assert.equal([...html.matchAll(/class="panel door[ "]/g)].length, 32);
+  assert.equal([...html.matchAll(/class="panel door[ "]/g)].length, 33);
   const make = html.slice(html.indexOf('id="make-title"'), html.indexOf('id="picker"'));
   for (const id of ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make']) assert.ok(make.includes(`id="${id}"`), id);
   // 대본의 단추 글자

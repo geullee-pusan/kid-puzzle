@@ -11712,3 +11712,224 @@ button.pd-clue {
 .board-foot:has(> #product-count:not([hidden])) {
   justify-content: flex-end;
 }
+
+/* ---- 세모 피하기: 원 위의 점, 점 사이의 선, 없는 선의 가위표, 한 색 세모 ----
+   색만으로 알리지 않는다. 빨간 선은 굵은 실선, 파란 선은 굵은 점선이다. 처음부터 그어 둔 선은 넓은 회색 테두리 위에 그린다.
+   선이 없는 두 점 사이에는 가는 회색 점선과 가위표를 그린다. 한 색 세모는 안을 옅게 칠하고 둘레에 넓은 띠를 두른다.
+   방금 그은 선은 넓은 금빛 띠, 골라 둔 점은 굵은 고리다. */
+.sim-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .sim-board,
+.door-picture > .sim-board,
+#make-sim .board-area > .sim-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.sim-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 560px;
+  max-height: 560px;
+}
+
+.sim-board.small .sim-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.sim-board.live .sim-svg {
+  touch-action: none;
+  user-select: none;
+}
+
+.sim-board.live .sim-point {
+  cursor: pointer;
+}
+
+.sim-line {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.sim-line.red {
+  stroke: #e03131;
+}
+
+.sim-line.blue {
+  stroke: #1971c2;
+  stroke-linecap: butt;
+  stroke-dasharray: 20 12;
+}
+
+.sim-given {
+  stroke: #adb5bd;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.sim-gone-line {
+  stroke: #868e96;
+  stroke-dasharray: 6 8;
+}
+
+.sim-gone-cross {
+  stroke: #495057;
+  stroke-linecap: round;
+}
+
+.sim-tri.red .sim-tri-fill {
+  fill: rgba(224, 49, 49, 0.16);
+}
+
+.sim-tri.blue .sim-tri-fill {
+  fill: rgba(25, 113, 194, 0.16);
+}
+
+.sim-tri-band {
+  fill: none;
+  stroke-linejoin: round;
+  opacity: 0.28;
+}
+
+.sim-tri.red .sim-tri-band {
+  stroke: #e03131;
+}
+
+.sim-tri.blue .sim-tri-band {
+  stroke: #1971c2;
+}
+
+.sim-fresh {
+  stroke: var(--gold);
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.sim-hit {
+  fill: transparent;
+}
+
+.sim-dot {
+  fill: #ffffff;
+  stroke: var(--ink);
+}
+
+.sim-pick {
+  fill: rgba(252, 196, 25, 0.35);
+  stroke: #e67700;
+}
+
+.sim-ring {
+  fill: none;
+  stroke: var(--bar);
+  stroke-dasharray: 10 6;
+}
+
+.sim-trace {
+  stroke: #868e96;
+  stroke-width: 6;
+  stroke-dasharray: 8 8;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* 자국과 표시는 누르는 것을 가로막지 않는다(점이 눌린다) */
+.sim-line,
+.sim-given,
+.sim-gone,
+.sim-tri,
+.sim-fresh {
+  pointer-events: none;
+}
+
+.sim-point:focus-visible {
+  outline: none;
+}
+
+.sim-point:focus-visible .sim-dot {
+  stroke: var(--gold);
+  stroke-width: 8;
+}
+
+.board-foot:has(> #sim-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸: 칠할 색 두 단추(눌린 쪽은 굵은 테두리) */
+.sim-pens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn.sim-pen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn.sim-pen[aria-pressed='true'] {
+  border: 5px solid var(--bar);
+  font-weight: 700;
+}
+
+.sim-pen-icon {
+  flex: none;
+  width: 80px;
+  height: 20px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .sim-board.small {
+  width: 90px;
+  height: 80px;
+  justify-content: flex-start;
+}
+
+.level .sim-board.small {
+  width: 80px;
+  height: 72px;
+  justify-content: flex-start;
+}
+
+.menu-picture > .sim-board {
+  height: 76px;
+}
+
+.resume.note-picture .sim-board.small {
+  justify-content: center;
+  width: 100%;
+  height: 110px;
+}
+
+/* 다시 보기, 풀이, "왜 그럴까?"의 그림 */
+/* 그림 두 장은 판 위의 종이(가로 490픽셀쯤)에 나란히 들어간다 */
+.sim-card {
+  width: min(100%, 225px);
+}
+
+.sim-card > .sim-board {
+  height: 210px;
+}
+
+.sim-card.big {
+  width: min(100%, 420px);
+}
+
+.sim-card.big > .sim-board {
+  height: 380px;
+}
+
+.sim-card .strip-note {
+  text-align: center;
+}

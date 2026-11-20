@@ -48,6 +48,7 @@ import { smallBoards as smallPancakeBoards } from './pancake-ladder.js';
 import { checkBoard as checkPancake } from './pancake.js';
 import { smallBoards as smallProductBoards } from './product-ladder.js';
 import { checkBoard as checkProduct } from './product.js';
+import { checkBoard as checkSim, smallBoards as smallSimBoards, solve as solveSim } from './sim.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -845,4 +846,17 @@ export function smallerProduct(origin, turn = 0) {
   return wrap(pickByTurn(smallProductBoards(origin), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct };
+// ---- 세모 피하기: 점이 하나(게임은 둘까지) 적은 판 ----
+
+/**
+ * 점이 적은 판을 낸다(src/core/sim.js의 smallBoards). 게임 판은 점이 하나 적은 판, 그다음 둘 적은 판이다(넷까지).
+ * 칠하기 판은 점 하나를 뺀 판이다. 원래 판이 되는 판이면 되는 판만, 안 되는 판이면 되는 판부터 안 되는 판(아이가 볼 수 있는 까닭이 있는 판)과 번갈아 낸다.
+ * 점이 넷인 판에는 더 작은 판이 없다.
+ */
+export function smallerSim(origin, turn = 0) {
+  if (!origin.board || checkSim(origin.board) !== null) return null;
+  const possible = origin.board.kind === 'game' || solveSim(origin.board).possible;
+  return wrap(pickByTurn(smallSimBoards(origin.board), possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim };
