@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="pieces-title"', 'id="make-title"'), part('id="pieces-sort"', 'id="why"'), part('id="pieces-count"', 'id="domino-count"'), part('id="pieces-pad"', 'id="domino-pad"'), part('id="make-pieces"', '<script')].map(visibleText).join(' ');
+const own = [part('id="pieces-title"', 'id="magic-title"'), part('id="pieces-sort"', 'id="magic-dots"'), part('id="pieces-count"', 'id="magic-count"'), part('id="pieces-pad"', 'id="magic-pad"'), part('id="make-pieces"', 'id="make-magic"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 /** 그림의 모양(rows: 줄마다 #이 칸, +가 떼거나 붙이는 칸)을 칸들로 */
@@ -114,7 +114,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules.fixed, /돌리거나 뒤집어야 겹치는 것은 다른 조각으로 쳐요\./);
   assert.match(T.rules.row, /줄은 가로나 세로로 곧게 이어진 칸이에요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 24);
+  assert.equal(guides.length, 25);
   assert.ok(sentenceCount(guides[23]) <= 3, guides[23]);
   assert.match(guides[23], /^칸 수와 같은 조각의 약속을 정해요\./);
   assert.match(guides[23], /약속을 바꾸면 가짓수는 얼마나 달라질까요\?$/);
@@ -221,7 +221,7 @@ test('"왜 그럴까?"는 그림 넷의 알아챈 이야기다. 그림 속의 �
 });
 
 test('직접 만들기: 칸 수와 같은 조각의 약속을 정하면 선생님이 세어 모두 그리고, 공책에 남기거나 해 볼 수 있다', () => {
-  const make = part('id="make-pieces"', '<script');
+  const make = part('id="make-pieces"', 'id="make-magic"');
   for (const id of ['pieces-make-fewer', 'pieces-make-n', 'pieces-make-more', 'pieces-make-limit', 'pieces-make-rules', 'pieces-make-board', 'pieces-make-solve', 'pieces-make-result', 'pieces-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="pieces-make-solve"[^>]*>선생님, 몇 가지예요\?</);
   assert.match(make, /id="pieces-make-play"[^>]*>내가 해 볼래요</);
@@ -249,11 +249,11 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(part('id="pieces-guess-box"', 'id="pieces-find-box"'), /id="pieces-guess-go"[^>]*>이만큼일 것 같아요</);
   assert.match(part('id="pieces-sort"', 'id="why"'), /aria-pressed="false" hidden>가장 긴 줄로 묶어 보기</);
   assert.match(part('id="pieces-count"', 'id="domino-count"'), /id="pieces-back"[^>]*>모눈으로</);
-  // 카드는 도미노 가로세로 다음, 퍼즐 만들기 앞이다
+  // 카드는 도미노 가로세로 다음, 마법 네모와 겹친 칸 앞이다
   assert.ok(html.indexOf('id="domino-title"') < html.indexOf('id="pieces-title"'));
-  assert.ok(html.indexOf('id="pieces-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 도미노 가로세로 다음)
-  assert.match(read('src/main.js'), /domino: createDomino\(frame\), pieces: createPieces\(frame\) \};/);
+  assert.ok(html.indexOf('id="pieces-title"') < html.indexOf('id="magic-title"'));
+  // 틀이 형식을 안다(도미노 가로세로 다음)
+  assert.match(read('src/main.js'), /domino: createDomino\(frame\), pieces: createPieces\(frame\), /);
   assert.match(read('src/check-main.js'), /\['pieces', '조각 가짓수 찾기'\]/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.doesNotMatch(code, /hintsOpened/);

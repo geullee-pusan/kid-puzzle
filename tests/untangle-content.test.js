@@ -120,7 +120,7 @@ test('규칙 설명은 세 문장 안이고, 점을 끌어 옮기는 것과 겹�
   // 형식이 판의 종류(이야기 판은 옷과 다리)로 규칙 글을 고른다.
   assert.match(code, /return round\.board\.bridges > 0 \? `\$\{kind\}-bridge` : kind;/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 24);
+  assert.equal(guides.length, 25);
   assert.ok(sentenceCount(guides[14]) <= 3, guides[14]);
   assert.match(guides[14], /아무리 옮겨도 안 풀리는 그림도 만들 수 있을까요\?$/);
 });

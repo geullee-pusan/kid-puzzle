@@ -9607,3 +9607,277 @@ button.mc-gcell {
   height: 64px;
   justify-content: flex-start;
 }
+
+/* ---- 마법 네모와 겹친 칸: 칸과 줄, 줄 끝의 합, 오른쪽의 카드 자리 ----
+   색만으로 알리지 않는다. 빈칸은 점선 테두리, 카드는 굵은 실선 테두리의 노란 카드다. 고른 카드는 더 굵은 테두리와 바깥 점선 고리다.
+   줄 끝의 합은 덜 찬 줄이 점선, 다 찬 줄이 실선 테두리이고, 합이 같은 줄은 아주 굵은 테두리에 옅은 칠이다.
+   "칸마다 몇 번 세어지는지 보기"의 점은 칸 위쪽에 가로로 늘어놓는다. 끄는 동안 카드가 놓일 칸에는 굵은 파란 테두리를 두른다. */
+.board-area:has(> #magic-board:not([hidden])) {
+  padding: 2px;
+}
+
+.mg-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .mg-board,
+.door-picture > .mg-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.mg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 100px을 넘지 않게 한다 */
+  max-width: calc(var(--w) * 100px);
+  max-height: calc(var(--h) * 100px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 누를 수 있는 판은 끄는 동안 화면이 굴러가지 않게 한다 */
+.mg-board.live .mg-svg {
+  touch-action: none;
+}
+
+.mg-board.live [data-cell],
+.mg-board.live [data-card],
+.mg-board.live [data-tray] {
+  cursor: pointer;
+}
+
+.mg-svg.dragging,
+.mg-svg.dragging [data-cell],
+.mg-svg.dragging [data-card] {
+  cursor: grabbing;
+}
+
+.mg-board [tabindex] {
+  outline: none;
+}
+
+.mg-guide {
+  stroke: #dee2e6;
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.mg-spot {
+  fill: #f1f3f5;
+  stroke: #adb5bd;
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+}
+
+/* 카드가 놓인 칸은 카드의 테두리만 보이게 한다 */
+.mg-cell.filled .mg-spot {
+  stroke: none;
+}
+
+.mg-card rect,
+.mg-card circle {
+  fill: #fff3bf;
+  stroke: #8f6b00;
+  stroke-width: 5;
+}
+
+.mg-card text {
+  fill: #1f2933;
+  font-weight: 800;
+}
+
+.mg-cell.picked .mg-card rect,
+.mg-cell.picked .mg-card circle,
+.mg-card.picked rect {
+  stroke-width: 10;
+}
+
+.mg-ring {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 7;
+  stroke-dasharray: 14 8;
+}
+
+.mg-board [tabindex]:focus-visible .mg-spot,
+.mg-board [tabindex]:focus-visible rect,
+.mg-board [tabindex]:focus-visible circle:not(.mg-dot) {
+  stroke: #f08c00;
+  stroke-width: 10;
+}
+
+.mg-sum rect {
+  fill: #fff;
+  stroke: #adb5bd;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.mg-sum.full rect {
+  stroke: #495057;
+  stroke-width: 4;
+  stroke-dasharray: none;
+}
+
+.mg-sum.same rect {
+  fill: #d3f9d8;
+  stroke: #2b8a3e;
+  stroke-width: 9;
+  stroke-dasharray: none;
+}
+
+.mg-sum text {
+  fill: #1f2933;
+  font-weight: 700;
+}
+
+.mg-sum.part text {
+  fill: #52606d;
+}
+
+.mg-dot {
+  fill: #1864ab;
+}
+
+.mg-tray {
+  fill: #f8f9fa;
+  stroke: #ced4da;
+  stroke-width: 3;
+  stroke-dasharray: 12 8;
+}
+
+.mg-slot {
+  fill: none;
+  stroke: #ced4da;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.mg-over {
+  fill: none;
+  stroke: #1c7ed6;
+  stroke-width: 9;
+}
+
+.mg-ghost {
+  opacity: 0.85;
+}
+
+/* 작은 그림(처음 화면, 판 고르기, 하던 판 띠, 공책, 풀이, "왜 그럴까?"). 빈칸과 합의 자리를 진하게 그려 작아도 보이게 한다 */
+.mg-board.small .mg-cell.empty .mg-spot,
+.mg-board.small .mg-sum:not(.same) rect {
+  stroke: #495057;
+  stroke-width: 6;
+  stroke-dasharray: none;
+}
+
+.mg-board.small .mg-guide {
+  stroke: #adb5bd;
+}
+
+.mg-board.small .mg-svg {
+  max-width: calc(var(--w) * 70px);
+  max-height: calc(var(--h) * 70px);
+}
+
+.resume .mg-board.small {
+  width: 110px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume.note-picture .mg-board.small {
+  width: 100%;
+  height: 110px;
+  justify-content: center;
+}
+
+.menu-picture > .mg-board {
+  height: 76px;
+}
+
+.level .mg-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}
+
+.mg-figure {
+  width: min(100%, 140px);
+}
+
+.mg-figure-picture {
+  display: flex;
+  height: 140px;
+}
+
+.mg-figure-picture > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.mg-figure.big {
+  width: min(100%, 520px);
+}
+
+.mg-figure.big .mg-figure-picture {
+  height: 280px;
+}
+
+.mg-figure .strip-note {
+  text-align: center;
+}
+
+/* 직접 만들기: 위에 판 모양, 아래에 1~20의 수 카드. 오른쪽에 선생님이 그린 판들 */
+.board-area.mg-make-area {
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mg-make-area > #magic-make-shape {
+  flex: none;
+  height: 110px;
+}
+
+.mg-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 72px));
+  gap: 6px;
+  justify-content: center;
+}
+
+.btn.mg-pick {
+  min-height: 48px;
+  padding: 4px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.mg-make-picture {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mg-make-picture:empty {
+  display: none;
+}
+
+.mg-make-picture .mg-figure-picture {
+  height: 130px;
+}
+
+/* 겹친 칸 판에서 줄마다 맞출 합: 판 옆 오른쪽 칸 맨 위에 크게 적는다 */
+#magic-target {
+  font-size: 24px;
+  font-weight: 700;
+}

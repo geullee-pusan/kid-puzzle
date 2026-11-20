@@ -58,6 +58,7 @@ function drawCounts() {
     ['fold', '접히는 모양 가리기'],
     ['domino', '도미노 가로세로'],
     ['pieces', '조각 가짓수 찾기'],
+    ['magic', '마법 네모와 겹친 칸'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
