@@ -66,6 +66,7 @@ function drawCounts() {
     ['pancake', '팬케이크 뒤집기'],
     ['product', '곱 단서 퍼즐'],
     ['sim', '세모 피하기'],
+    ['matches', '성냥개비'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

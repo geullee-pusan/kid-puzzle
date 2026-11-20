@@ -11933,3 +11933,262 @@ button.pd-clue {
 .sim-card .strip-note {
   text-align: center;
 }
+
+/* ---- 성냥개비: 모눈의 점, 변마다 놓인 성냥(막대와 머리), 빈 자리, 처음 자리, 찾은 정사각형의 테두리 ----
+   색만으로 알리지 않는다. 성냥은 짙은 테두리의 나무색 막대와 둥근 머리, 빈 자리는 가는 점선, 성냥이 처음 있던 자리는 성냥 모양의 점선 테두리다.
+   옮겨 온 성냥은 넓은 금빛 점선 띠, 고른 성냥은 굵은 짧은 점선 고리다. 정사각형의 테두리는 크기마다 선의 모양이 다르다
+   (한 변이 성냥 1개는 실선, 2개는 긴 점선, 3개는 짧은 점선, 4개는 긴 점선과 점). 누르는 자리는 변마다 마름모 하나다. */
+.mt-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .mt-board,
+.door-picture > .mt-board,
+#make-matches .board-area > .mt-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.mt-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 640px;
+  max-height: 640px;
+}
+
+.mt-board.small .mt-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.mt-board.live .mt-svg {
+  user-select: none;
+}
+
+.mt-dot {
+  fill: #868e96;
+}
+
+.mt-slot {
+  stroke: #adb5bd;
+  stroke-width: 3;
+  stroke-dasharray: 4 8;
+  stroke-linecap: round;
+}
+
+.mt-ghost {
+  fill: none;
+  stroke: #868e96;
+  stroke-width: 3;
+  stroke-dasharray: 7 6;
+}
+
+.mt-stick {
+  fill: #e8c07d;
+  stroke: #7a4e1d;
+  stroke-width: 3;
+}
+
+.mt-head {
+  fill: #c92a2a;
+  stroke: #5c1a1a;
+  stroke-width: 3;
+}
+
+.mt-moved {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 6;
+  stroke-dasharray: 10 6;
+}
+
+.mt-pick {
+  fill: rgba(252, 196, 25, 0.25);
+  stroke: var(--ink);
+  stroke-width: 5;
+  stroke-dasharray: 6 5;
+}
+
+.mt-square {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.mt-square.size-1 {
+  stroke: #1971c2;
+}
+
+.mt-square.size-2 {
+  stroke: #2b8a3e;
+  stroke-dasharray: 18 10;
+}
+
+.mt-square.size-3 {
+  stroke: #9c36b5;
+  stroke-width: 6;
+  stroke-dasharray: 2 10;
+}
+
+.mt-square.size-4 {
+  stroke: #e8590c;
+  stroke-dasharray: 18 7 2 7;
+}
+
+.mt-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* 글자판으로 온 변은 마름모를 옅은 금빛으로 칠한다(네모난 테두리 대신) */
+.mt-hit:focus {
+  outline: none;
+}
+
+.mt-hit:focus-visible {
+  fill: rgba(252, 196, 25, 0.3);
+}
+
+/* 자국과 표시는 누르는 것을 가로막지 않는다(마름모가 눌린다) */
+.mt-dot,
+.mt-slot,
+.mt-ghost,
+.mt-match,
+.mt-moved,
+.mt-pick,
+.mt-square {
+  pointer-events: none;
+}
+
+.board-foot:has(> #matches-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸: "정사각형 모두 보기"를 켰을 때 크기마다의 수(선 모양 보기와 함께) */
+.mt-size-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+}
+
+.mt-size-box h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.mt-sizes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.mt-sizes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+}
+
+.mt-size-sample {
+  flex: none;
+  width: 56px;
+  height: 16px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .mt-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .mt-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .mt-board {
+  height: 76px;
+}
+
+.resume.note-picture .mt-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이, "왜 그럴까?", 직접 만들기의 그림 카드. 그림 두 장은 판 위의 종이에 나란히 들어간다 */
+.mt-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 210px);
+}
+
+.mt-card > .mt-board {
+  height: 196px;
+}
+
+.mt-card.big {
+  width: min(100%, 380px);
+}
+
+.mt-card.big > .mt-board {
+  height: 360px;
+}
+
+.mt-card .strip-note {
+  text-align: center;
+}
+
+.mt-make-picture .mt-card {
+  width: min(100%, 200px);
+}
+
+.mt-make-picture .mt-card > .mt-board {
+  height: 180px;
+}
+
+/* 직접 만들기: 두 단추를 한 줄에. 할 일의 두 단추는 눌린 쪽이 굵은 테두리 */
+.mt-make-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mt-make-pair .btn[aria-pressed='true'],
+#matches-make-tidy[aria-pressed='true'] {
+  border: 5px solid var(--bar);
+  font-weight: 700;
+}
+
+.mt-make-label {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+/* 직접 만들기의 왼쪽 칸은 정할 것이 많다. 1180×820에서 굴리지 않고 다 보이게 수 정하기 단추를 조금 낮게 둔다(48픽셀 이상) */
+#make-matches .stepper .btn {
+  min-width: 56px;
+  min-height: 52px;
+  font-size: 26px;
+}
+
+.mt-make-pair .btn {
+  padding-inline: 6px;
+  font-size: 19px;
+}
+
+.mt-make-now {
+  margin: 4px 0 0;
+  text-align: center;
+}

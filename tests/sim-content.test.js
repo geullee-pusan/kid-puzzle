@@ -48,7 +48,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="sim-title"', 'id="make-title"'), part('id="sim-count"', 'id="domino-count"'), part('id="sim-pad"', 'id="domino-pad"'), part('id="sim-swap"', '</section>'), part('id="make-sim"', '<script')]
+const own = [part('id="sim-title"', 'id="matches-title"'), part('id="sim-count"', 'id="matches-count"'), part('id="sim-pad"', 'id="matches-pad"'), part('id="sim-swap"', '</section>'), part('id="make-sim"', 'id="make-matches"')]
   .map(visibleText)
   .join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
@@ -92,9 +92,9 @@ test('규칙 설명은 세 문장 안이고, 색과 선의 모양·지는 때를
   assert.match(T.rules['paint-gone'], /^가위표가 있는 두 점 사이에는 선이 없어요\./);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[round\.mode === 'game' \? 'game' : round\.board\.gone\.length > 0 \? 'paint-gone' : 'paint'\],/);
   // 선이 가운데에서 엇갈린 곳은 세모가 아니라고 판 옆에 적어 둔다.
-  assert.match(visibleText(part('id="sim-pad"', 'id="domino-pad"')), /선이 가운데에서 엇갈린 곳은 점이 아니라서 세모가 되지 않아요\./);
+  assert.match(visibleText(part('id="sim-pad"', 'id="matches-pad"')), /선이 가운데에서 엇갈린 곳은 점이 아니라서 세모가 되지 않아요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 32);
+  assert.equal(guides.length, 33);
   assert.ok(sentenceCount(guides[31]) <= 3, guides[31]);
   assert.match(guides[31], /^두 점을 차례로 누를 때마다 그 선이 빨강, 파랑, 없음으로 바뀌어요\./);
   // 이 물음의 답(그런 판이 있다)은 tests/sim.test.js가 다른 방법으로 찾는다.
@@ -111,9 +111,9 @@ test('이 형식의 답: 고르는 판은 먼저 그을지 고른다. 1단계는
   assert.match(code, /const correct = seatOutcome\(solution, order\) !== 'lose';/);
   // 자리를 바꾸면 차례를 바꾼다(아이는 늘 빨강).
   assert.match(code, /const next = \{ order: round\.order === 'first' \? 'second' : 'first', rematchOf: round\.id \};/);
-  assert.match(part('id="sim-paint-box"', 'id="domino-pad"'), /id="sim-impossible"[^>]*>세모 없이는 안 돼요</);
-  assert.match(part('id="sim-paint-box"', 'id="domino-pad"'), /id="sim-pen-red"[^>]*aria-pressed="true">빨간 실선</);
-  assert.match(part('id="sim-paint-box"', 'id="domino-pad"'), /id="sim-pen-blue"[^>]*aria-pressed="false">파란 점선</);
+  assert.match(part('id="sim-paint-box"', 'id="matches-pad"'), /id="sim-impossible"[^>]*>세모 없이는 안 돼요</);
+  assert.match(part('id="sim-paint-box"', 'id="matches-pad"'), /id="sim-pen-red"[^>]*aria-pressed="true">빨간 실선</);
+  assert.match(part('id="sim-paint-box"', 'id="matches-pad"'), /id="sim-pen-blue"[^>]*aria-pressed="false">파란 점선</);
   assert.match(T.right['after-press'], /‘세모 없이는 안 돼요’/);
   // 되는 판에 "세모 없이는 안 돼요"를 누르면 틀렸다고 하지 않고 사실과 할 수 있는 일을 말한다.
   assert.equal(T.play['possible-press'], '이 판은 세모 없이 다 칠하는 방법이 있어요. 더 칠해 볼 수 있어요.');
@@ -133,7 +133,7 @@ test('판이 끝나면 어떤 세모가 생겼고 누가 이겼는지(또는 비
   assert.equal(fill(T.right.painted, { n: 10 }), '한 색 세모 없이 선 10개를 모두 칠했어요.');
   assert.equal(fill(T.right['impossible-tried'], { n: 7 }), '맞아요. 이 판은 어떻게 칠해도 한 색 세모가 생겨요. 선을 7번 칠해 보고 알아냈어요.');
   // 판 아래의 수는 그은 선과 남은 선뿐이다.
-  assert.equal([...part('id="sim-count"', 'id="domino-count"').matchAll(/<strong/g)].length, 2);
+  assert.equal([...part('id="sim-count"', 'id="matches-count"').matchAll(/<strong/g)].length, 2);
 });
 
 test('선을 긋는 법: 두 점을 차례로 누르거나 끈다. 벌써 이어진 두 점, 없는 선, 처음부터 칠해 둔 선은 그 사실을 판 아래에 적는다', () => {
@@ -292,7 +292,7 @@ test('풀이와 직접 만들기의 글: 게임은 둘 다 잘 두면 어떻게 
   assert.match(T.solution.given, /^이 점에서 같은 색 선이 셋 나가요\./);
   assert.match(T.solution.many, /^이 점에서 나가는 선 다섯 가운데 셋은 같은 색이에요\./);
   assert.deepEqual(Object.keys(T.make.starts).sort(), ['blue-blue', 'blue-draw', 'blue-red', 'red-blue', 'red-draw', 'red-red']);
-  const make = part('id="make-sim"', '<script');
+  const make = part('id="make-sim"', 'id="make-matches"');
   for (const id of ['sim-make-fewer', 'sim-make-n', 'sim-make-more', 'sim-make-lines', 'sim-make-clear', 'sim-make-board', 'sim-make-solve', 'sim-make-result', 'sim-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="sim-make-solve"[^>]*>선생님, 어떻게 끝나요\?</);
   assert.match(make, /id="sim-make-clear"[^>]*>선 모두 지우기</);
@@ -315,10 +315,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 끝난 �
   assert.match(part('id="after"', '</section>'), /id="sim-swap"[^>]*hidden>자리를 바꿔서 다시 두기</);
   assert.match(part('id="after"', '</section>'), /id="sim-replay"[^>]*hidden>방금 판 다시 보기</);
   assert.match(code, /\$\(lost \? 'after-same' : 'after-make'\)\.before\(\$\('sim-swap'\), \$\('sim-replay'\)\);/);
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 곱 단서 퍼즐 다음)
-  assert.match(read('src/main.js'), /product: createProduct\(frame\), sim: createSim\(frame\) \};/);
+  // 틀이 형식을 안다(곱 단서 퍼즐 다음)
+  assert.match(read('src/main.js'), /product: createProduct\(frame\), sim: createSim\(frame\), /);
   assert.match(read('src/check-main.js'), /\['sim', '세모 피하기'\]/);
-  assert.match(read('src/core/smaller.js'), /product: smallerProduct, sim: smallerSim \};/);
+  assert.match(read('src/core/smaller.js'), /product: smallerProduct, sim: smallerSim, /);
   assert.match(code, /smaller: \(round, turn\) => smallerSim\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 게임과 칠하기라 가장 좋은 기록은 없다.

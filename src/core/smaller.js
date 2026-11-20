@@ -49,6 +49,8 @@ import { checkBoard as checkPancake } from './pancake.js';
 import { smallBoards as smallProductBoards } from './product-ladder.js';
 import { checkBoard as checkProduct } from './product.js';
 import { checkBoard as checkSim, smallBoards as smallSimBoards, solve as solveSim } from './sim.js';
+import { smallBoards as smallMatchesBoards } from './matches-ladder.js';
+import { checkBoard as checkMatches } from './matches.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -859,4 +861,15 @@ export function smallerSim(origin, turn = 0) {
   return wrap(pickByTurn(smallSimBoards(origin.board), possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim };
+// ---- 성냥개비: 같은 할 일의 더 작은 모눈 ----
+
+/**
+ * 같은 할 일(빼기 또는 옮기기, "성냥은 모두 정사각형의 변" 약속)의 더 작은 모눈의 판을 낸다(src/core/matches-ladder.js의 smallBoards).
+ * 사다리와 같은 잣대로 골라서 할 일대로 되는 방법이 있는 판만 낸다. 2×2 판에는 더 작은 판이 없다.
+ */
+export function smallerMatches(origin, turn = 0) {
+  if (!origin.board || checkMatches(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallMatchesBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches };

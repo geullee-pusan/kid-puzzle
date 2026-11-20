@@ -92,7 +92,7 @@ test('규칙 설명은 세 문장을 넘지 않고, "약수"라는 말을 보기
   assert.deepEqual(replay(board(6), [6]).paid[0], list.split(', ').map(Number));
   // 직접 만들기 화면의 안내 글도 세 문장 안쪽이다. 가질 수 있는 카드가 없는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 32, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 33, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[6]) <= 3, guides[6]);
   assert.match(guides[6], /가질 수 있는 카드가 하나도 없는 판도 만들 수 있을까요\?/);
   // 판이 보여 주는 나머지 규칙: 가질 수 없는 카드를 누르면 왜 못 가지는지 한 줄이 나온다.
@@ -439,16 +439,16 @@ test('index.html: 약수 세금의 카드, 판, 답하는 칸, 도구, 직접 �
   assert.match(code, /if \(pick === card\) \{\s*take\(card\);/);
 });
 
-test('처음 화면: 카드 서른세 장이 가로 1280px에서 넉 장씩 아홉 줄로 놓이고, 셋째 줄이 있다는 것이 보인다', () => {
+test('처음 화면: 카드 서른네 장이 가로 1280px에서 넉 장씩 아홉 줄로 놓이고, 셋째 줄이 있다는 것이 보인다', () => {
   const cards = part('id="doors"', 'id="make-menu"');
-  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 33);
+  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 34);
   const doors = css.match(/\n\.doors \{([^}]*)\}/)[1];
   const [, width] = doors.match(/grid-template-columns:\s*repeat\(auto-fill,\s*minmax\((\d+)px,\s*1fr\)\)/);
   const [, gap] = doors.match(/gap:\s*(\d+)px/);
   const [, low] = doors.match(/grid-auto-rows:\s*minmax\((\d+)px,\s*\d+px\)/);
   const perRow = Math.floor((1256 + Number(gap)) / (Number(width) + Number(gap)));
   assert.equal(perRow, 4);
-  assert.equal(Math.ceil(33 / perRow), 9);
+  assert.equal(Math.ceil(34 / perRow), 9);
   // 높이 800px에서 하던 판 띠가 있어도(카드 칸의 높이 426px) 두 줄이 굴리지 않고 들어가고, 셋째 줄의 제목(40px)이 보인다.
   assert.ok(2 * Number(low) + Number(gap) <= 426);
   assert.ok(2 * Number(low) + 2 * Number(gap) + 40 <= 426);
