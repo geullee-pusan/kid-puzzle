@@ -48,7 +48,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="domino-title"', 'id="make-title"'), part('id="domino-safe"', 'id="why"'), part('id="domino-count"', 'id="fold-count"'), part('id="domino-pad"', 'id="fold-pad"'), part('id="domino-swap"', '</section>'), part('id="make-domino"', '<script')]
+const own = [part('id="domino-title"', 'id="pieces-title"'), part('id="domino-safe"', 'id="pieces-sort"'), part('id="domino-count"', 'id="fold-count"'), part('id="domino-pad"', 'id="fold-pad"'), part('id="domino-swap"', '</section>'), part('id="make-domino"', 'id="make-pieces"')]
   .map(visibleText)
   .join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
@@ -71,7 +71,7 @@ test('규칙 설명은 세 문장 안이고, 두 방향·겹치지 않기·지�
   assert.match(T.rules.game, /자기 차례에 놓을 곳이 없는 쪽이 져요\.$/);
   assert.match(code, /ruleLine: \(\) => T\.rules\.game,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 23);
+  assert.equal(guides.length, 24);
   assert.ok(sentenceCount(guides[22]) <= 3, guides[22]);
   assert.match(guides[22], /^가로와 세로의 칸 수를 정하고, 칸을 누르면 구멍이 뚫리거나 메워져요\./);
   assert.match(guides[22], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?$/);
@@ -262,7 +262,7 @@ test('"더 작은 판으로": 사다리의 판마다 잘 두면 이기는 꼴이
 });
 
 test('직접 만들기: 가로·세로를 정하고 칸을 눌러 구멍을 뚫으면, 누가 먼저 두면 누가 이기는지 알려 준다', () => {
-  const make = part('id="make-domino"', '<script');
+  const make = part('id="make-domino"', 'id="make-pieces"');
   for (const id of ['domino-make-w-fewer', 'domino-make-w-more', 'domino-make-h-fewer', 'domino-make-h-more', 'domino-make-holes', 'domino-make-clear', 'domino-make-board', 'domino-make-solve', 'domino-make-result', 'domino-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="domino-make-solve"[^>]*>선생님, 누가 이길까요\?</);
   assert.match(make, /id="domino-make-clear"[^>]*>구멍 모두 메우기</);
@@ -289,7 +289,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(html, /id="domino-safe"[^>]*aria-pressed="false" hidden>한쪽만 놓을 수 있는 자리 보기</);
   // 도구를 켜 본 판은 힌트 하나를 연 것으로 센다.
   assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.safeShown \? 1 : 0\),/);
-  assert.match(read('src/main.js'), /fold: createFold\(frame\), domino: createDomino\(frame\) \};/);
+  assert.match(read('src/main.js'), /fold: createFold\(frame\), domino: createDomino\(frame\), /);
   assert.match(read('src/check-main.js'), /\['domino', '도미노 가로세로'\]/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 게임이라 가장 좋은 기록은 없다.

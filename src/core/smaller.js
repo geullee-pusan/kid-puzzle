@@ -35,6 +35,7 @@ import { checkBoard as checkCutpaste, solve as solveCutpaste } from './cutpaste.
 import { smallBoards as smallFoldBoards } from './fold-ladder.js';
 import { checkBoard as checkFold, solve as solveFold } from './fold.js';
 import { checkBoard as checkDomino, playable as playableDomino, smallBoards as smallDominoBoards } from './domino.js';
+import { checkBoard as checkPieces, smallBoards as smallPieceBoards } from './pieces.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -735,4 +736,16 @@ export function smallerDomino(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino };
+// ---- 조각 가짓수 찾기: 같은 약속(같은 줄)으로 칸이 하나, 둘 적은 조각 ----
+
+/**
+ * 원래 판보다 칸이 적은 조각을 찾는 판을 낸다(src/core/pieces.js의 smallBoards). 같은 조각의 약속과 가장 긴 줄, 가짓수를 알려 주는지는 그대로다.
+ * 찾을 조각이 둘 이상인 판만 내고, 칸이 하나 적은 것부터 차례로 낸다. 그런 판이 없으면(세 칸 조각 등) null이다.
+ */
+export function smallerPieces(origin, turn = 0) {
+  if (!origin.board || checkPieces(origin.board) !== null) return null;
+  const list = smallPieceBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces };

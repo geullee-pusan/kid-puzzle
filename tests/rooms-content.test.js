@@ -88,7 +88,7 @@ test('규칙 설명은 세 문장 안이고, 모든 방을 한 번씩 지나 끝
   // 형식이 판의 종류(직접 만든 판은 made)로 규칙 글을 고른다.
   assert.match(code, /const ruleKey = \(round\) => \(round\.custom \? 'made' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 23);
+  assert.equal(guides.length, 24);
   assert.ok(sentenceCount(guides[16]) <= 3, guides[16]);
   assert.match(guides[16], /아무리 해도 안 되는 집도 만들 수 있을까요\?$/);
 });
