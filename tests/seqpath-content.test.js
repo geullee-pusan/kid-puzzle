@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="seqpath-title"', 'id="make-title"'), part('id="seqpath-board"', '</div>\n          <div class="board-foot">'), part('id="seqpath-count"', 'id="domino-count"'), part('id="seqpath-pad"', 'id="domino-pad"'), part('id="make-seqpath"', '<script')].map(visibleText).join(' ');
+const own = [part('id="seqpath-title"', 'id="pancake-title"'), part('id="seqpath-board"', '</div>\n          <div class="board-foot">'), part('id="seqpath-count"', 'id="pancake-count"'), part('id="seqpath-pad"', 'id="pancake-pad"'), part('id="make-seqpath"', 'id="make-pancake"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -104,7 +104,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'same' \? 'same' : 'paths'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 29);
+  assert.equal(guides.length, 30);
   assert.ok(sentenceCount(guides[28]) <= 3, guides[28]);
   assert.match(guides[28], /길을 잇는 방법이 한 가지뿐인 판도 만들 수 있을까요\?$/);
 });
@@ -207,7 +207,7 @@ test('풀이와 직접 만들기: 방법의 수(위 끝까지)와 그 가운데 
   assert.match(code, /const result = countSolutions\(board, \{ limit: MAKE_LIMIT \+ 1, budget: MAKE_BUDGET \}\);/);
   assert.match(code, /if \(!result\.complete && !reached\) line = result\.count === 0 \? T\.make\['far-none'\] : fill\(T\.make\.far, \{ n: result\.count \}\);/);
   assert.match(T.make.none, /모든 방법을 따져 보니/);
-  const make = part('id="make-seqpath"', '<script');
+  const make = part('id="make-seqpath"', 'id="make-pancake"');
   for (const id of ['seqpath-make-w-fewer', 'seqpath-make-w', 'seqpath-make-w-more', 'seqpath-make-h-fewer', 'seqpath-make-h', 'seqpath-make-h-more', 'seqpath-make-clear', 'seqpath-make-board', 'seqpath-make-keys', 'seqpath-make-solve', 'seqpath-make-result', 'seqpath-make-play', 'seqpath-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="seqpath-make-solve"[^>]*>선생님, 길을 잇는 방법이 몇 가지예요\?</);
   assert.match(make, /id="seqpath-make-play"[^>]*>내가 해 볼래요</);
@@ -227,7 +227,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.match(part('id="seqpath-title"', '</section>'), /<h2 id="seqpath-title">수열 길 퍼즐<\/h2>/);
   assert.ok(visibleText(part('id="seqpath-title"', '</section>')).includes(T.home.ask.four));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-seqpath-make" class="menu-item"/);
-  const pad = part('id="seqpath-pad"', 'id="domino-pad"');
+  const pad = part('id="seqpath-pad"', 'id="pancake-pad"');
   assert.match(visibleText(pad), /길을 누르기만 하면 그 길이 지워져요\./);
   // 길의 모양 그림: 굵은 줄, 가는 줄, 끊긴 줄(색만으로 알리지 않는다)
   assert.deepEqual([...pad.matchAll(/class="sp-legend-line (\w+)"/g)].map((match) => match[1]), ['ok', 'open', 'broken']);
@@ -235,10 +235,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   // 카드는 암호 놀이 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="cipher-title"') < html.indexOf('id="seqpath-title"'));
   assert.ok(html.indexOf('id="seqpath-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 암호 놀이 다음)
-  assert.match(read('src/main.js'), /cipher: createCipher\(frame\), seqpath: createSeqpath\(frame\) \};/);
+  // 틀이 형식을 안다(암호 놀이 다음)
+  assert.match(read('src/main.js'), /cipher: createCipher\(frame\), seqpath: createSeqpath\(frame\), /);
   assert.match(read('src/check-main.js'), /\['seqpath', '수열 길 퍼즐'\]/);
-  assert.match(read('src/core/smaller.js'), /cipher: smallerCipher, seqpath: smallerSeqpath \};/);
+  assert.match(read('src/core/smaller.js'), /cipher: smallerCipher, seqpath: smallerSeqpath, /);
   assert.match(code, /smaller: \(round, turn\) => smallerSeqpath\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 위아래로 커서 규칙 글은 왼쪽 칸에 둔다

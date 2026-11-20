@@ -63,6 +63,7 @@ function drawCounts() {
     ['keymaze', '열쇠 미로'],
     ['cipher', '암호 놀이'],
     ['seqpath', '수열 길 퍼즐'],
+    ['pancake', '팬케이크 뒤집기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

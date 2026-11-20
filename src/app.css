@@ -11098,3 +11098,265 @@ button.mc-gcell {
   width: 100%;
   height: 120px;
 }
+
+/* ---- 팬케이크 뒤집기: 접시 위의 팬케이크 더미 ----
+   색만으로 알리지 않는다. 크기는 너비와 판에 적힌 수(작은 그림에서는 너비와 진하기), 탄 면은 팬케이크의 위나 아래에 붙은 빗금 띠다.
+   누를 수 있는 판은 줄마다 단추 하나라서 작은 팬케이크도 줄 전체가 누르는 자리다(여덟 장이어도 한 줄이 44픽셀보다 높다).
+   누르기 시작하면 뒤집힐 팬케이크들에 점선 테두리를, 그 아래에 뒤집개를 그린다. 방금 뒤집힌 팬케이크들은 0.45초 동안 뒤집히는 움직임을 보인다. */
+.cake-board.live {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.cake-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* 방금 뒤집힌 팬케이크: 원래 자리(--from줄 떨어진 곳)에서 위아래가 뒤집히며 새 자리로 온다. 줄 단추는 그대로라서 움직이는 동안 눌러도 누른 줄이 뒤집힌다 */
+.cake-row.turning .cake {
+  animation: cake-turn 0.45s ease-in-out;
+}
+
+@keyframes cake-turn {
+  from {
+    transform: translateY(calc(var(--from) * (100% + 6px))) scaleY(-1);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cake-row.turning .cake {
+    animation: none;
+  }
+}
+
+.cake-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: min(66px, calc((100cqh - 30px) / var(--n)));
+  min-height: 44px;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  font: inherit;
+}
+
+.cake-row:disabled {
+  cursor: default;
+}
+
+.cake-row:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+
+.cake {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--w);
+  height: 100%;
+  overflow: hidden;
+  border: 3px solid #7a4a1c;
+  border-radius: 999px;
+  background: hsl(34 78% var(--l));
+}
+
+.cake-size {
+  position: relative;
+  z-index: 1;
+  min-width: 34px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+  color: #4a2c10;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* 탄 면: 위나 아래 3분의 1에 짙은 빗금 띠 */
+.cake-burnt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 36%;
+  background: repeating-linear-gradient(-45deg, #3b2210 0 6px, #6b3f19 6px 11px);
+}
+
+.cake.burnt-up .cake-burnt {
+  top: 0;
+}
+
+.cake.burnt-down .cake-burnt {
+  bottom: 0;
+}
+
+/* 뒤집힐 팬케이크들: 점선 테두리. 뒤집개는 맨 아래 것의 바로 밑에 왼쪽에서 들어온다 */
+.cake-row.aimed .cake {
+  outline: 4px dashed var(--accent);
+  outline-offset: 2px;
+}
+
+.cake-row.spatula::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 52%;
+  height: 8px;
+  border-radius: 4px;
+  background: #868e96;
+}
+
+/* 직접 만들기에서 고른 팬케이크 */
+.cake-row.selected .cake {
+  outline: 5px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.cake-plate {
+  flex: none;
+  width: 100%;
+  height: 10px;
+  margin-top: 2px;
+  border-radius: 6px;
+  background: #adb5bd;
+}
+
+/* 작은 그림(SVG): 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책, 풀이와 "왜 그럴까?" */
+.cake-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .cake-board.small,
+.door-picture > .cake-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.cake-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cake-body {
+  fill: hsl(34 78% var(--l));
+  stroke: #7a4a1c;
+  stroke-width: 2;
+}
+
+.cake-band {
+  fill: #3b2210;
+}
+
+.cake-number {
+  fill: #4a2c10;
+  font-weight: 700;
+}
+
+.cake-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+
+.cake-spatula {
+  fill: none;
+  stroke: #868e96;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cake-plate-art {
+  fill: #adb5bd;
+}
+
+.resume .cake-board.small {
+  width: 90px;
+  height: 60px;
+}
+
+.level .cake-board.small {
+  width: 90px;
+  height: 66px;
+}
+
+.menu-picture > .cake-board {
+  height: 76px;
+}
+
+.resume.note-picture .cake-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 뒤집는 차례의 그림: 더미마다 작게 */
+.cake-strip .strip-cell > div {
+  width: 140px;
+  height: 160px;
+}
+
+.cake-make-picture .cake-strip .strip-cell > div {
+  width: 100px;
+  height: 116px;
+}
+
+/* "왜 그럴까?"의 표 */
+.cake-table-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cake-table {
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.cake-table th,
+.cake-table td {
+  padding: 8px 12px;
+  border: 2px solid var(--line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cake-table th:first-child {
+  text-align: left;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #pancake-count:not([hidden])) {
+  justify-content: flex-end;
+}

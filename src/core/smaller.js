@@ -44,6 +44,8 @@ import { smallBoards as smallCipherBoards } from './cipher-ladder.js';
 import { checkBoard as checkCipher } from './cipher.js';
 import { smallBoards as smallSeqpathBoards } from './seqpath-ladder.js';
 import { checkBoard as checkSeqpath } from './seqpath.js';
+import { smallBoards as smallPancakeBoards } from './pancake-ladder.js';
+import { checkBoard as checkPancake } from './pancake.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -818,4 +820,16 @@ export function smallerSeqpath(origin, turn = 0) {
   return wrap(pickByTurn(smallSeqpathBoards(origin), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath };
+// ---- 팬케이크 뒤집기: 탄 면이 있는지가 같고 장 수가 적은 더미 ----
+
+/**
+ * 원래 판과 같은 종류(탄 면이 있는지, 판의 종류)로 장 수가 적은 더미를 낸다(src/core/pancake-ladder.js의 smallBoards).
+ * 다섯 장까지는 한 장, 여섯 장부터는 두 장 적다. 가장 적은 횟수가 둘 이상이고 원래 판보다 많지 않다. 모든 더미는 다 쌓을 수 있다.
+ * 탄 면이 없는 세 장 더미와 탄 면이 있는 두 장 더미에는 없다(더 줄이면 한 번에 끝난다).
+ */
+export function smallerPancake(origin, turn = 0) {
+  if (!origin.board || checkPancake(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallPancakeBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake };

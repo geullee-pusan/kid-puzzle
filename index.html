@@ -359,6 +359,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="pancake-title">
+            <h2 id="pancake-title">팬케이크 뒤집기</h2>
+            <div class="door-picture"><div id="home-pancake-sample"></div></div>
+            <p id="home-pancake-ask" class="door-ask">팬케이크를 크기 차례대로 쌓을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-pancake-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-pancake-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -464,6 +474,9 @@
               </li>
               <li>
                 <button id="home-seqpath-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-seqpath-blank"></span></span><span class="menu-name">수열 길 퍼즐</span></button>
+              </li>
+              <li>
+                <button id="home-pancake-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-pancake-blank"></span></span><span class="menu-name">팬케이크 뒤집기</span></button>
               </li>
             </ul>
           </div>
@@ -639,6 +652,8 @@
             <div id="cipher-board" hidden></div>
             <!-- 수열 길 퍼즐: 네모 칸과 칸에 적힌 수, 그은 길들. 수 칸에서 옆 칸으로 끌어 길을 긋고, 길을 누르면 지워진다 -->
             <div id="seqpath-board" hidden></div>
+            <!-- 팬케이크 뒤집기: 접시 위의 팬케이크 더미. 팬케이크를 누르면 그 팬케이크부터 맨 위까지 한꺼번에 뒤집힌다 -->
+            <div id="pancake-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -679,6 +694,14 @@
               <span class="block-numbers">
                 <span>그은 길 <strong id="seqpath-paths">0</strong>개</span>
                 <span>남은 칸 <strong id="seqpath-left">0</strong>칸</span>
+              </span>
+            </span>
+            <!-- 팬케이크 뒤집기: 윗줄에 할 일이나 사실 한 줄(다 쌓였는지, 맨 위 한 장만 누른 것), 그 아래에 뒤집은 횟수, 가장 적게 뒤집는 판은 이 더미에서 가장 적게 뒤집은 횟수 -->
+            <span id="pancake-count" class="count tile-count block-count" hidden>
+              <span id="pancake-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>뒤집은 횟수 <strong id="pancake-flips">0</strong>번</span>
+                <span id="pancake-best-line" hidden>이 더미에서 가장 적게 뒤집은 것: <strong id="pancake-best"></strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -943,6 +966,15 @@
               <li><span class="sp-legend-line open" aria-hidden="true"></span><span>가는 줄: 아직 덜 그은 길</span></li>
               <li><span class="sp-legend-line broken" aria-hidden="true"></span><span>끊긴 줄: 수의 차례가 맞지 않는 길</span></li>
             </ul>
+          </div>
+          <!-- 팬케이크 뒤집기: 뒤집는 법과 탄 면. 다 쌓을 수 없는 더미가 없어서 안 된다고 답하는 단추가 없다. 가장 적게 뒤집는 판은 다 쌓은 뒤에 다시 해 볼지 여기까지 할지 고른다 -->
+          <div id="pancake-pad" class="pad" hidden>
+            <h2>뒤집개</h2>
+            <p class="pad-note">팬케이크를 누르면 뒤집개가 그 아래로 들어가요.</p>
+            <p class="pad-note">누른 팬케이크부터 맨 위까지 한꺼번에 뒤집혀서 차례가 거꾸로 돼요.</p>
+            <p id="pancake-burnt-note" class="pad-note" hidden>빗금 띠가 탄 면이에요. 뒤집힌 팬케이크는 탄 면도 위아래가 바뀌어요.</p>
+            <button id="pancake-again" class="btn huge" type="button" hidden>처음 더미로 다시 해 볼래요</button>
+            <button id="pancake-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -2936,6 +2968,40 @@
             <button id="seqpath-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 그린 판: 길을 잇는 방법 가운데 한 가지 -->
             <div id="seqpath-make-picture" class="ap-make-picture sp-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-pancake" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>팬케이크 수</h2>
+          <div class="stepper">
+            <button id="pancake-make-fewer" class="btn" type="button" aria-label="팬케이크 한 장 줄이기">−</button>
+            <strong id="pancake-make-n"></strong>
+            <button id="pancake-make-more" class="btn" type="button" aria-label="팬케이크 한 장 늘리기">＋</button>
+          </div>
+          <h2>탄 면</h2>
+          <div id="pancake-make-burnt" class="segment column">
+            <button class="btn" type="button" data-burnt="no" aria-pressed="true">탄 면 없이</button>
+            <button class="btn" type="button" data-burnt="yes" aria-pressed="false">탄 면 있게</button>
+          </div>
+          <!-- 탄 면 판에서만: 고른 팬케이크를 그 자리에서 뒤집어 놓는다(탄 면의 위아래만 바뀐다) -->
+          <button id="pancake-make-turn" class="btn wide" type="button" hidden>고른 것 뒤집어 놓기</button>
+          <button id="pancake-make-clear" class="btn wide" type="button">차례대로 놓기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">두 팬케이크를 차례로 누르면 자리가 바뀌어요. 가장 적게 뒤집어도 여러 번 걸리는 더미를 만들 수 있을까요?</p>
+          <div class="board-area"><div id="pancake-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="pancake-make-solve" class="btn primary huge" type="button">선생님, 가장 적게 몇 번이에요?</button>
+            <p id="pancake-make-result" class="make-result" aria-live="polite"></p>
+            <button id="pancake-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 그린 그림: 가장 적게 뒤집는 한 가지 방법(뒤집기 전 더미마다 뒤집개를 넣는 자리) -->
+            <div id="pancake-make-picture" class="ap-make-picture cake-make-picture"></div>
           </div>
         </section>
       </main>
