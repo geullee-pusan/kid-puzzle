@@ -10921,3 +10921,180 @@ button.mc-gcell {
 .cp-make-picture .cp-bars {
   height: 140px;
 }
+
+/* ---- 수열 길 퍼즐: 네모 칸과 칸에 적힌 수, 그은 길들 ----
+   판의 자리 잡기는 조각 못 들어가게 막기의 판(block-board, block-svg)과 같다. 색만으로 알리지 않는다.
+   약속에 맞는 길은 굵은 실선과 메운 끝 동그라미, 아직 덜 그은 길은 가는 실선과 속이 빈 끝 동그라미,
+   수의 차례가 맞지 않는 길은 끊긴 줄(점선)로 그린다. 길마다 색을 돌려 쓰지만 색은 길을 가려 보기 쉽게 할 뿐이다.
+   직접 만들기에서 고른 칸은 굵은 테두리, 그림에서 짚는 칸은 두 겹 고리로 그린다. */
+.sp-board.live .sp-cell-group {
+  cursor: pointer;
+}
+
+/* 칸을 따라 긋는 동안에는 손가락으로 판이 굴러가지 않게 한다 */
+.sp-board.drawing .sp-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sp-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.sp-cell {
+  fill: #fdf8ef;
+  stroke: #adb5bd;
+  stroke-width: 3;
+}
+
+.sp-cell.empty {
+  fill: #ffffff;
+}
+
+.sp-frame {
+  fill: none;
+  stroke: #495057;
+  stroke-width: 6;
+}
+
+.sp-number {
+  fill: #212529;
+  font-size: 50px;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 9px;
+  pointer-events: none;
+}
+
+.sp-number.two {
+  font-size: 44px;
+}
+
+.sp-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.sp-path.ok {
+  stroke-width: 24;
+}
+
+.sp-path.open,
+.sp-path.live {
+  stroke-width: 10;
+}
+
+.sp-path.live {
+  opacity: 0.9;
+}
+
+.sp-path.broken {
+  stroke-width: 16;
+  stroke-dasharray: 18 16;
+  stroke-linecap: butt;
+}
+
+.sp-end {
+  stroke-width: 6;
+  pointer-events: none;
+}
+
+.sp-end.open,
+.sp-end.live,
+.sp-end.broken {
+  fill: #ffffff;
+}
+
+.sp-path.c0 { stroke: #339af0; }
+.sp-path.c1 { stroke: #51cf66; }
+.sp-path.c2 { stroke: #ff922b; }
+.sp-path.c3 { stroke: #cc5de8; }
+.sp-path.c4 { stroke: #fcc419; }
+.sp-path.c5 { stroke: #ff6b6b; }
+.sp-end.c0 { stroke: #1c7ed6; }
+.sp-end.c1 { stroke: #2f9e44; }
+.sp-end.c2 { stroke: #e8590c; }
+.sp-end.c3 { stroke: #ae3ec9; }
+.sp-end.c4 { stroke: #f08c00; }
+.sp-end.c5 { stroke: #e03131; }
+.sp-end.ok.c0 { fill: #1c7ed6; }
+.sp-end.ok.c1 { fill: #2f9e44; }
+.sp-end.ok.c2 { fill: #e8590c; }
+.sp-end.ok.c3 { fill: #ae3ec9; }
+.sp-end.ok.c4 { fill: #f08c00; }
+.sp-end.ok.c5 { fill: #e03131; }
+
+.sp-picked {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 9;
+}
+
+.sp-ring {
+  fill: none;
+  stroke: #c2255c;
+  stroke-width: 6;
+}
+
+/* 오른쪽 칸: 길의 모양 그림 */
+.sp-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sp-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+}
+
+.sp-legend-line {
+  flex: none;
+  width: 54px;
+  border-top: 10px solid #339af0;
+  border-radius: 5px;
+}
+
+.sp-legend-line.open {
+  border-top-width: 4px;
+}
+
+.sp-legend-line.broken {
+  border-top: 8px dashed #ff922b;
+  border-radius: 0;
+}
+
+/* 직접 만들기: 숫자판은 왼쪽 칸에 둔다(판이 8×8이어도 칸 하나가 44픽셀보다 작아지지 않게) */
+.sp-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.sp-keypad .key {
+  min-height: 52px;
+  font-size: 26px;
+}
+
+.sp-keypad .key.word {
+  grid-column: span 2;
+  font-size: 20px;
+}
+
+/* 공책의 그림: 수가 잘 보이게 조금 크게 그린다 */
+.resume.note-picture .sp-board.small {
+  width: 100%;
+  height: 120px;
+}

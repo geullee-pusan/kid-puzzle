@@ -62,6 +62,7 @@ function drawCounts() {
     ['apart', '닿지 않게 놓기와 구역 긋기'],
     ['keymaze', '열쇠 미로'],
     ['cipher', '암호 놀이'],
+    ['seqpath', '수열 길 퍼즐'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

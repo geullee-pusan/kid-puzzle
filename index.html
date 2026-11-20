@@ -349,6 +349,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="seqpath-title">
+            <h2 id="seqpath-title">수열 길 퍼즐</h2>
+            <div class="door-picture"><div id="home-seqpath-sample"></div></div>
+            <p id="home-seqpath-ask" class="door-ask">같은 간격으로 뛰는 수를 길로 이어 볼까요?</p>
+            <div class="door-foot">
+              <button id="home-seqpath-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-seqpath-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -451,6 +461,9 @@
               </li>
               <li>
                 <button id="home-cipher-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-cipher-blank"></span></span><span class="menu-name">암호 놀이</span></button>
+              </li>
+              <li>
+                <button id="home-seqpath-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-seqpath-blank"></span></span><span class="menu-name">수열 길 퍼즐</span></button>
               </li>
             </ul>
           </div>
@@ -624,6 +637,8 @@
             <div id="keymaze-board" hidden></div>
             <!-- 암호 놀이: 열쇠 줄, 암호와 푼 글(또는 바퀴대로 읽은 글), 풀 글자 줄, 글자 바퀴(바깥 고리는 원래 글자, 안쪽 고리는 암호 글자). 또는 숫자가 달아난 세로셈 -->
             <div id="cipher-board" hidden></div>
+            <!-- 수열 길 퍼즐: 네모 칸과 칸에 적힌 수, 그은 길들. 수 칸에서 옆 칸으로 끌어 길을 긋고, 길을 누르면 지워진다 -->
+            <div id="seqpath-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -657,6 +672,14 @@
             <!-- 암호 놀이: 할 일이나 사실 한 줄(남은 풀 글자의 수, 읽어 본 바퀴 모습의 수, 남은 네모의 수). 몇 번 눌렀는지는 적지 않는다 -->
             <span id="cipher-count" class="count tile-count" hidden>
               <span id="cipher-status" class="tile-status" aria-live="polite"></span>
+            </span>
+            <!-- 수열 길 퍼즐: 윗줄에 할 일이나 사실 한 줄(방금 그은 길이 빈칸에서 끝났는지, 약속에 맞지 않는 길이 있는지), 그 아래에 그은 길과 남은 칸의 수. 몇 번 그었는지는 적지 않는다 -->
+            <span id="seqpath-count" class="count tile-count block-count" hidden>
+              <span id="seqpath-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>그은 길 <strong id="seqpath-paths">0</strong>개</span>
+                <span>남은 칸 <strong id="seqpath-left">0</strong>칸</span>
+              </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
             <!-- 도미노 가로세로: 윗줄에 누구 차례인지(선생님이 방금 놓았는지, 누가 놓을 곳이 없는지), 그 아래에 놓은 도미노와 남은 빈칸의 수 -->
@@ -908,6 +931,18 @@
                 <button class="btn key word" type="button" data-n="erase">지우기</button>
               </div>
             </div>
+          </div>
+          <!-- 수열 길 퍼즐: 긋는 법과 길의 모양. 길을 이을 수 없는 판이 없어서 "불가능해요"가 없다 -->
+          <div id="seqpath-pad" class="pad" hidden>
+            <h2>길 긋기</h2>
+            <p class="pad-note">수가 적힌 칸에서 옆 칸으로 끌어 길을 그어요.</p>
+            <p class="pad-note">길의 끝에서 끌면 길이 늘어나요. 다른 길의 끝에 닿으면 두 길이 이어져요.</p>
+            <p class="pad-note">길을 누르기만 하면 그 길이 지워져요.</p>
+            <ul class="sp-legend">
+              <li><span class="sp-legend-line ok" aria-hidden="true"></span><span>굵은 줄: 약속에 맞는 길</span></li>
+              <li><span class="sp-legend-line open" aria-hidden="true"></span><span>가는 줄: 아직 덜 그은 길</span></li>
+              <li><span class="sp-legend-line broken" aria-hidden="true"></span><span>끊긴 줄: 수의 차례가 맞지 않는 길</span></li>
+            </ul>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -2853,6 +2888,54 @@
             <button id="cipher-make-play" class="btn huge" type="button">내가 풀어 볼래요</button>
             <!-- 선생님이 그린 그림: 암호에 나온 자음마다의 수 -->
             <div id="cipher-make-picture" class="cp-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-seqpath" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="seqpath-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="seqpath-make-w"></strong>
+            <button id="seqpath-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="seqpath-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="seqpath-make-h"></strong>
+            <button id="seqpath-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <button id="seqpath-make-clear" class="btn wide" type="button">수 모두 지우기</button>
+          <h2>수 적기</h2>
+          <!-- 숫자판: 고른 칸에 처음 누른 숫자는 원래 수를 바꾸고, 다음 숫자는 뒤에 붙인다(99까지). "빈칸으로"는 수를 지운다 -->
+          <div id="seqpath-make-keys" class="sp-keypad">
+            <button class="btn key" type="button" data-n="1">1</button>
+            <button class="btn key" type="button" data-n="2">2</button>
+            <button class="btn key" type="button" data-n="3">3</button>
+            <button class="btn key" type="button" data-n="4">4</button>
+            <button class="btn key" type="button" data-n="5">5</button>
+            <button class="btn key" type="button" data-n="6">6</button>
+            <button class="btn key" type="button" data-n="7">7</button>
+            <button class="btn key" type="button" data-n="8">8</button>
+            <button class="btn key" type="button" data-n="9">9</button>
+            <button class="btn key" type="button" data-n="0">0</button>
+            <button class="btn key word" type="button" data-n="erase">빈칸으로</button>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 누르고 숫자판으로 수를 적어요. 길을 잇는 방법이 한 가지뿐인 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="seqpath-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="seqpath-make-solve" class="btn primary huge" type="button">선생님, 길을 잇는 방법이 몇 가지예요?</button>
+            <p id="seqpath-make-result" class="make-result" aria-live="polite"></p>
+            <button id="seqpath-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 그린 판: 길을 잇는 방법 가운데 한 가지 -->
+            <div id="seqpath-make-picture" class="ap-make-picture sp-make-picture"></div>
           </div>
         </section>
       </main>

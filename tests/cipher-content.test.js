@@ -52,7 +52,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="cipher-title"', 'id="make-title"'), part('id="cipher-counts"', 'id="why"'), part('id="cipher-count"', 'id="domino-count"'), part('id="cipher-pad"', 'id="domino-pad"'), part('id="make-cipher"', '<script')].map(visibleText).join(' ');
+const own = [part('id="cipher-title"', 'id="seqpath-title"'), part('id="cipher-counts"', 'id="why"'), part('id="cipher-count"', 'id="seqpath-count"'), part('id="cipher-pad"', 'id="seqpath-pad"'), part('id="make-cipher"', 'id="make-seqpath"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const readmePart = readme.slice(readme.indexOf('암호 놀이'));
@@ -123,7 +123,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(T.rules.added, /14를 넘으면 14를 빼서 앞으로 돌아가요\./);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[keyOf\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 28);
+  assert.equal(guides.length, 29);
   assert.ok(sentenceCount(guides[27]) <= 3, guides[27]);
   assert.match(guides[27], /자주 나오는 글자로는 열쇠를 찾을 수 없는 편지도 쓸 수 있을까요\?$/);
 });
@@ -202,7 +202,7 @@ test('"왜 그럴까?": ㅎ 다음은 ㄱ → 14칸은 0칸, 15칸은 1칸(나�
 });
 
 test('직접 만들기(암호 편지): 글자판으로 쓰고 열쇠를 정한다. 선생님은 바퀴를 놓는 방법의 수와 자주 나오는 글자로 열쇠가 나오는지 말한다. 편지는 앱 안(공책)에만 남는다', () => {
-  const make = part('id="make-cipher"', '<script');
+  const make = part('id="make-cipher"', 'id="make-seqpath"');
   for (const id of ['cipher-make-c-fewer', 'cipher-make-c', 'cipher-make-c-more', 'cipher-make-v-fewer', 'cipher-make-v', 'cipher-make-v-more', 'cipher-make-clear', 'cipher-make-board', 'cipher-make-keys', 'cipher-make-solve', 'cipher-make-result', 'cipher-make-play', 'cipher-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="cipher-make-solve"[^>]*>선생님, 열쇠를 찾을 수 있어요\?</);
   assert.match(make, /id="cipher-make-play"[^>]*>내가 풀어 볼래요</);
@@ -225,15 +225,15 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.ok(visibleText(part('id="cipher-title"', '</section>')).includes(T.home.ask.decode));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-cipher-make" class="menu-item"/);
   assert.match(part('id="cipher-counts"', 'id="why"'), /aria-pressed="false" hidden>글자 세어 보기</);
-  assert.match(part('id="cipher-pad"', 'id="domino-pad"'), /id="cipher-this"[^>]*>이 열쇠예요</);
-  assert.deepEqual([...part('id="cipher-keys"', 'id="domino-pad"').matchAll(/data-n="(\w+)"/g)].map((match) => match[1]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'erase']);
-  // 카드는 열쇠 미로 다음, 퍼즐 만들기 앞이다
+  assert.match(part('id="cipher-pad"', 'id="seqpath-pad"'), /id="cipher-this"[^>]*>이 열쇠예요</);
+  assert.deepEqual([...part('id="cipher-keys"', 'id="seqpath-pad"').matchAll(/data-n="(\w+)"/g)].map((match) => match[1]), ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'erase']);
+  // 카드는 열쇠 미로 다음, 수열 길 퍼즐 앞이다
   assert.ok(html.indexOf('id="keymaze-title"') < html.indexOf('id="cipher-title"'));
-  assert.ok(html.indexOf('id="cipher-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 열쇠 미로 다음)
-  assert.match(read('src/main.js'), /keymaze: createKeymaze\(frame\), cipher: createCipher\(frame\) \};/);
+  assert.ok(html.indexOf('id="cipher-title"') < html.indexOf('id="seqpath-title"'));
+  // 틀이 형식을 안다(열쇠 미로 다음)
+  assert.match(read('src/main.js'), /keymaze: createKeymaze\(frame\), cipher: createCipher\(frame\), /);
   assert.match(read('src/check-main.js'), /\['cipher', '암호 놀이'\]/);
-  assert.match(read('src/core/smaller.js'), /keymaze: smallerKeymaze, cipher: smallerCipher \};/);
+  assert.match(read('src/core/smaller.js'), /keymaze: smallerKeymaze, cipher: smallerCipher, /);
   assert.match(code, /smaller: \(round, turn\) => smallerCipher\(\{ mode: round\.mode, board: round\.board, book: T\.messages \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.doesNotMatch(code + board, /Math\.random|setInterval|setTimeout/);

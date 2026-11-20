@@ -42,6 +42,8 @@ import { smallBoards as smallKeymazeBoards } from './keymaze-ladder.js';
 import { checkBoard as checkKeymaze, solve as solveKeymaze } from './keymaze.js';
 import { smallBoards as smallCipherBoards } from './cipher-ladder.js';
 import { checkBoard as checkCipher } from './cipher.js';
+import { smallBoards as smallSeqpathBoards } from './seqpath-ladder.js';
+import { checkBoard as checkSeqpath } from './seqpath.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -804,4 +806,16 @@ export function smallerCipher(origin, turn = 0) {
   return wrap(pickByTurn(smallCipherBoards(origin, origin.book), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher };
+// ---- 수열 길 퍼즐: 같은 종류(뛰는 크기의 후보, 모든 길이 같은 간격인지)의 더 작은 판 ----
+
+/**
+ * 원래 판과 같은 종류의 더 작은 판을 낸다(src/core/seqpath-ladder.js의 smallBoards). 칸 수가 원래 판의 3분의 2 이하이고,
+ * 길을 잇는 방법이 꼭 하나인 판만 낸다(사다리에 길을 이을 수 없는 판이 없으므로 작은 판도 모두 되는 판이다).
+ * 직접 만든 판은 그 판의 수 사이의 차에서 뛰는 크기를 고른다. 3×3 판처럼 더 줄일 수 없는 판에는 없다.
+ */
+export function smallerSeqpath(origin, turn = 0) {
+  if (!origin.board || checkSeqpath(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallSeqpathBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath };
