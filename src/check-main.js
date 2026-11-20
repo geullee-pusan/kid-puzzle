@@ -60,6 +60,7 @@ function drawCounts() {
     ['pieces', '조각 가짓수 찾기'],
     ['magic', '마법 네모와 겹친 칸'],
     ['apart', '닿지 않게 놓기와 구역 긋기'],
+    ['keymaze', '열쇠 미로'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

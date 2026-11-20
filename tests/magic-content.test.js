@@ -120,7 +120,7 @@ test('규칙 설명은 세 문장 안이다. 안 되는 판이 섞이는 판만 
   assert.match(code, /mode: custom \|\| rungOf\(level\)\.pool \? 'mixed' : 'sure',/);
   assert.equal(fill(T.rules.hub, { n: 3, k: 12 }), '줄 3개가 가운데 칸 하나에서 만나요. 줄마다 합을 12에 맞춰요.');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 26);
+  assert.equal(guides.length, 27);
   assert.ok(sentenceCount(guides[24]) <= 3, guides[24]);
   assert.match(guides[24], /^판 모양을 고르고, 수를 눌러 카드를 골라요\./);
   assert.match(guides[24], /어떤 합으로도 안 되는 카드도 고를 수 있을까요\?$/);

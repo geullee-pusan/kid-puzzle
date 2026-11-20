@@ -10036,3 +10036,299 @@ button.mc-gcell {
 .ap-make-picture .block-card > .block-board {
   height: 150px;
 }
+
+/* ---- 열쇠 미로: 네모 방, 벽과 문, 열쇠, 처음 방, 판 밖의 나가는 문, 걸어온 길 ----
+   판의 자리 잡기는 조각 못 들어가게 막기의 판(block-board, block-svg)과 같다. 색만으로 알리지 않는다.
+   열쇠와 잠긴 문은 색마다 모양(동그라미, 세모, 네모)을 함께 그린다. 지금 지나갈 수 있는 잠긴 문은 속이 빈 점선 막대다.
+   한쪽 문은 화살표, 처음 방은 안쪽 실선 테두리와 이름, 나가는 문은 판 밖의 문 그림과 이름, "나갈 수 있는 방"은 빗금. */
+.km-board.live .km-room-group {
+  cursor: pointer;
+}
+
+/* 방을 따라 그어 걷는 동안에는 손가락으로 판이 굴러가지 않게 한다 */
+.km-board.walking .km-svg {
+  touch-action: none;
+}
+
+.km-room {
+  fill: #fdf8ef;
+}
+
+.km-room.marked {
+  fill: #e6fcf5;
+}
+
+.km-room-group:focus-visible,
+.km-exit:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.km-mark line {
+  stroke: #63e6be;
+  stroke-width: 5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.km-wall {
+  stroke: #5c3d2e;
+  stroke-width: 8;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.km-wall.outer {
+  stroke-width: 12;
+}
+
+.km-start {
+  fill: none;
+  stroke: #2b8a3e;
+  stroke-width: 7;
+  pointer-events: none;
+}
+
+.km-word {
+  font-size: 22px;
+  font-weight: 800;
+  fill: #2b8a3e;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 6px;
+  pointer-events: none;
+}
+
+.km-word.exit {
+  font-size: 18px;
+  fill: #0b4f5c;
+}
+
+.km-arrow,
+.km-lock,
+.km-key,
+.km-trail,
+.km-dot,
+.km-step-dot,
+.km-step,
+.km-ring,
+.km-refused,
+.km-me,
+.km-live {
+  pointer-events: none;
+}
+
+.km-arrow-shaft {
+  stroke: #343a40;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.km-arrow-head {
+  fill: #343a40;
+}
+
+.km-lock-bar {
+  stroke: #212529;
+  stroke-width: 3;
+}
+
+.km-lock-mark,
+.km-key-mark {
+  fill: #fff;
+  stroke: #212529;
+  stroke-width: 2;
+}
+
+.km-lock.c0 .km-lock-bar,
+.km-key.c0 .km-key-body {
+  fill: #e03131;
+}
+
+.km-lock.c1 .km-lock-bar,
+.km-key.c1 .km-key-body {
+  fill: #1c7ed6;
+}
+
+.km-lock.c2 .km-lock-bar,
+.km-key.c2 .km-key-body {
+  fill: #fab005;
+}
+
+/* 지금 지나갈 수 있는 잠긴 문: 속이 빈 점선 막대 */
+.km-lock.open .km-lock-bar {
+  fill: #fff;
+  stroke-dasharray: 8 6;
+  stroke-width: 4;
+}
+
+.km-lock.c0.open .km-lock-bar {
+  stroke: #e03131;
+}
+
+.km-lock.c1.open .km-lock-bar {
+  stroke: #1c7ed6;
+}
+
+.km-lock.c2.open .km-lock-bar {
+  stroke: #e67700;
+}
+
+.km-key-body {
+  stroke: #212529;
+  stroke-width: 3;
+}
+
+.km-exit {
+  cursor: pointer;
+}
+
+.km-exit-box {
+  fill: #d3f9d8;
+  stroke: #2b8a3e;
+  stroke-width: 5;
+}
+
+.km-exit-arrow {
+  fill: #2b8a3e;
+}
+
+.km-trail {
+  fill: none;
+  stroke: #1c7ed6;
+  stroke-width: 6;
+  stroke-dasharray: 2 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.km-dot {
+  fill: #1c7ed6;
+}
+
+.km-step-dot {
+  fill: #fff;
+  stroke: #1c7ed6;
+  stroke-width: 4;
+}
+
+.km-step {
+  font-size: 22px;
+  font-weight: 800;
+  fill: #1c7ed6;
+}
+
+.km-ring {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 7;
+}
+
+.km-ring.inner {
+  stroke-width: 4;
+}
+
+.km-refused {
+  fill: rgba(255, 255, 255, 0.5);
+  stroke: #e67700;
+  stroke-width: 6;
+  stroke-dasharray: 10 8;
+}
+
+.km-me-body {
+  fill: var(--bar);
+  stroke: #fff;
+  stroke-width: 4;
+}
+
+.km-me-head {
+  fill: #fcc419;
+  stroke: var(--bar);
+  stroke-width: 4;
+}
+
+.km-live {
+  fill: rgba(252, 196, 25, 0.35);
+  stroke: #e67700;
+  stroke-width: 5;
+}
+
+/* 판 아래: 가진 열쇠 */
+.km-held-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.km-held {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.km-key-icon {
+  width: 44px;
+  height: 28px;
+}
+
+/* 답하는 칸: 문의 종류 그림과 한 줄씩 */
+.km-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.km-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.km-legend-picture {
+  flex: none;
+  display: flex;
+}
+
+.km-door-icon {
+  width: 72px;
+  height: 36px;
+}
+
+/* 직접 만들기: 놓을 것과 색 */
+.km-tools,
+.km-colors {
+  margin-bottom: 8px;
+}
+
+.km-tools .btn,
+.km-colors .btn {
+  padding: 6px 4px;
+  word-break: keep-all;
+}
+
+/* 색 단추: 색과 모양을 함께 그린 열쇠 그림(읽어 줄 이름에 색과 모양을 적는다) */
+.km-colors .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+}
+
+.km-colors .km-key-icon {
+  width: 52px;
+  height: 34px;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #keymaze-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 공책의 그림: 열쇠 미로는 방마다 문과 열쇠가 있어서 조금 크게 그린다 */
+.resume.note-picture .km-board.small {
+  width: 100%;
+  height: 120px;
+}

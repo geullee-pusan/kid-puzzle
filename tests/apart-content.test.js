@@ -48,7 +48,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="apart-title"', 'id="make-title"'), part('id="apart-near"', 'id="why"'), part('id="apart-count"', 'id="domino-count"'), part('id="apart-pad"', 'id="domino-pad"'), part('id="make-apart"', '<script')].map(visibleText).join(' ');
+const own = [part('id="apart-title"', 'id="keymaze-title"'), part('id="apart-near"', 'id="keymaze-marks"'), part('id="apart-count"', 'id="keymaze-count"'), part('id="apart-pad"', 'id="keymaze-pad"'), part('id="make-apart"', 'id="make-keymaze"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -105,7 +105,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'place' \? round\.board\.touch : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 26);
+  assert.equal(guides.length, 27);
   assert.ok(sentenceCount(guides[25]) <= 3, guides[25]);
   assert.match(guides[25], /^칸을 누르면 판에서 빠지고, 다시 누르면 돌아와요\./);
   assert.match(guides[25], /구역으로는 가장 많이 놓는 수를 보일 수 없는 판도 만들 수 있을까요\?$/);
@@ -213,7 +213,7 @@ test('풀이와 직접 만들기: 가장 많이 놓는 수와 한 가지 방법,
   assert.match(fill(T.solution.gap, { k: 3, n: 4 }), /이 판은 구역을 아무리 나눠도 4개보다 적어지지 않아요\.$/);
   assert.match(code, /const say = fill\(solution\.closes \? T\.solution\.say : T\.solution\.gap, \{ k: solution\.best, n: solution\.cover \}\);/);
   assert.equal(fill(T.make.best, { k: 8, n: 8, total: 7 }), '가장 많이 놓으면 8개예요. 놓는 방법은 7가지예요. 구역 8개로 나누면 더 놓을 수 없는 것이 보여요.');
-  const make = part('id="make-apart"', '<script');
+  const make = part('id="make-apart"', 'id="make-keymaze"');
   for (const id of ['apart-make-touch', 'apart-make-w-fewer', 'apart-make-w', 'apart-make-w-more', 'apart-make-h-fewer', 'apart-make-h', 'apart-make-h-more', 'apart-make-clear', 'apart-make-board', 'apart-make-solve', 'apart-make-result', 'apart-make-play', 'apart-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="apart-make-solve"[^>]*>선생님, 몇 개까지 돼요\?</);
   assert.match(make, /id="apart-make-play"[^>]*>내가 해 볼래요</);
@@ -244,13 +244,13 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   ]);
   assert.match(part('id="apart-pad"', 'id="domino-pad"'), /id="apart-again"[^>]*>처음부터 다시 해 볼래요</);
   assert.match(part('id="apart-pad"', 'id="domino-pad"'), /id="apart-stop"[^>]*>여기까지 할래요</);
-  // 카드는 마법 네모와 겹친 칸 다음, 퍼즐 만들기 앞이다
+  // 카드는 마법 네모와 겹친 칸 다음, 열쇠 미로 앞이다
   assert.ok(html.indexOf('id="magic-title"') < html.indexOf('id="apart-title"'));
-  assert.ok(html.indexOf('id="apart-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 마법 네모와 겹친 칸 다음)
-  assert.match(read('src/main.js'), /magic: createMagic\(frame\), apart: createApart\(frame\) \};/);
+  assert.ok(html.indexOf('id="apart-title"') < html.indexOf('id="keymaze-title"'));
+  // 틀이 형식을 안다(마법 네모와 겹친 칸 다음)
+  assert.match(read('src/main.js'), /magic: createMagic\(frame\), apart: createApart\(frame\), /);
   assert.match(read('src/check-main.js'), /\['apart', '닿지 않게 놓기와 구역 긋기'\]/);
-  assert.match(read('src/core/smaller.js'), /magic: smallerMagic, apart: smallerApart \};/);
+  assert.match(read('src/core/smaller.js'), /magic: smallerMagic, apart: smallerApart, /);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 도구를 켜 본 판은 힌트 하나를 연 것으로 센다
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

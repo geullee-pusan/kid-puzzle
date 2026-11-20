@@ -38,6 +38,8 @@ import { checkBoard as checkDomino, playable as playableDomino, smallBoards as s
 import { checkBoard as checkPieces, smallBoards as smallPieceBoards } from './pieces.js';
 import { checkBoard as checkMagic, smallLists as smallMagicLists, solve as solveMagic } from './magic.js';
 import { checkBoard as checkApart, smallBoards as smallApartBoards } from './apart.js';
+import { smallBoards as smallKeymazeBoards } from './keymaze-ladder.js';
+import { checkBoard as checkKeymaze, solve as solveKeymaze } from './keymaze.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -775,4 +777,16 @@ export function smallerApart(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart };
+// ---- 열쇠 미로: 열쇠 약속과 문 종류가 같은 더 작은 미로 ----
+
+/**
+ * 원래 판과 열쇠 약속, 문 종류(한쪽 문, 잠긴 문, 열쇠)가 같고 방이 원래 판의 3분의 2 이하인 미로를 낸다(src/core/keymaze-ladder.js의 smallBoards).
+ * 나갈 수 있는 판이면 나갈 수 있는 미로만, 나갈 수 없는 판이면 나갈 수 있는 미로부터 까닭이 같은 나갈 수 없는 미로와 번갈아 낸다.
+ * 방이 다섯 개보다 적은 판(2×2)에는 없다. 그보다 큰 판에서도 그런 미로를 찾지 못하면 없다.
+ */
+export function smallerKeymaze(origin, turn = 0) {
+  if (!origin.board || checkKeymaze(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallKeymazeBoards(origin), solveKeymaze(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze };
