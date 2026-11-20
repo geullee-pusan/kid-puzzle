@@ -51,12 +51,12 @@ const part = (from, to) => {
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
 const own = [
-  part('id="fair-title"', 'id="make-title"'),
-  part('id="fair-table"', 'id="why"'),
-  part('id="fair-count"', 'id="domino-count"'),
-  part('id="fair-pad"', 'id="domino-pad"'),
+  part('id="fair-title"', 'id="rowflip-title"'),
+  part('id="fair-table"', 'id="rowflip-pick"'),
+  part('id="fair-count"', 'id="rowflip-count"'),
+  part('id="fair-pad"', 'id="rowflip-pad"'),
   part('id="fair-reason-box"', '</section>'),
-  part('id="make-fair"', '<script'),
+  part('id="make-fair"', 'id="make-rowflip"'),
 ]
   .map(visibleText)
   .join(' ');
@@ -144,7 +144,7 @@ test('사실만 말한다. 판정하는 말, 칭찬 낱말, 돈과 내기와 점
   assert.match(code, /if \(rule\.device !== 'die1' && unorderedCount\(rule\)\.verdict === choice\) return 'unordered';/);
   // 판 아래에는 던진 수와 둘이 가져간 수만 적는다(틀린 수, 답한 수는 적지 않는다)
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /wrongCount|tries|submitCount|changeCount|manyCount|tableCount|moveCount/, line.trim());
-  assert.equal([...part('id="fair-count"', 'id="domino-count"').matchAll(/<strong/g)].length, 3);
+  assert.equal([...part('id="fair-count"', 'id="rowflip-count"').matchAll(/<strong/g)].length, 3);
   assert.doesNotMatch(code + board, /Math\.random|setInterval/);
 });
 
@@ -181,7 +181,7 @@ test('규칙 설명과 힌트: 규칙은 세 문장 안, 힌트는 종류마다 
   // 동전 둘의 판(더 작은 판이 없다)의 힌트 1은 "더 작은 판"이 아니다
   assert.notEqual(T.hints.coins[0], '더 작은 판이라면 할 수 있을까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 34);
+  assert.equal(guides.length, 35);
   assert.ok(sentenceCount(guides[33]) <= 3, guides[33]);
   assert.match(guides[33], /주사위 둘로 공정한 규칙을 몇 가지나 만들 수 있을까요\?$/);
 });
@@ -252,17 +252,17 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="fair-title"', '</section>'), /<h2 id="fair-title">공정한 게임일까<\/h2>/);
   assert.ok(visibleText(part('id="fair-title"', '</section>')).includes(T.home.ask.coins));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-fair-make" class="menu-item"/);
-  assert.match(part('id="fair-table"', 'id="why"'), /aria-pressed="false" hidden>모든 경우 세어 보기</);
+  assert.match(part('id="fair-table"', 'id="rowflip-pick"'), /aria-pressed="false" hidden>모든 경우 세어 보기</);
   assert.match(part('id="fair-reason-box"', '</section>'), /<textarea id="fair-reason" rows="2" maxlength="200" placeholder="안 써도 돼요"><\/textarea>/);
-  assert.match(part('id="make-fair"', '<script'), /id="fair-make-solve"[^>]*>선생님, 누가 유리해요\?</);
-  assert.match(part('id="make-fair"', '<script'), /id="fair-make-play"[^>]*>내가 해 볼래요</);
+  assert.match(part('id="make-fair"', 'id="make-rowflip"'), /id="fair-make-solve"[^>]*>선생님, 누가 유리해요\?</);
+  assert.match(part('id="make-fair"', 'id="make-rowflip"'), /id="fair-make-play"[^>]*>내가 해 볼래요</);
   // 카드는 성냥개비 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="matches-title"') < html.indexOf('id="fair-title"'));
   assert.ok(html.indexOf('id="fair-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 성냥개비 다음)
-  assert.match(read('src/main.js'), /matches: createMatches\(frame\), fair: createFair\(frame\) \};/);
+  // 틀이 형식을 안다(성냥개비 다음)
+  assert.match(read('src/main.js'), /matches: createMatches\(frame\), fair: createFair\(frame\), /);
   assert.match(read('src/check-main.js'), /\['fair', '공정한 게임일까'\]/);
-  assert.match(read('src/core/smaller.js'), /matches: smallerMatches, fair: smallerFair \};/);
+  assert.match(read('src/core/smaller.js'), /matches: smallerMatches, fair: smallerFair, /);
   assert.match(code, /smaller: \(round, turn\) => smallerFair\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기는 쓰지 않는다. 판이 위아래로 길어 규칙 글은 왼쪽 칸에 둔다

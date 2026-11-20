@@ -53,6 +53,8 @@ import { smallBoards as smallMatchesBoards } from './matches-ladder.js';
 import { checkBoard as checkMatches } from './matches.js';
 import { smallBoards as smallFairBoards } from './fair-ladder.js';
 import { checkBoard as checkFair } from './fair.js';
+import { smallBoards as smallRowflipBoards } from './rowflip-ladder.js';
+import { checkBoard as checkRowflip, solve as solveRowflip } from './rowflip.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -885,4 +887,16 @@ export function smallerFair(origin, turn = 0) {
   return wrap(pickByTurn(smallFairBoards(origin), true, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair };
+// ---- 줄 뒤집기 판: 판의 한 구석을 잘라 낸 판 ----
+
+/**
+ * 가로와 세로를 한 칸씩 줄인 판을 낸다(src/core/rowflip-ladder.js의 smallBoards). 원래 판의 네 구석을 잘라 낸 되는 판이 먼저이고,
+ * 그런 판이 없으면 그 크기의 되는 판을 만든다. 안 되는 판이면 되는 판부터, 검은 칸이 홀수 개인 2×2 덩이를 잘라 낸 판과 번갈아 낸다
+ * (큰 판의 한 구석이 작은 판과 같다). 2×2 판에는 더 작은 판이 없다.
+ */
+export function smallerRowflip(origin, turn = 0) {
+  if (!origin.board || checkRowflip(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallRowflipBoards(origin), solveRowflip(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip };

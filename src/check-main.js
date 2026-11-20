@@ -68,6 +68,7 @@ function drawCounts() {
     ['sim', '세모 피하기'],
     ['matches', '성냥개비'],
     ['fair', '공정한 게임일까'],
+    ['rowflip', '줄 뒤집기 판'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

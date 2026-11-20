@@ -100,7 +100,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 안 되
   assert.match(T.rules.shadow, /‘불가능해요’를 눌러요\.$/);
   assert.match(code, /const hasImpossible = \(round\) => round\.mode === 'shadow' \|\| \(round\.mode === 'move' && round\.board\.cuts >= 2\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 34);
+  assert.equal(guides.length, 35);
   assert.ok(sentenceCount(guides[20]) <= 3, guides[20]);
   assert.match(guides[20], /^빵의 수와 사람의 수를 정해요\./);
 });
