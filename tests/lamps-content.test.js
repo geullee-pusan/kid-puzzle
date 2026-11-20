@@ -92,7 +92,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   // 형식이 판의 종류(직접 만든 판은 어디까지)로 규칙 글과 힌트를 고른다.
   assert.match(code, /const hintKey = \(round\) => \(round\.custom \? 'reach' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 25);
+  assert.equal(guides.length, 26);
   assert.ok(sentenceCount(guides[15]) <= 3, guides[15]);
   assert.match(guides[15], /두 배씩이 아닌 불로도 빈 곳 없이 멀리 갈 수 있을까요\?$/);
 });

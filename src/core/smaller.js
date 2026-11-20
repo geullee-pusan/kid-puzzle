@@ -37,6 +37,7 @@ import { checkBoard as checkFold, solve as solveFold } from './fold.js';
 import { checkBoard as checkDomino, playable as playableDomino, smallBoards as smallDominoBoards } from './domino.js';
 import { checkBoard as checkPieces, smallBoards as smallPieceBoards } from './pieces.js';
 import { checkBoard as checkMagic, smallLists as smallMagicLists, solve as solveMagic } from './magic.js';
+import { checkBoard as checkApart, smallBoards as smallApartBoards } from './apart.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -761,4 +762,17 @@ export function smallerMagic(origin, turn = 0) {
   return wrap(pickByTurn(smallMagicLists(origin.board), solveMagic(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic };
+// ---- 닿지 않게 놓기와 구역 긋기: 같은 약속의 작은 네모 판 ----
+
+/**
+ * 원래 판보다 작은 같은 약속(변만, 변과 꼭짓점)의 네모 판을 낸다(src/core/apart.js의 smallBoards). 칸 수가 원래 판의 3분의 2 이하이고
+ * 구슬을 둘 이상 놓을 수 있는 판을 큰 것부터 차례로 낸다. 구역을 그어 둔 판이면 작은 판에도 가장 적은 구역을 그어 둔다.
+ * 안 되는 판이 없는 형식이라 되는 판만 낸다. 그런 판이 없으면(2×3보다 작은 판) null이다.
+ */
+export function smallerApart(origin, turn = 0) {
+  if (!origin.board || checkApart(origin.board) !== null) return null;
+  const list = smallApartBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart };

@@ -9881,3 +9881,158 @@ button.mc-gcell {
   font-size: 24px;
   font-weight: 700;
 }
+
+/* ---- 닿지 않게 놓기와 구역 긋기: 네모 칸, 구슬, 구역, 닿는 칸 ----
+   판의 자리 잡기는 조각 못 들어가게 막기의 판(block-board, block-svg)과 같다. 색만으로 알리지 않는다.
+   구슬은 짙은 동그라미에 밝은 점. 구역은 옅은 색과 굵은 실선 둘레, 구슬이 둘 들어가는 구역은 점선 둘레와 두 칸의 점선 동그라미.
+   닿는 칸(도구)은 빗금. 놓으려다 닿은 칸은 점선 동그라미, 닿은 구슬은 굵은 고리. */
+.ap-board.live .ap-cell-group {
+  cursor: pointer;
+}
+
+/* 구역을 긋는 동안에는 손가락으로 판이 굴러가지 않게 한다 */
+.ap-board.drawing .ap-svg {
+  touch-action: none;
+}
+
+.ap-cell {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.ap-cell-group:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.ap-frame {
+  display: none;
+}
+
+.ap-region-fill {
+  pointer-events: none;
+}
+
+.ap-region-fill.tint-0 {
+  fill: #c5f6fa;
+}
+
+.ap-region-fill.tint-1 {
+  fill: #ffec99;
+}
+
+.ap-region-fill.tint-2 {
+  fill: #d3f9d8;
+}
+
+.ap-region-fill.tint-3 {
+  fill: #e5dbff;
+}
+
+.ap-region {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 14;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.ap-region.bad {
+  stroke: #c92a2a;
+  stroke-dasharray: 20 12;
+}
+
+.ap-near line {
+  stroke: #868e96;
+  stroke-width: 6;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.ap-marble,
+.ap-hit,
+.ap-ghost,
+.ap-live {
+  pointer-events: none;
+}
+
+.ap-marble-body {
+  fill: var(--bar);
+  stroke: #062f37;
+  stroke-width: 4;
+}
+
+.ap-marble-shine {
+  fill: #e3fafc;
+}
+
+.ap-hit {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 10;
+}
+
+.ap-ghost {
+  fill: rgba(255, 255, 255, 0.6);
+  stroke: #c92a2a;
+  stroke-width: 6;
+  stroke-dasharray: 10 8;
+}
+
+.ap-ghost.refused {
+  stroke: #e67700;
+}
+
+/* 구슬이 놓인 칸은 구슬을 가리지 않게 둘레에 고리만 두른다 */
+.ap-ghost.ring {
+  fill: none;
+}
+
+.ap-live {
+  fill: rgba(252, 196, 25, 0.45);
+  stroke: #e67700;
+  stroke-width: 6;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #apart-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 답하는 칸: 닿는 칸의 작은 그림과 한 줄 */
+.ap-touch-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ap-touch-line > .block-board {
+  flex: none;
+  width: 96px;
+  height: 96px;
+}
+
+.ap-touch-line .pad-note {
+  margin: 0;
+}
+
+/* 직접 만들기: 선생님이 그린 판 둘 */
+.ap-make-picture {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ap-make-picture:empty {
+  display: none;
+}
+
+.ap-make-picture .block-card {
+  width: min(100%, 170px);
+}
+
+.ap-make-picture .block-card > .block-board {
+  height: 150px;
+}

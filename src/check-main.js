@@ -59,6 +59,7 @@ function drawCounts() {
     ['domino', '도미노 가로세로'],
     ['pieces', '조각 가짓수 찾기'],
     ['magic', '마법 네모와 겹친 칸'],
+    ['apart', '닿지 않게 놓기와 구역 긋기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

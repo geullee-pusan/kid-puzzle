@@ -319,6 +319,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="apart-title">
+            <h2 id="apart-title">닿지 않게 놓기와 구역 긋기</h2>
+            <div class="door-picture"><div id="home-apart-sample"></div></div>
+            <p id="home-apart-ask" class="door-ask">구슬을 몇 개까지 놓을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-apart-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-apart-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -413,6 +423,9 @@
               <li>
                 <button id="home-magic-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-magic-blank"></span></span><span class="menu-name">마법 네모와 겹친 칸</span></button>
               </li>
+              <li>
+                <button id="home-apart-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-apart-blank"></span></span><span class="menu-name">닿지 않게 놓기와 구역 긋기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -506,6 +519,8 @@
           <button id="pieces-sort" class="btn wide" type="button" aria-pressed="false" hidden>가장 긴 줄로 묶어 보기</button>
           <!-- 마법 네모와 겹친 칸: 칸마다 그 칸을 지나는 줄의 수만큼 점을 찍는 도구. 무엇을 알려 주는지는 말하지 않는다 -->
           <button id="magic-dots" class="btn wide" type="button" aria-pressed="false" hidden>몇 번 세어지는지 보기</button>
+          <!-- 닿지 않게 놓기와 구역 긋기: 놓인 구슬과 닿는 빈칸에 빗금을 긋고, 더 놓을 수 있는 칸의 수를 판 아래에 적는 도구 -->
+          <button id="apart-near" class="btn wide" type="button" aria-pressed="false" hidden>닿는 칸 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -573,6 +588,8 @@
             <div id="pieces-board" hidden></div>
             <!-- 마법 네모와 겹친 칸: 칸과 줄, 줄 끝의 합, 오른쪽에 아직 놓지 않은 카드의 자리. 카드를 끌거나 눌러서 놓는다 -->
             <div id="magic-board" hidden></div>
+            <!-- 닿지 않게 놓기와 구역 긋기: 네모 칸들(빠진 칸이 있을 수 있다)과 구슬, 구역. 칸을 누르면 구슬이 놓이고, 구역을 긋는 판에서는 칸을 따라 그어 구역을 만든다 -->
+            <div id="apart-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -584,6 +601,15 @@
             <!-- 마법 네모와 겹친 칸: 할 일 한 줄(남은 카드의 수, 합이 다른 줄이 있는지). 몇 번 놓아 보았는지는 적지 않는다 -->
             <span id="magic-count" class="count tile-count" hidden>
               <span id="magic-status" class="tile-status" aria-live="polite"></span>
+            </span>
+            <!-- 닿지 않게 놓기와 구역 긋기: 윗줄에 할 일이나 사실 한 줄, 그 아래에 놓은 구슬의 수와 이 판에서 가장 많이 놓은 수, 구역이 있는 판은 구역의 수 -->
+            <span id="apart-count" class="count tile-count block-count" hidden>
+              <span id="apart-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>놓은 구슬 <strong id="apart-now">0</strong>개</span>
+                <span id="apart-best-line" hidden>이 판에서 가장 많이 놓은 것: <strong id="apart-best"></strong>개</span>
+                <span id="apart-regions-line" hidden>구역 <strong id="apart-regions">0</strong>개</span>
+              </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
             <!-- 도미노 가로세로: 윗줄에 누구 차례인지(선생님이 방금 놓았는지, 누가 놓을 곳이 없는지), 그 아래에 놓은 도미노와 남은 빈칸의 수 -->
@@ -777,6 +803,19 @@
               <p class="pad-note">아무리 해도 안 될 것 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="magic-impossible" class="btn huge" type="button">불가능해요</button>
             </div>
+          </div>
+          <!-- 닿지 않게 놓기와 구역 긋기: 닿는 칸의 그림과 놓는 법. 구역을 긋는 판에는 "구슬 놓기"와 "구역 긋기". 한 번이 끝난 뒤에는 다시 해 볼지 여기까지 할지 고른다 -->
+          <div id="apart-pad" class="pad" hidden>
+            <h2>닿는 칸</h2>
+            <div class="ap-touch-line"><div id="apart-touch-picture"></div><p id="apart-touch-note" class="pad-note"></p></div>
+            <p class="pad-note">칸을 누르면 구슬이 놓여요. 놓인 구슬을 누르면 빠져요.</p>
+            <div id="apart-pens" class="segment ap-pens" hidden>
+              <button class="btn" type="button" data-pen="marble" aria-pressed="true">구슬 놓기</button>
+              <button class="btn" type="button" data-pen="region" aria-pressed="false">구역 긋기</button>
+            </div>
+            <p id="apart-pen-note" class="pad-note" hidden></p>
+            <button id="apart-again" class="btn huge" type="button" hidden>처음부터 다시 해 볼래요</button>
+            <button id="apart-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -2568,6 +2607,44 @@
             <button id="magic-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 그린 판들. 많아도 "내가 해 볼래요"가 밀려 내려가지 않게 단추 아래에 둔다 -->
             <div id="magic-make-picture" class="mg-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-apart" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>닿는 약속</h2>
+          <div id="apart-make-touch" class="segment column">
+            <button class="btn" type="button" data-touch="side" aria-pressed="false">변만 닿지 않게</button>
+            <button class="btn" type="button" data-touch="king" aria-pressed="true">꼭짓점도 닿지 않게</button>
+          </div>
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="apart-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="apart-make-w"></strong>
+            <button id="apart-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="apart-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="apart-make-h"></strong>
+            <button id="apart-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <button id="apart-make-clear" class="btn wide" type="button">뺀 칸 모두 되돌리기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 누르면 판에서 빠지고, 다시 누르면 돌아와요. 구역으로는 가장 많이 놓는 수를 보일 수 없는 판도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="apart-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="apart-make-solve" class="btn primary huge" type="button">선생님, 몇 개까지 돼요?</button>
+            <p id="apart-make-result" class="make-result" aria-live="polite"></p>
+            <button id="apart-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 그린 판: 가장 많이 놓은 한 가지와, 구역으로 보일 수 있으면 그 구역 -->
+            <div id="apart-make-picture" class="ap-make-picture"></div>
           </div>
         </section>
       </main>
