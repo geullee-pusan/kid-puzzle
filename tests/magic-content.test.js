@@ -252,7 +252,7 @@ test('"왜 그럴까?"(겹친 칸): 11을 만들려다 막힘 → 가운데는 �
 });
 
 test('안 되는 판의 까닭마다 말이 있다(사다리의 안 되는 판, 직접 만들기의 판)', () => {
-  const reasons = new Set([...SET_POOL.no.map((cards) => solve({ shape: 'grid', w: 3, h: 3, lines: 'all', cards, target: null }).why.reason), ...HUB_POOL.no.map((item) => solve(item).why.reason), 'big', 'small', 'pairs-all']);
+  const reasons = new Set([...SET_POOL.no.map((cards) => solve({ shape: 'grid', w: 3, h: 3, lines: 'all', cards, target: null }).why.reason), ...HUB_POOL.no.map((item) => solve(item).why.reason), 'big', 'small', 'pairs-all', 'search']);
   const used = { big: ['big-closed', 'big-rest', 'hub-big-closed'], split: ['total-closed', 'split'], 'center-part': ['line-closed', 'center-part', 'hub-count', 'hub-extra-closed', 'hub-part'], 'center-missing': ['center-need-closed', 'center-missing'], pairs: ['pairs-closed', 'lonely'], search: ['search'], small: ['hub-small-closed'], 'pairs-all': ['pairs-all'] };
   for (const reason of reasons) for (const key of used[reason]) assert.ok(T.reason[key], `${reason}: ${key}`);
   for (const reason of reasons) assert.match(code, new RegExp(`why\\.reason === '${reason}'`), reason);

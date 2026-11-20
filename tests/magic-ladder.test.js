@@ -76,6 +76,11 @@ test('4, 5단계: 첫 판은 되는 판, 둘째는 아주 쉬운 안 되는 판(
     assert.ok(seen.size >= pool, `${level}단계 판 ${seen.size}가지`);
   }
   assert.ok(NO_SHARE > 0.3 && NO_SHARE < 0.35);
+  // 모두 놓아 봐야 아는 안 되는 판(까닭 search)은 사다리에 없다. 직접 만들기에서만 나온다
+  for (let level = 1; level <= TOP_LEVEL; level++) for (const seed of SEEDS) {
+    const { solution } = generateBoard(level, seed);
+    if (!solution.possible) assert.notEqual(solution.why.reason, 'search', `${level}단계 ${seed}번`);
+  }
 });
 
 test('판 묶음의 되는 판과 안 되는 판이 모든 차례를 다 놓아 본 것과 같다', () => {
@@ -133,6 +138,7 @@ test('"더 작은 판으로": 되는 판에서는 되는 판만, 안 되는 판�
         assert.ok(sizeOf(small.board) < sizeOf(board) || linesOf(small.board).length < linesOf(board).length, where);
         const possible = solve(small.board).possible;
         if (solution.possible || turn === 0) assert.equal(possible, true, where);
+        if (!possible) assert.notEqual(solve(small.board).why.reason, 'search', where);
         assert.deepEqual(smallerMagic(origin, turn), small, where);
       }
     }

@@ -359,6 +359,7 @@ export function hubSums(arms, cards) {
  *            가로 줄만 3×3 → 가로 두 칸짜리 줄 셋(작은 카드 여섯 장), 2×2(작은 카드 네 장). 2×3 → 2×2
  *   가운데 네 줄 → 줄 셋, 줄 둘이 만나는 판(합을 정하지 않는다. 작은 카드부터)
  *   겹친 칸: 줄이 하나, 둘 적은 판(작은 카드부터). 합을 정한 판이면 그 판의 카드로 만들 수 있는 합들을 모두 낸다(가운데가 1보다 작은 합은 뺀다)
+ * 모두 놓아 봐야 아는 안 되는 판(까닭 search)은 내지 않는다.
  */
 export function smallLists(board) {
   if (checkBoard(board) !== null) return { yes: [], no: [] };
@@ -388,6 +389,11 @@ export function smallLists(board) {
   }
   const yes = [];
   const no = [];
-  for (const item of boards) (solve(item).possible ? yes : no).push(item);
+  // 모두 놓아 봐야 아는 안 되는 판(까닭 search)은 아이가 따져 알 수 없어서 작은 판으로 내지 않는다
+  for (const item of boards) {
+    const solved = solve(item);
+    if (solved.possible) yes.push(item);
+    else if (solved.why.reason !== 'search') no.push(item);
+  }
   return { yes, no };
 }

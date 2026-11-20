@@ -90,7 +90,7 @@ test('놓인 모습: 줄마다의 합, 합이 같은 줄 표시, 다 되었는�
 });
 
 /** 견줄 3×3 카드 묶음: 1~9, 사다리의 묶음, 그리고 1~15에서 고른 묶음 몇 개 */
-const SQUARE_SETS = [ONE_TO_NINE, ...SET_POOL.yes, ...SET_POOL.no, [1, 2, 3, 4, 6, 7, 8, 9, 10], [2, 3, 5, 6, 7, 8, 9, 11, 12], [1, 4, 5, 6, 7, 8, 9, 10, 13], [1, 2, 3, 4, 5, 6, 7, 8, 18]];
+const SQUARE_SETS = [ONE_TO_NINE, ...SET_POOL.yes, ...SET_POOL.no, [1, 2, 4, 5, 6, 7, 8, 10, 11], [1, 2, 3, 4, 6, 7, 8, 9, 10], [2, 3, 5, 6, 7, 8, 9, 11, 12], [1, 4, 5, 6, 7, 8, 9, 10, 13], [1, 2, 3, 4, 5, 6, 7, 8, 18]];
 
 test('3×3 판: 가로 줄만, 가로와 세로, 마법 네모, 가운데 네 줄의 놓는 방법이 모든 차례를 다 놓아 본 것과 같다', () => {
   for (const cards of SQUARE_SETS) {
@@ -196,7 +196,7 @@ test('겹친 칸: 두 번 세기로 정한 가운데 카드가 있고 남은 카
 });
 
 test('안 되는 판의 까닭: 사다리의 안 되는 묶음마다 까닭이 맞고, 까닭이 말하는 수가 맞다', () => {
-  const expected = ['big', 'split', 'center-part', 'center-missing', 'pairs', 'search'];
+  const expected = ['big', 'split', 'center-part', 'center-missing', 'pairs'];
   assert.deepEqual(
     SET_POOL.no.map((cards) => solve(grid('all', cards)).why.reason),
     expected,
@@ -259,4 +259,8 @@ test('더 작은 판의 목록: 되는 판과 안 되는 판으로 나뉘고, �
   assert.deepEqual(big.yes.map((item) => item.lines), ['center']);
   assert.deepEqual(big.no.map((item) => item.lines), ['rowscols', 'rows']);
   assert.deepEqual(smallLists({ shape: 'grid' }), { yes: [], no: [] });
+  // 모두 놓아 봐야 아는 안 되는 판은 작은 판으로 내지 않는다(그런 묶음의 가로와 세로 판도 마찬가지)
+  const hard = [1, 2, 4, 5, 6, 7, 8, 10, 11];
+  assert.equal(solve(grid('all', hard)).why.reason, 'search');
+  for (const cards of [hard, [1, 4, 5, 6, 7, 8, 9, 10, 13], ...SET_POOL.no]) for (const item of smallLists(grid('all', cards)).no) assert.notEqual(solve(item).why.reason, 'search', JSON.stringify(item));
 });
