@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="regionmap-title"', 'id="make-title"'), part('id="regionmap-left"', 'id="why"'), part('id="regionmap-count"', 'id="domino-count"'), part('id="regionmap-pad"', 'id="domino-pad"'), part('id="make-regionmap"', '<script')].map(visibleText).join(' ');
+const own = [part('id="regionmap-title"', 'id="blackhole-title"'), part('id="regionmap-left"', 'id="why"'), part('id="regionmap-count"', 'id="blackhole-count"'), part('id="regionmap-pad"', 'id="blackhole-pad"'), part('id="make-regionmap"', 'id="make-blackhole"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -89,7 +89,7 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.doesNotMatch(code + board, /Math\.random|setInterval|setTimeout|requestAnimationFrame/);
   // 판 아래에는 물은 네모, 칠한 칸, (도구를 켜면) 맞는 지도의 수만 적는다. 누른 수나 무른 수, 틀린 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /askCount|againCount|paintCount|undoCount|resetCount|wrongCount|fitCount|moveCount/, line.trim());
-  const foot = part('id="regionmap-count"', 'id="domino-count"');
+  const foot = part('id="regionmap-count"', 'id="blackhole-count"');
   assert.equal([...foot.matchAll(/<strong/g)].length, 3);
   assert.match(visibleText(foot), /물은 네모\s+0\s+개\s+칠한 칸\s+0\s+개 \/\s+16\s+개/);
 });
@@ -116,7 +116,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(fill(T.rules, { n: 2 }), '숨은 지도는 이어진 구역 2개로 나뉘어 있어요. 네모를 골라 물으면 그 안에 구역마다 몇 칸이 있는지 알려 줘요.');
   assert.match(code, /ruleLine: \(round\) => `\$\{fill\(T\.rules, \{ n: round\.board\.regions\.length \}\)\} \$\{T\.asks\[round\.mode\]\}`,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 39);
+  assert.equal(guides.length, 40);
   assert.ok(sentenceCount(guides[38]) <= 3, guides[38]);
   assert.match(guides[38], /^칸을 모두 칠해 숨길 지도를 만들어요\./);
   assert.match(guides[38], /선생님이 네모를 많이 물어야 하는 지도도 만들 수 있을까요\?$/);
@@ -215,7 +215,7 @@ test('직접 만들기: 4×4 판에 숲, 바다, 모래밭을 칠하고, 선생�
   assert.match(code, /if \(least\) lines\.push\(fill\(T\.make\.min, \{ k: least\.size \}\)\);/);
   // 지도를 바꾸면 앞의 대답이 맞지 않으니 말로 덮는다
   assert.match(code, /if \(said\) frame\.talkers\.make\.say\(T\.make\.changed\);/);
-  const make = part('id="make-regionmap"', '<script');
+  const make = part('id="make-regionmap"', 'id="make-blackhole"');
   for (const id of ['regionmap-make-palette', 'regionmap-make-clear', 'regionmap-make-board', 'regionmap-make-solve', 'regionmap-make-result', 'regionmap-make-list']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="regionmap-make-solve"[^>]*>선생님, 물어 보세요</);
   assert.match(code, /mode: custom \? 'made' : rungOf\(level\)\.mode,/);
@@ -230,7 +230,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="regionmap-title"', '</section>'), /<h2 id="regionmap-title">구역 지도 맞히기<\/h2>/);
   assert.ok(visibleText(part('id="regionmap-title"', '</section>')).includes(T.home.ask.ask));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-regionmap-make" class="menu-item"/);
-  const pad = part('id="regionmap-pad"', 'id="domino-pad"');
+  const pad = part('id="regionmap-pad"', 'id="blackhole-pad"');
   assert.match(pad, /id="regionmap-ask-mode"[^>]*>네모로 묻기</);
   assert.match(pad, /id="regionmap-paint-mode"[^>]*>지도 칠하기</);
   assert.match(pad, /id="regionmap-ask"[^>]*>물어보기</);
@@ -241,9 +241,9 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.ok(html.indexOf('id="net-title"') < html.indexOf('id="regionmap-title"'));
   assert.ok(html.indexOf('id="regionmap-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(형식 목록의 맨 뒤, 그물 끊기 다음)
-  assert.match(read('src/main.js'), /net: createNet\(frame\), regionmap: createRegionmap\(frame\) \};/);
+  assert.match(read('src/main.js'), /net: createNet\(frame\), regionmap: createRegionmap\(frame\), /);
   assert.match(read('src/check-main.js'), /\['regionmap', '구역 지도 맞히기'\]/);
-  assert.match(read('src/core/smaller.js'), /net: smallerNet, regionmap: smallerRegionmap \};/);
+  assert.match(read('src/core/smaller.js'), /net: smallerNet, regionmap: smallerRegionmap, /);
   assert.match(code, /smaller: \(round, turn\) => smallerRegionmap\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다(칠한 것을 무른다). 규칙 글은 왼쪽 칸에 둔다

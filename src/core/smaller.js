@@ -62,6 +62,8 @@ import { smallBoards as smallNetBoards } from './net-ladder.js';
 import { checkBoard as checkNet } from './net.js';
 import { smallBoards as smallRegionmapBoards } from './regionmap-ladder.js';
 import { checkBoard as checkRegionmap } from './regionmap.js';
+import { smallBoards as smallBlackholeBoards } from './blackhole-ladder.js';
+import { checkBoard as checkBlackhole } from './blackhole.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -956,4 +958,16 @@ export function smallerRegionmap(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap };
+// ---- 블랙홀: 종류가 같고 칸이 더 적은 판 ----
+
+/**
+ * 종류(먼저 둘지 고르는 판, 빈 판에서 아이가 먼저, 수가 놓인 판에서 아이 차례 등)가 같고 열린 칸이 더 적은 판을 낸다(src/core/blackhole-ladder.js의 smallBoards).
+ * 칸이 많은 것부터(9칸, 7칸, 5칸)이고, 가장 작은 판이면 같은 판에 수를 두 개 더 놓은 판(빈칸이 둘 적다)을 낸다. 더 줄일 수 없으면 없다.
+ */
+export function smallerBlackhole(origin, turn = 0) {
+  if (!origin.board || checkBlackhole(origin.board) !== null) return null;
+  const list = smallBlackholeBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole };

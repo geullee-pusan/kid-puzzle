@@ -73,6 +73,7 @@ function drawCounts() {
     ['pins', '핀에 실 감기'],
     ['net', '그물 끊기'],
     ['regionmap', '구역 지도 맞히기'],
+    ['blackhole', '블랙홀'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

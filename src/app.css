@@ -14182,3 +14182,271 @@ button.fr-chip {
   margin-top: 4px;
   text-align: center;
 }
+
+/* ---- 블랙홀: 세모꼴로 놓인 동그라미 칸, 돌, 내 수와 선생님 수, 방금 놓은 수, 블랙홀과 빨려 들어간 수 ----
+   색만으로 알리지 않는다. 내 수는 속이 찬 주황 동그라미(흰 수), 선생님 수는 파란 점선 네모(파란 수),
+   돌은 점이 박힌 회색 동그라미, 블랙홀은 검은 동그라미와 소용돌이, 빨려 들어간 수는 옅어지고 점선 고리가 둘린다. */
+.bh-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .bh-board,
+.door-picture > .bh-board,
+#make-blackhole .board-area > .bh-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.bh-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--rows) * 118px);
+  max-height: calc(var(--rows) * 104px);
+}
+
+.bh-board.small .bh-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.bh-board.live .bh-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.bh-board.live .bh-cell-group {
+  cursor: pointer;
+}
+
+.bh-cell {
+  fill: #fdf8ef;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+/* 아이 차례에 놓을 수 있는 빈칸: 굵은 점선 테두리 */
+.bh-cell.open {
+  fill: #fff9db;
+  stroke: #e67700;
+  stroke-width: 4;
+  stroke-dasharray: 10 7;
+}
+
+.bh-rock {
+  fill: #adb5bd;
+  stroke: #495057;
+  stroke-width: 4;
+}
+
+.bh-rock-dot {
+  fill: #495057;
+}
+
+.bh-kid {
+  fill: #f76707;
+  stroke: #862e0c;
+  stroke-width: 4;
+}
+
+.bh-teacher {
+  fill: #e7f5ff;
+  stroke: #1864ab;
+  stroke-width: 5;
+  stroke-dasharray: 9 6;
+}
+
+.bh-number {
+  font-size: 44px;
+  font-weight: 800;
+}
+
+.bh-kid-number {
+  fill: #ffffff;
+}
+
+.bh-teacher-number {
+  fill: #1864ab;
+}
+
+.bh-last {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 6;
+}
+
+.bh-ring {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 6;
+}
+
+.bh-hole {
+  fill: #212529;
+  stroke: #000000;
+  stroke-width: 3;
+}
+
+.bh-swirl {
+  fill: none;
+  stroke: #9775fa;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.bh-hole-core {
+  fill: #9775fa;
+}
+
+/* 빨려 들어간 수: 옅어지고 블랙홀 쪽으로 조금 끌려간 자리에 남는다 */
+.bh-gone {
+  opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: translate(var(--dx), var(--dy)) scale(0.78);
+}
+
+.bh-swallow {
+  animation: bh-swallow 0.5s ease-in;
+}
+
+@keyframes bh-swallow {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0.35;
+    transform: translate(var(--dx), var(--dy)) scale(0.78);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bh-swallow {
+    animation: none;
+  }
+}
+
+.bh-gone-ring {
+  fill: none;
+  stroke: #7048e8;
+  stroke-width: 4;
+  stroke-dasharray: 5 7;
+}
+
+/* 그림과 표시는 누르는 것을 가로막지 않는다(밑의 칸이 눌린다) */
+.bh-piece,
+.bh-rock-group,
+.bh-hole-group,
+.bh-last,
+.bh-ring,
+.bh-gone-ring {
+  pointer-events: none;
+}
+
+.bh-cell-group:focus {
+  outline: none;
+}
+
+.bh-cell-group:focus-visible .bh-cell {
+  stroke: var(--gold);
+  stroke-width: 9;
+}
+
+.board-foot:has(> #blackhole-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸: 내 수와 선생님 수의 모양, 두 사람이 다음에 놓을 수 */
+.bh-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  margin: 0 6px;
+  vertical-align: middle;
+  font-weight: 800;
+}
+
+.bh-chip.kid {
+  border-radius: 50%;
+  background: #f76707;
+  border: 3px solid #862e0c;
+  color: #ffffff;
+}
+
+.bh-chip.teacher {
+  border-radius: 6px;
+  background: #e7f5ff;
+  border: 3px dashed #1864ab;
+  color: #1864ab;
+}
+
+.bh-legend,
+.bh-next {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .bh-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .bh-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .bh-board {
+  height: 76px;
+}
+
+.resume.note-picture .bh-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 다시 보기, 풀이, "왜 그럴까?"의 그림 카드. 판 위의 종이(가로 470픽셀쯤)에 한 줄에 석 장이 굴리지 않고 들어간다. big은 한 장 */
+.bh-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 140px);
+}
+
+.bh-card > .bh-board {
+  height: 128px;
+}
+
+.bh-card.big {
+  width: min(100%, 360px);
+}
+
+.bh-card.big > .bh-board {
+  height: 300px;
+}
+
+.bh-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* 직접 만들기: 칸에 놓을 것과 먼저 둘 사람을 고르는 단추 */
+.bh-make-tools,
+.bh-make-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

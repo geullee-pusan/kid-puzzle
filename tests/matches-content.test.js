@@ -110,7 +110,7 @@ test('규칙 설명은 세 문장 안이다. 큰 정사각형도 센다고, 약�
   assert.match(code, /const ruleKey = \(board\) => \(board\.tidy \? `\$\{board\.kind\}-tidy` : board\.kind\);/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\.board\)\], \{ k: round\.board\.k, n: round\.board\.n \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 39);
+  assert.equal(guides.length, 40);
   assert.ok(sentenceCount(guides[32]) <= 3, guides[32]);
   assert.match(guides[32], /^빈 자리를 누르면 성냥이 놓이고, 성냥을 누르면 없어져요\./);
   assert.match(guides[32], /할 일대로 되는 방법이 딱 하나뿐인 판도 만들 수 있을까요\?$/);
