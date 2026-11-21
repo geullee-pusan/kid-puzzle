@@ -13614,3 +13614,233 @@ button.fr-chip {
   margin-top: 4px;
   text-align: center;
 }
+
+/* ---- 그물 끊기: 매듭과 줄, 끊긴 줄(양 끝만 남은 가는 점선), 갈라진 조각, 고리 찾기의 띠 ----
+   색만으로 알리지 않는다. 갈라져 나간 조각마다 색과 함께 선의 모양(실선, 긴 점선, 짧은 점선, 선과 점, 성긴 점, 아주 긴 점선)과
+   매듭의 모양(동그라미, 네모, 마름모, 세모)이 다르다. 고리 찾기로 찾은 고리는 줄 밑의 넓은 금빛 점선 띠와 매듭의 점선 고리다. */
+.net-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .net-board,
+.door-picture > .net-board,
+#make-net .board-area > .net-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.net-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 720px;
+  max-height: 560px;
+}
+
+.net-board.small .net-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.net-board.live .net-svg {
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+}
+
+.net-dot {
+  fill: #ced4da;
+}
+
+.net-string {
+  stroke-linecap: round;
+}
+
+.net-string.p0 {
+  stroke: #1971c2;
+}
+
+.net-string.p1 {
+  stroke: #e03131;
+  stroke-linecap: butt;
+  stroke-dasharray: 18 10;
+}
+
+.net-string.p2 {
+  stroke: #2f9e44;
+  stroke-dasharray: 2 11;
+}
+
+.net-string.p3 {
+  stroke: #7048e8;
+  stroke-linecap: butt;
+  stroke-dasharray: 20 7 4 7;
+}
+
+.net-string.p4 {
+  stroke: #e8590c;
+  stroke-dasharray: 2 18;
+}
+
+.net-string.p5 {
+  stroke: #0c8599;
+  stroke-linecap: butt;
+  stroke-dasharray: 34 10;
+}
+
+/* 끊긴 줄: 양 끝만 남은 회색 점선 */
+.net-cut line {
+  stroke: #868e96;
+  stroke-linecap: butt;
+  stroke-dasharray: 10 6;
+}
+
+.net-knot {
+  fill: #ffffff;
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+
+.net-knot.p0 {
+  stroke: #1864ab;
+}
+
+.net-knot.p1 {
+  stroke: #c92a2a;
+  fill: #fff5f5;
+}
+
+.net-knot.p2 {
+  stroke: #2b8a3e;
+  fill: #ebfbee;
+}
+
+.net-knot.p3 {
+  stroke: #5f3dc4;
+  fill: #f3f0ff;
+}
+
+.net-knot.p4 {
+  stroke: #d9480f;
+  fill: #fff4e6;
+}
+
+.net-knot.p5 {
+  stroke: #0b7285;
+  fill: #e3fafc;
+}
+
+.net-loop {
+  stroke: rgba(252, 196, 25, 0.75);
+  stroke-width: 26;
+  stroke-linecap: round;
+  stroke-dasharray: 22 10;
+}
+
+.net-ring {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 5;
+  stroke-dasharray: 7 5;
+}
+
+.net-picked {
+  fill: rgba(252, 196, 25, 0.35);
+  stroke: #e67700;
+  stroke-width: 6;
+  stroke-dasharray: 8 5;
+}
+
+/* 글자판으로 누를 자리: 보이지 않는 넓은 선. 손가락으로 누른 것은 판이 가장 가까운 줄을 골라 받는다 */
+.net-hit {
+  stroke: transparent;
+  stroke-width: 40;
+}
+
+.net-hit:focus {
+  outline: none;
+}
+
+.net-hit:focus-visible {
+  stroke: rgba(252, 196, 25, 0.5);
+}
+
+/* 줄과 매듭과 띠는 누르는 것을 가로막지 않는다(판이 누른 자리를 받는다) */
+.net-string,
+.net-cut,
+.net-knot,
+.net-loop,
+.net-ring,
+.net-picked,
+.net-dot {
+  pointer-events: none;
+}
+
+.board-foot:has(> #net-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 판 아래의 글이 두 줄이 되어도 아래 줄의 수와 겹치지 않는다 */
+#net-status {
+  height: auto;
+  min-height: 22px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .net-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .net-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .net-board {
+  height: 76px;
+}
+
+.resume.note-picture .net-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드. 판 위의 종이(가로 470픽셀쯤)에 한 줄에 석 장이 들어간다. big은 한 장 */
+.net-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 140px);
+}
+
+.net-card > .net-board {
+  height: 140px;
+}
+
+.net-card.mid {
+  width: min(100%, 215px);
+}
+
+.net-card.mid > .net-board {
+  height: 205px;
+}
+
+.net-card.big {
+  width: min(100%, 360px);
+}
+
+.net-card.big > .net-board {
+  height: 300px;
+}
+
+.net-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}

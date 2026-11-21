@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="pins-title"', 'id="make-title"'), part('id="pins-numbers"', 'id="why"'), part('id="pins-count"', 'id="domino-count"'), part('id="pins-pad"', 'id="domino-pad"'), part('id="make-pins"', '<script')].map(visibleText).join(' ');
+const own = [part('id="pins-title"', 'id="net-title"'), part('id="pins-numbers"', 'id="net-loop"'), part('id="pins-count"', 'id="net-count"'), part('id="pins-pad"', 'id="net-pad"'), part('id="make-pins"', 'id="make-net"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -81,7 +81,7 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.doesNotMatch(code + board, /Math\.random|setInterval|requestAnimationFrame/);
   // 판 아래에는 칸 수, 가닥 수, 실이 지나간 핀 수만 적는다. 누른 수나 무른 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /moveCount|autoCount|offCount|undoCount|resetCount|wrongCount|skipCount|numbersCount/, line.trim());
-  const foot = part('id="pins-count"', 'id="domino-count"');
+  const foot = part('id="pins-count"', 'id="net-count"');
   assert.equal([...foot.matchAll(/<strong/g)].length, 4);
   assert.match(visibleText(foot), /실\s+0\s+가닥/);
   assert.match(visibleText(foot), /실이 지나간 핀\s+0\s+개 \/\s+6\s+개/);
@@ -119,7 +119,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(fill(T.rules.wind, { k: 2 }), '실은 핀에서 시계 방향으로 2칸 앞의 핀으로 가요. 처음 핀으로 돌아오면 한 가닥이 끝나고, 실이 없는 핀에서 새 실을 매요.');
   assert.match(code, /return `\$\{free\(round\) \? T\.rules\.free : fill\(T\.rules\.wind, \{ k: round\.k \}\)\} \$\{ask\}`;/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 37);
+  assert.equal(guides.length, 38);
   assert.ok(sentenceCount(guides[36]) <= 3, guides[36]);
   assert.match(guides[36], /^핀 수와 칸 수를 정하면 선생님이 실을 끝까지 감아 줘요\./);
   // "실이 꼭 다섯 가닥 필요한 판"은 만들 수 있다(핀 10개 5칸씩, 핀 15개 5칸씩과 10칸씩)
@@ -208,7 +208,7 @@ test('풀이와 직접 만들기: 칸 수가 정해진 판은 끝까지 감은 �
   assert.match(code, /made = \{ line: fill\(T\.make\.result, \{ n: result\.count, k: result\.per \}\) \};/);
   // 판을 바꾸면 앞의 대답이 맞지 않으니 말로 덮는다
   assert.match(code, /if \(said\) frame\.talkers\.make\.say\(T\.make\.changed\);/);
-  const make = part('id="make-pins"', '<script');
+  const make = part('id="make-pins"', 'id="make-net"');
   for (const id of ['pins-make-n-fewer', 'pins-make-n', 'pins-make-n-more', 'pins-make-k-fewer', 'pins-make-k', 'pins-make-k-more', 'pins-make-board', 'pins-make-solve', 'pins-make-result', 'pins-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="pins-make-solve"[^>]*>선생님, 감아 보세요</);
   assert.match(make, /id="pins-make-play"[^>]*>내가 해 볼래요</);
@@ -224,20 +224,20 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="pins-title"', '</section>'), /<h2 id="pins-title">핀에 실 감기<\/h2>/);
   assert.ok(visibleText(part('id="pins-title"', '</section>')).includes(T.home.ask.wind));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-pins-make" class="menu-item"/);
-  const pad = part('id="pins-pad"', 'id="domino-pad"');
+  const pad = part('id="pins-pad"', 'id="net-pad"');
   // 짐작 단추는 1가닥부터 8가닥까지(핀 16개를 8칸씩 감으면 8가닥이다)
   assert.deepEqual([...pad.matchAll(/data-guess="(\d)">(\d)가닥</g)].map((match) => [Number(match[1]), Number(match[2])]), Array.from({ length: 8 }, (_, index) => [index + 1, index + 1]));
   assert.match(pad, /id="pins-wind"[^>]*>감기</);
   assert.match(pad, /id="pins-one-done"[^>]*>다 골랐어요</);
-  assert.match(part('id="pins-numbers"', 'id="why"'), /aria-pressed="false" hidden>핀마다 칸 수 적기</);
+  assert.match(part('id="pins-numbers"', 'id="net-loop"'), /aria-pressed="false" hidden>핀마다 칸 수 적기</);
   assert.equal(T.tool.off, '핀마다 칸 수 적기');
   // 카드는 여우와 토끼 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="foxrabbit-title"') < html.indexOf('id="pins-title"'));
   assert.ok(html.indexOf('id="pins-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 여우와 토끼 다음)
-  assert.match(read('src/main.js'), /foxrabbit: createFoxrabbit\(frame\), pins: createPins\(frame\) \};/);
+  // 틀이 형식을 안다(여우와 토끼 다음)
+  assert.match(read('src/main.js'), /foxrabbit: createFoxrabbit\(frame\), pins: createPins\(frame\), /);
   assert.match(read('src/check-main.js'), /\['pins', '핀에 실 감기'\]/);
-  assert.match(read('src/core/smaller.js'), /foxrabbit: smallerFoxrabbit, pins: smallerPins \};/);
+  assert.match(read('src/core/smaller.js'), /foxrabbit: smallerFoxrabbit, pins: smallerPins, /);
   assert.match(code, /smaller: \(round, turn\) => smallerPins\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 둥글어 규칙 글은 왼쪽 칸에 둔다

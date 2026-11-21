@@ -76,7 +76,7 @@ test('규칙 설명은 세 문장 안이고, 심기·바람·이기는 때를 �
   // 형식이 판의 종류로 규칙 글을 고른다.
   assert.match(code, /ruleLine: \(round\) => T\.rules\[round\.mode\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 37);
+  assert.equal(guides.length, 38);
   assert.ok(sentenceCount(guides[11]) <= 3, guides[11]);
   assert.match(guides[11], /바람이 이기는 판도 만들 수 있을까요\?$/);
   // 보기 판: 직접 만들기의 그림과 처음 화면의 그림은 꽃 하나에 바람이 한 번 분 모습이다.
