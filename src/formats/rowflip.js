@@ -70,6 +70,8 @@ export function createRowflip(frame) {
       labels: labelsFor(board.w, board.h),
       onLine: playing ? flip : undefined,
       onCell: playing && round.pickOn ? tapCell : undefined,
+      // 끝난 판에서도 단추 자리를 비워 두어 판이 갑자기 커지지 않게 한다
+      keepLanes: true,
     });
     changed = [];
     $('rowflip-flips').textContent = String(round.trail.length);

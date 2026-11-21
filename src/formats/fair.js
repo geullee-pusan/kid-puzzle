@@ -111,7 +111,7 @@ export function createFair(frame) {
   }
 
   /** 표의 값 */
-  function tableView(rule, { changed = null, counted = true } = {}) {
+  function tableView(rule, { changed = null, counted = true, wait = false } = {}) {
     const result = countCases(rule);
     return {
       rule,
@@ -120,7 +120,7 @@ export function createFair(frame) {
       names: T.names,
       labels: { cell: cellLabel(rule), table: T.labels.table },
       caption: T.table[rule.device],
-      count: counted ? fill(T.table.count, { total: result.total, k: result.a, n: result.b }) : '',
+      count: wait ? T.table.wait : counted ? fill(T.table.count, { total: result.total, k: result.a, n: result.b }) : '',
       changed,
     };
   }
@@ -145,7 +145,8 @@ export function createFair(frame) {
       label: T.labels.board,
       page: round.tableOn ? 'table' : 'game',
       chipsView: chipsView(rule, { onChip: round.mode === 'fix' && playing ? tapChip : null, changed: round.change }),
-      table: tableView(rule, { changed: round.change }),
+      // 규칙 고치기에서는 바꾼 규칙의 센 수를 "이렇게 바꿀래요"를 누르기 전에는 보이지 않는다(칸을 이리저리 눌러 수만 보고 맞히지 않게). 칸은 보이므로 아이가 직접 셀 수 있다
+      table: tableView(rule, { changed: round.change, wait: round.mode === 'fix' && playing && round.change !== null && !round.tries.includes(String(round.change)) }),
       game: {
         last,
         lastOwner,

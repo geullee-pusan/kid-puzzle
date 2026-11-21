@@ -45,6 +45,7 @@ function arrow(cx, cy, across) {
  *   band       감쌀 줄 하나('r2', 'c0'). 그림에서 방금 뒤집은 줄을 보인다
  *   lineMarks  단추 자리에 점을 찍을 줄들(그림에서 뒤집을 줄을 보인다)
  *   lanes      단추 자리를 둔다(누를 수 있는 판과 lineMarks가 있는 그림)
+ *   keepLanes  단추가 없어도 단추 자리를 비워 둔다(판이 끝났을 때 판 크기가 바뀌지 않게)
  *   labels     { board, cell(칸 번호, 검은 칸인가), row(번호), col(번호) } 읽어 줄 이름(누를 수 있는 판에서만)
  *   onLine     (줄) → 뒤집기 단추를 눌렀을 때. 없으면 단추를 그리지 않는다
  *   onCell     (칸 번호) → 칸을 눌렀을 때(네 칸 골라 보기). 없으면 칸을 누를 수 없다
@@ -53,7 +54,7 @@ function arrow(cx, cy, across) {
 export function drawBoard(root, view) {
   const { w, h, cells, changed = [], marks = [], pick = null, band = null, lineMarks = [], small = false } = view;
   const live = Boolean(view.onLine || view.onCell);
-  const lanes = Boolean(view.onLine) || lineMarks.length > 0;
+  const lanes = Boolean(view.onLine) || lineMarks.length > 0 || Boolean(view.keepLanes);
   const focused = root.contains(document.activeElement) ? document.activeElement.dataset?.key : undefined;
   root.className = `rf-board${small ? ' small' : ''}${live ? ' live' : ''}`;
   const lane = lanes ? LANE : 0;

@@ -576,7 +576,7 @@ function openSide() {
   stopClock();
   persist();
   origin = { round, finished: 0 };
-  startSide(turn, small.board, C.side.open);
+  startSide(turn, small.board, F.T.side?.open ?? C.side.open);
 }
 
 /** 작은 판 하나를 시작한다. 단계와 판의 종류는 원래 판을 따른다. 판 번호는 없다. */

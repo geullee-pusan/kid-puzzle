@@ -150,6 +150,7 @@ export function createSim(frame) {
     if (!mine) pick = null;
     drawSim($('sim-board'), { ...gameView(board, trail, first), pick, label: pointLabel, onPair: mine ? tryPair : undefined, onTap: mine ? tapPoint : undefined });
     $('sim-status').textContent = flash ?? gameStatus(round, now);
+    $('sim-drawn-name').textContent = T.counts.game;
     $('sim-drawn').textContent = String(lineCount(board.n) - now.left);
     $('sim-left').textContent = String(now.left);
 
@@ -182,6 +183,7 @@ export function createSim(frame) {
     if (!playing) pick = null;
     drawSim($('sim-board'), { ...paintView(board, round.marks), pick, label: pointLabel, onPair: playing ? paintPair : undefined, onTap: playing ? tapPoint : undefined });
     $('sim-status').textContent = flash ?? paintStatus(round, state);
+    $('sim-drawn-name').textContent = T.counts.paint;
     $('sim-drawn').textContent = String(lineCount(board.n) - board.gone.length - state.left);
     $('sim-left').textContent = String(state.left);
     $('sim-game-box').hidden = true;

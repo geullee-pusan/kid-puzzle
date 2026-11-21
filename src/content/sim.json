@@ -57,6 +57,7 @@
     "closed": "어떻게 칠해도 한 색 세모가 생기는 판이에요",
     "choose": "먼저 그을지 골라요"
   },
+  "counts": { "game": "그은 선", "paint": "칠한 선" },
   "pointLabel": "{no}번째 점",
   "play": {
     "order-first": "내가 먼저 그어요. 두 점을 이으면 빨간 선이 그어져요.",
