@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="rowflip-title"', 'id="make-title"'), part('id="rowflip-pick"', 'id="why"'), part('id="rowflip-count"', 'id="domino-count"'), part('id="rowflip-pad"', 'id="domino-pad"'), part('id="make-rowflip"', '<script')].map(visibleText).join(' ');
+const own = [part('id="rowflip-title"', 'id="foxrabbit-title"'), part('id="rowflip-pick"', 'id="foxrabbit-color"'), part('id="rowflip-count"', 'id="foxrabbit-count"'), part('id="rowflip-pad"', 'id="foxrabbit-pad"'), part('id="make-rowflip"', 'id="make-foxrabbit"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -79,8 +79,8 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.doesNotMatch(board, /Math\.random/);
   // 판 아래에는 뒤집은 횟수, 검은 칸의 수, 표시한 네 칸의 검은 칸 수만 적는다. 무른 수나 해 본 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /undoCount|resetCount|loopCount|wrongCount|moveCount|impossibleCount|pickCount/, line.trim());
-  assert.equal([...part('id="rowflip-count"', 'id="domino-count"').matchAll(/<strong/g)].length, 3);
-  assert.match(visibleText(part('id="rowflip-count"', 'id="domino-count"')), /뒤집은 횟수\s+0\s+번/);
+  assert.equal([...part('id="rowflip-count"', 'id="foxrabbit-count"').matchAll(/<strong/g)].length, 3);
+  assert.match(visibleText(part('id="rowflip-count"', 'id="foxrabbit-count"')), /뒤집은 횟수\s+0\s+번/);
 });
 
 test('0과 1의 줄과 이진법을 보이지 않는다', () => {
@@ -107,7 +107,7 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   // 2단계(모두 되는 판)에는 "불가능해요" 단추가 없다
   assert.match(code, /const hasImpossible = \(round\) => round\.mode !== 'grid';/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 35);
+  assert.equal(guides.length, 36);
   assert.ok(sentenceCount(guides[34]) <= 3, guides[34]);
   assert.match(guides[34], /^칸을 누르면 검은 칸이 되고, 다시 누르면 흰 칸이 돼요\./);
   assert.match(guides[34], /네 모서리가 모두 흰 칸인데도 안 되는 판을 만들 수 있을까요\?$/);
@@ -208,7 +208,7 @@ test('풀이와 직접 만들기: 되는 판은 가장 적게 뒤집는 차례, 
   assert.match(code, /made = \{ line, node: boardCard\(\{ \.\.\.board, lineMarks: result\.moves \}, T\.make\['picture-possible'\]\), marks: \[\] \};/);
   // 모두 흰 판은 해 보거나 공책에 남길 것이 없다
   assert.match(code, /if \(!draft \|\| isWhite\(draft\.cells\)\) return null;/);
-  const make = part('id="make-rowflip"', '<script');
+  const make = part('id="make-rowflip"', 'id="make-foxrabbit"');
   for (const id of ['rowflip-make-w-fewer', 'rowflip-make-w', 'rowflip-make-w-more', 'rowflip-make-h-fewer', 'rowflip-make-h', 'rowflip-make-h-more', 'rowflip-make-clear', 'rowflip-make-board', 'rowflip-make-solve', 'rowflip-make-result', 'rowflip-make-play', 'rowflip-make-picture']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -227,16 +227,16 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="rowflip-title"', '</section>'), /<h2 id="rowflip-title">줄 뒤집기 판<\/h2>/);
   assert.ok(visibleText(part('id="rowflip-title"', '</section>')).includes(T.home.ask.small));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-rowflip-make" class="menu-item"/);
-  assert.match(part('id="rowflip-pad"', 'id="domino-pad"'), /id="rowflip-impossible"[^>]*>불가능해요</);
-  assert.match(part('id="rowflip-pick"', 'id="why"'), /aria-pressed="false" hidden>네 칸 골라 보기</);
+  assert.match(part('id="rowflip-pad"', 'id="foxrabbit-pad"'), /id="rowflip-impossible"[^>]*>불가능해요</);
+  assert.match(part('id="rowflip-pick"', 'id="foxrabbit-color"'), /aria-pressed="false" hidden>네 칸 골라 보기</);
   assert.equal(T.tool.off, '네 칸 골라 보기');
   // 카드는 공정한 게임일까 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="fair-title"') < html.indexOf('id="rowflip-title"'));
   assert.ok(html.indexOf('id="rowflip-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 공정한 게임일까 다음)
-  assert.match(read('src/main.js'), /fair: createFair\(frame\), rowflip: createRowflip\(frame\) \};/);
+  // 틀이 형식을 안다(공정한 게임일까 다음)
+  assert.match(read('src/main.js'), /fair: createFair\(frame\), rowflip: createRowflip\(frame\), /);
   assert.match(read('src/check-main.js'), /\['rowflip', '줄 뒤집기 판'\]/);
-  assert.match(read('src/core/smaller.js'), /fair: smallerFair, rowflip: smallerRowflip \};/);
+  assert.match(read('src/core/smaller.js'), /fair: smallerFair, rowflip: smallerRowflip, /);
   assert.match(code, /smaller: \(round, turn\) => smallerRowflip\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 정사각형에 가까워 규칙 글은 왼쪽 칸에 둔다
@@ -268,7 +268,7 @@ test('화면: 뒤집기 단추와 칸이 44픽셀보다 크다. 검은 칸, 표�
   const [, seconds] = plain.match(/\.rf-turn \{[^}]*animation: rf-turn ([\d.]+)s/);
   assert.ok(Number(seconds) <= 0.4);
   assert.match(plain, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rf-turn \{\s*animation: none;/);
-  assert.match(visibleText(part('id="rowflip-pad"', 'id="domino-pad"')), /검은 칸에는 흰 동그라미가 찍혀 있어요\./);
+  assert.match(visibleText(part('id="rowflip-pad"', 'id="foxrabbit-pad"')), /검은 칸에는 흰 동그라미가 찍혀 있어요\./);
 });
 
 /** 끝까지 한 판의 기록 하나 */

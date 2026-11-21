@@ -69,6 +69,7 @@ function drawCounts() {
     ['matches', '성냥개비'],
     ['fair', '공정한 게임일까'],
     ['rowflip', '줄 뒤집기 판'],
+    ['foxrabbit', '여우와 토끼'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
