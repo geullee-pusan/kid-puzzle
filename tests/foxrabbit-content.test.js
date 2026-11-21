@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="foxrabbit-title"', 'id="make-title"'), part('id="foxrabbit-color"', 'id="why"'), part('id="foxrabbit-count"', 'id="domino-count"'), part('id="foxrabbit-pad"', 'id="domino-pad"'), part('id="make-foxrabbit"', '<script')].map(visibleText).join(' ');
+const own = [part('id="foxrabbit-title"', 'id="pins-title"'), part('id="foxrabbit-color"', 'id="pins-numbers"'), part('id="foxrabbit-count"', 'id="pins-count"'), part('id="foxrabbit-pad"', 'id="pins-pad"'), part('id="make-foxrabbit"', 'id="make-pins"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -77,19 +77,19 @@ test('규칙은 세 문장 안이고, 반드시 한 칸 움직이고 제자리�
   assert.match(rule, /여우가 5번 움직일 때까지 안 잡히면 토끼가 이겨요\.$/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\.game, \{ n: limitOf\(round\.board\) \}\),/);
   // 판을 하는 동안에도 제자리에 있을 수 없다고 적어 둔다
-  assert.match(visibleText(part('id="foxrabbit-pad"', 'id="domino-pad"')), /제자리에 있을 수는 없어요\./);
+  assert.match(visibleText(part('id="foxrabbit-pad"', 'id="pins-pad"')), /제자리에 있을 수는 없어요\./);
   assert.equal(T.status.stay, '제자리에 있을 수 없어요. 꼭 한 칸 움직여요');
   // 직접 만들기의 안내 글도 세 문장 안이다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 36);
+  assert.equal(guides.length, 37);
   assert.ok(sentenceCount(guides[35]) <= 3, guides[35]);
   assert.match(guides[35], /^칸을 누르면 고른 동물이 그 칸으로 가요\./);
 });
 
 test('시계가 아니라 여우가 움직인 횟수를 보인다("여우가 움직인 횟수 2 / 5"). 점수, 별, 연달아 이긴 수가 없다', () => {
-  const foot = visibleText(part('id="foxrabbit-count"', 'id="domino-count"'));
+  const foot = visibleText(part('id="foxrabbit-count"', 'id="pins-count"'));
   assert.match(foot, /여우가 움직인 횟수\s+0\s+\/\s+5/);
-  assert.equal([...part('id="foxrabbit-count"', 'id="domino-count"').matchAll(/<strong/g)].length, 2);
+  assert.equal([...part('id="foxrabbit-count"', 'id="pins-count"').matchAll(/<strong/g)].length, 2);
   assert.match(code, /\$\('foxrabbit-moves'\)\.textContent = String\(now\.foxMoves\);/);
   assert.match(code, /\$\('foxrabbit-limit'\)\.textContent = String\(now\.limit\);/);
   assert.doesNotMatch(code + board, /setInterval|requestAnimationFrame|Date\.now|performance\.now/);
@@ -231,7 +231,7 @@ test('풀이와 직접 만들기: 먼저 움직이는 쪽마다 누가 이기는
   assert.equal(fill(T.make.fox, { k: 4 }), '둘 다 잘 하면 여우가 이겨요. 토끼가 가장 오래 버텨도 여우가 4번 만에 잡아요.');
   assert.equal(T.make.rabbit, '둘 다 잘 하면 토끼가 이겨요. 여우가 아무리 잘 쫓아도 토끼를 잡을 수 없어요.');
   assert.match(code, /const line = fill\(T\.make\[result\.winner\], \{ k: stepsOf\(result, board\.first\) \}\);/);
-  const make = part('id="make-foxrabbit"', '<script');
+  const make = part('id="make-foxrabbit"', 'id="make-pins"');
   for (const id of ['foxrabbit-make-w-fewer', 'foxrabbit-make-w', 'foxrabbit-make-w-more', 'foxrabbit-make-h-fewer', 'foxrabbit-make-h', 'foxrabbit-make-h-more', 'foxrabbit-make-place-fox', 'foxrabbit-make-place-rabbit', 'foxrabbit-make-first-fox', 'foxrabbit-make-first-rabbit', 'foxrabbit-make-board', 'foxrabbit-make-placing', 'foxrabbit-make-solve', 'foxrabbit-make-result', 'foxrabbit-make-play']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -249,20 +249,20 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="foxrabbit-title"', '</section>'), /<h2 id="foxrabbit-title">여우와 토끼<\/h2>/);
   assert.ok(visibleText(part('id="foxrabbit-title"', '</section>')).includes(T.home.ask.rabbit));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-foxrabbit-make" class="menu-item"/);
-  const pad = part('id="foxrabbit-pad"', 'id="domino-pad"');
+  const pad = part('id="foxrabbit-pad"', 'id="pins-pad"');
   assert.match(pad, /id="foxrabbit-first"[^>]*>먼저 갈래요</);
   assert.match(pad, /id="foxrabbit-second"[^>]*>나중에 갈래요</);
   assert.match(pad, /id="foxrabbit-guess-fox"[^>]*>여우가 이겨요</);
   assert.match(pad, /id="foxrabbit-guess-rabbit"[^>]*>토끼가 이겨요</);
-  assert.match(part('id="foxrabbit-color"', 'id="why"'), /aria-pressed="false" hidden>색 켜기</);
+  assert.match(part('id="foxrabbit-color"', 'id="pins-numbers"'), /aria-pressed="false" hidden>색 켜기</);
   assert.equal(T.tool.off, '색 켜기');
   // 카드는 줄 뒤집기 판 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="rowflip-title"') < html.indexOf('id="foxrabbit-title"'));
   assert.ok(html.indexOf('id="foxrabbit-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 줄 뒤집기 판 다음)
-  assert.match(read('src/main.js'), /rowflip: createRowflip\(frame\), foxrabbit: createFoxrabbit\(frame\) \};/);
+  // 틀이 형식을 안다(줄 뒤집기 판 다음)
+  assert.match(read('src/main.js'), /rowflip: createRowflip\(frame\), foxrabbit: createFoxrabbit\(frame\), /);
   assert.match(read('src/check-main.js'), /\['foxrabbit', '여우와 토끼'\]/);
-  assert.match(read('src/core/smaller.js'), /rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit \};/);
+  assert.match(read('src/core/smaller.js'), /rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, /);
   assert.match(code, /smaller: \(round, turn\) => smallerFoxrabbit\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 없다(선생님과 두는 게임). 판이 정사각형에 가까워 규칙 글은 왼쪽 칸에 둔다

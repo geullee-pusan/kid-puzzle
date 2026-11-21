@@ -92,7 +92,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   for (const key of ['dice', 'dice-one']) assert.match(T.rules[key], /마주 보는 두 면의 눈을 더하면 7개예요\./);
   assert.match(T.rules.all, /돌리거나 뒤집어 같은 모양은 하나로 세요\.$/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 36);
+  assert.equal(guides.length, 37);
   assert.ok(sentenceCount(guides[21]) <= 3, guides[21]);
   assert.match(guides[21], /^칸을 눌러 정사각형 여섯 칸을 이어 붙여요\./);
   assert.match(guides[21], /안 되는 모양도 만들 수 있을까요\?$/);

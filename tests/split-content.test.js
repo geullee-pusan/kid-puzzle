@@ -90,7 +90,7 @@ test('규칙 설명은 세 문장 안이다. 안 되는 판이 섞이는 판만 
   assert.match(T.rules.four, /선 세 개로/);
   assert.match(code, /const ruleKey = \(round\) => \(round\.custom \? 'made' : round\.mode\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 36);
+  assert.equal(guides.length, 37);
   assert.ok(sentenceCount(guides[18]) <= 3, guides[18]);
   assert.match(guides[18], /아무리 잘라도 안 되는 판도 만들 수 있을까요\?$/);
 });

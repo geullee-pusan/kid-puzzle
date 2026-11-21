@@ -13302,3 +13302,315 @@ button.fr-chip {
   border-color: #e67700;
   font-weight: 700;
 }
+
+/* ---- 핀에 실 감기: 원 위의 핀, 핀 사이에 감긴 실, 가닥의 차례 수, 실이 걸린 핀의 고리 ----
+   색만으로 알리지 않는다. 가닥마다 색과 함께 선의 모양이 다르다(실선, 긴 점선, 점, 선과 점, 짧은 점선, 선과 두 점, 성긴 점, 아주 긴 점선).
+   실이 지나간 핀의 동그라미 안에는 가닥의 차례 수를 적는다. 실이 걸려 있는 핀은 굵은 점선 고리다.
+   방금 감은 마디는 0.25초 동안 떠오른다(움직임을 줄이는 설정이면 멈춘다). */
+.pins-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .pins-board,
+.door-picture > .pins-board,
+#make-pins .board-area > .pins-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.pins-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 560px;
+  max-height: 560px;
+}
+
+.pins-board.small .pins-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.pins-board.live .pins-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.pins-board.live .pins-pin {
+  cursor: pointer;
+}
+
+.pins-ring {
+  fill: none;
+  stroke: #dee2e6;
+}
+
+.pins-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.pins-thread.s0 .pins-line {
+  stroke: #1971c2;
+}
+
+.pins-thread.s1 .pins-line {
+  stroke: #e03131;
+  stroke-linecap: butt;
+  stroke-dasharray: 18 10;
+}
+
+.pins-thread.s2 .pins-line {
+  stroke: #2f9e44;
+  stroke-dasharray: 2 11;
+}
+
+.pins-thread.s3 .pins-line {
+  stroke: #7048e8;
+  stroke-linecap: butt;
+  stroke-dasharray: 20 7 4 7;
+}
+
+.pins-thread.s4 .pins-line {
+  stroke: #e8590c;
+  stroke-linecap: butt;
+  stroke-dasharray: 9 6;
+}
+
+.pins-thread.s5 .pins-line {
+  stroke: #0c8599;
+  stroke-linecap: butt;
+  stroke-dasharray: 24 6 4 6 4 6;
+}
+
+.pins-thread.s6 .pins-line {
+  stroke: #c2255c;
+  stroke-dasharray: 2 16;
+}
+
+.pins-thread.s7 .pins-line {
+  stroke: #8d6e63;
+  stroke-linecap: butt;
+  stroke-dasharray: 34 10;
+}
+
+.pins-fresh {
+  animation: pins-fresh 0.25s ease-out;
+}
+
+@keyframes pins-fresh {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pins-fresh {
+    animation: none;
+  }
+}
+
+.pins-hit {
+  fill: transparent;
+}
+
+.pins-dot {
+  fill: #ffffff;
+  stroke: var(--ink);
+}
+
+.pins-pin.used .pins-dot {
+  fill: #f1f3f5;
+}
+
+.pins-pin.used.s0 .pins-dot {
+  stroke: #1971c2;
+}
+
+.pins-pin.used.s1 .pins-dot {
+  stroke: #e03131;
+}
+
+.pins-pin.used.s2 .pins-dot {
+  stroke: #2f9e44;
+}
+
+.pins-pin.used.s3 .pins-dot {
+  stroke: #7048e8;
+}
+
+.pins-pin.used.s4 .pins-dot {
+  stroke: #e8590c;
+}
+
+.pins-pin.used.s5 .pins-dot {
+  stroke: #0c8599;
+}
+
+.pins-pin.used.s6 .pins-dot {
+  stroke: #c2255c;
+}
+
+.pins-pin.used.s7 .pins-dot {
+  stroke: #8d6e63;
+}
+
+.pins-mark,
+.pins-number {
+  font-size: 18px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--ink);
+}
+
+.pins-number {
+  fill: #495057;
+}
+
+.pins-last {
+  fill: rgba(252, 196, 25, 0.3);
+  stroke: #e67700;
+  stroke-dasharray: 8 5;
+}
+
+/* 실과 글자는 누르는 것을 가로막지 않는다(핀이 눌린다) */
+.pins-thread,
+.pins-ring,
+.pins-mark,
+.pins-number {
+  pointer-events: none;
+}
+
+.pins-pin:focus {
+  outline: none;
+}
+
+.pins-pin:focus-visible .pins-dot {
+  stroke: var(--gold);
+  stroke-width: 8;
+}
+
+.board-foot:has(> #pins-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 판 아래의 글이 두 줄이 되어도 아래 줄의 수와 겹치지 않는다 */
+#pins-status {
+  height: auto;
+  min-height: 22px;
+}
+
+/* 오른쪽 칸: 가닥 수 짐작(넷씩 두 줄), 칸 수마다의 표, 한 가닥으로 다 감기는 칸 수 고르기 */
+.pins-guesses {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.pins-guesses > .btn {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.pins-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+  text-align: center;
+}
+
+.pins-table th,
+.pins-table td {
+  border: 2px solid #ced4da;
+  padding: 2px 6px;
+  height: 28px;
+}
+
+.pins-table th {
+  background: #f1f3f5;
+}
+
+.pins-table tr.now td {
+  font-weight: 700;
+  border-top: 3px solid var(--bar);
+  border-bottom: 3px solid var(--bar);
+  background: rgba(252, 196, 25, 0.25);
+}
+
+.pins-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.btn.pins-chip {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.btn.pins-chip[aria-pressed='true'] {
+  border: 5px solid var(--bar);
+  background: var(--gold);
+  font-weight: 700;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .pins-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .pins-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .pins-board {
+  height: 76px;
+}
+
+.resume.note-picture .pins-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드. 판 위의 종이(가로 470픽셀쯤)에 한 줄에 석 장이 들어간다. big은 한 장 */
+.pins-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 140px);
+}
+
+.pins-card > .pins-board {
+  height: 140px;
+}
+
+.pins-card.mid {
+  width: min(100%, 215px);
+}
+
+.pins-card.mid > .pins-board {
+  height: 205px;
+}
+
+.pins-card.big {
+  width: min(100%, 360px);
+}
+
+.pins-card.big > .pins-board {
+  height: 320px;
+}
+
+.pins-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}

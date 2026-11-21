@@ -56,6 +56,8 @@ import { checkBoard as checkFair } from './fair.js';
 import { smallBoards as smallRowflipBoards } from './rowflip-ladder.js';
 import { checkBoard as checkRowflip, solve as solveRowflip } from './rowflip.js';
 import { checkBoard as checkFoxrabbit, smallBoards as smallFoxrabbitBoards } from './foxrabbit.js';
+import { smallBoards as smallPinsBoards } from './pins-ladder.js';
+import { checkBoard as checkPins } from './pins.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -913,4 +915,17 @@ export function smallerFoxrabbit(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit };
+// ---- 핀에 실 감기: 핀이 더 적은 판 ----
+
+/**
+ * 칸 수가 정해진 판은 핀이 더 적고 실 가닥 수가 같은 판(한 가닥의 핀 수는 줄어든다)을 낸다(src/core/pins-ladder.js의 smallBoards).
+ * 같은 칸 수의 판이 먼저이고, 핀이 적은 것부터다. 칸 수를 아이가 고르는 판은 핀이 더 적은 같은 종류의 판이고,
+ * 맞히기 판은 어느 칸 수로도 한 가닥인지가 같은 판이다. 더 줄일 수 없으면 없다.
+ */
+export function smallerPins(origin, turn = 0) {
+  if (!origin.board || checkPins(origin.board) !== null) return null;
+  const list = smallPinsBoards(origin);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins };
