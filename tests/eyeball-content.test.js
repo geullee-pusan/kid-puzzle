@@ -109,7 +109,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules['side-hidden'], /□는 가려진 숫자예요\./);
   for (const key of ['side', 'side-hidden']) assert.match(T.rules[key], /큰지, 작은지, 알 수 없는지 골라요\.$/, key);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 41);
+  assert.equal(guides.length, 42);
   assert.ok(sentenceCount(guides[19]) <= 3, guides[19]);
   assert.match(guides[19], /^모눈을 눌러 둥근 덩어리를 놓아 얼룩을 만들어요\./);
 });

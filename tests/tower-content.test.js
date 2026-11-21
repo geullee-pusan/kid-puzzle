@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="tower-title"', 'id="make-title"'), part('id="tower-count"', 'id="domino-count"'), part('id="tower-pad"', 'id="domino-pad"'), part('id="make-tower"', '<script')].map(visibleText).join(' ');
+const own = [part('id="tower-title"', 'id="racetrack-title"'), part('id="tower-count"', 'id="racetrack-count"'), part('id="tower-pad"', 'id="racetrack-pad"'), part('id="make-tower"', 'id="make-racetrack"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -107,7 +107,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 단
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(isTower\(round\.board\) \? 'fewest' : 'spread'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 41);
+  assert.equal(guides.length, 42);
   assert.ok(sentenceCount(guides[40]) <= 3, guides[40]);
   assert.match(guides[40], /^원판마다 꽂을 기둥을 골라요\./);
   assert.match(guides[40], /아주 다른 판을 만들 수 있을까요\?$/);
@@ -207,7 +207,7 @@ test('풀이와 직접 만들기: 가장 적은 횟수와 길을 여덟 번씩 �
   assert.equal(fill(T.solution.path, { k: 7 }), '가장 적게 옮기면 7번이에요. 차례대로 보여 줄게요.');
   assert.match(code, /const PER_PAGE = 8;/);
   assert.match(code, /const worst = result\.fewest === worstOf\(board\.n, board\.target\)\.worst;/);
-  const make = part('id="make-tower"', '<script');
+  const make = part('id="make-tower"', 'id="make-racetrack"');
   for (const id of ['tower-make-fewer', 'tower-make-n', 'tower-make-more', 'tower-make-target', 'tower-make-discs', 'tower-make-clear', 'tower-make-board', 'tower-make-solve', 'tower-make-result', 'tower-make-step', 'tower-make-back', 'tower-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="tower-make-solve"[^>]*>선생님, 가장 적게 몇 번이에요\?</);
   assert.match(make, /id="tower-make-step"[^>]*>선생님, 한 번 옮겨 주세요</);
@@ -228,7 +228,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.match(part('id="tower-title"', '</section>'), /<h2 id="tower-title">탑 옮기기<\/h2>/);
   assert.ok(visibleText(part('id="tower-title"', '</section>')).includes(T.home.ask.move));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-tower-make" class="menu-item"/);
-  const pad = part('id="tower-pad"', 'id="domino-pad"');
+  const pad = part('id="tower-pad"', 'id="racetrack-pad"');
   assert.match(visibleText(pad), /기둥을 누르면 맨 위의 원판을 들어 올리고, 다른 기둥을 누르면 그 기둥에 내려놓아요\./);
   assert.match(pad, /id="tower-again"[^>]*>처음 모습으로 다시 해 볼래요</);
   assert.match(pad, /id="tower-stop"[^>]*>여기까지 할래요</);
@@ -238,9 +238,9 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 답하는 칸, 직접 �
   assert.ok(html.indexOf('id="blackhole-title"') < html.indexOf('id="tower-title"'));
   assert.ok(html.indexOf('id="tower-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(형식 목록의 맨 뒤, 블랙홀 다음)
-  assert.match(read('src/main.js'), /blackhole: createBlackhole\(frame\), tower: createTower\(frame\) \};/);
+  assert.match(read('src/main.js'), /blackhole: createBlackhole\(frame\), tower: createTower\(frame\), /);
   assert.match(read('src/check-main.js'), /\['tower', '탑 옮기기'\]/);
-  assert.match(read('src/core/smaller.js'), /blackhole: smallerBlackhole, tower: smallerTower \};/);
+  assert.match(read('src/core/smaller.js'), /blackhole: smallerBlackhole, tower: smallerTower, /);
   assert.match(code, /smaller: \(round, turn\) => smallerTower\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 원판 일곱 개 탑은 위아래로 커서 규칙 글은 왼쪽 칸에 둔다

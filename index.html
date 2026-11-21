@@ -479,6 +479,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="racetrack-title">
+            <h2 id="racetrack-title">모눈 자동차 경주</h2>
+            <div class="door-picture"><div id="home-racetrack-sample"></div></div>
+            <p id="home-racetrack-ask" class="door-ask">차를 몰아 결승선을 넘을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-racetrack-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-racetrack-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -620,6 +630,9 @@
               </li>
               <li>
                 <button id="home-tower-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-tower-blank"></span></span><span class="menu-name">탑 옮기기</span></button>
+              </li>
+              <li>
+                <button id="home-racetrack-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-racetrack-blank"></span></span><span class="menu-name">모눈 자동차 경주</span></button>
               </li>
             </ul>
           </div>
@@ -838,6 +851,9 @@
             <!-- 탑 옮기기: 받침 위의 기둥 셋과 원판들(크기는 너비와 적힌 수), 깃발 기둥. 기둥을 누르면 맨 위 원판을 들어 올리고, 다른 기둥을 누르면 내려놓는다.
                  끌어서 옮겨도 된다. 표 만들기에서는 판 아래에 표가 있다 -->
             <div id="tower-board" hidden></div>
+            <!-- 모눈 자동차 경주: 길 칸과 벽(빗금), 칸마다의 점, 결승선(체크 무늬 선)과 결승선 너머, 깃발 칸, 지나온 길, 차.
+                 다음에 갈 수 있는 아홉 점이 동그라미로 그려지고, 하나를 누르면 차가 그 점으로 간다 -->
+            <div id="racetrack-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -980,6 +996,14 @@
               <span class="block-numbers">
                 <span>옮긴 횟수 <strong id="tower-moves">0</strong>번</span>
                 <span id="tower-best-line" hidden>이 판에서 가장 적게 옮긴 것: <strong id="tower-best"></strong>번</span>
+              </span>
+            </span>
+            <!-- 모눈 자동차 경주: 윗줄에 할 일이나 사실 한 줄(벽에 닿는 선, 아홉 점 모두 막힌 자리, 결승선을 넘었는지), 그 아래에 움직인 횟수.
+                 지난 움직임과 이 판에서 가장 적게 움직인 횟수는 오른쪽 칸에 적는다(판 아래가 늘 같은 높이라서 판이 줄었다 늘었다 하지 않는다). 시계는 없다 -->
+            <span id="racetrack-count" class="count tile-count block-count" hidden>
+              <span id="racetrack-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>움직인 횟수 <strong id="racetrack-moves">0</strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1545,6 +1569,20 @@
             </div>
             <button id="tower-again" class="btn huge" type="button" hidden>처음 모습으로 다시 해 볼래요</button>
             <button id="tower-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+          </div>
+          <!-- 모눈 자동차 경주: 움직이는 법과 벽에 닿는 것, 깃발 칸. 사다리에 갈 수 없는 판이 없어서 안 된다고 답하는 단추가 없다.
+               가장 적게 가는 판은 결승선을 넘은 뒤에 "출발 칸에서 다시 해 볼래요"와 "여기까지 할래요" -->
+          <div id="racetrack-pad" class="pad" hidden>
+            <h2>지난 움직임</h2>
+            <p class="pad-note rt-speed-line"><strong id="racetrack-speed"></strong></p>
+            <p id="racetrack-best-line" class="pad-note best-line" hidden>이 판에서 가장 적게 움직인 것: <strong id="racetrack-best"></strong>번</p>
+            <h2>움직이는 법</h2>
+            <p class="pad-note">동그라미를 누르면 차가 그 점으로 가요.</p>
+            <p class="pad-note">가운데 동그라미는 지난번과 똑같이 움직인 자리예요. 둘레의 동그라미는 가로나 세로로 1칸씩 다르게 움직인 자리예요.</p>
+            <p class="pad-note">점과 점을 잇는 선이 벽에 닿기만 해도 그 점으로는 갈 수 없어요. 결승선은 체크 무늬 선이에요.</p>
+            <p id="racetrack-flag-note" class="pad-note" hidden>선이 깃발 칸에 한 번 닿아야 결승선을 넘을 수 있어요.</p>
+            <button id="racetrack-again" class="btn huge" type="button" hidden>출발 칸에서 다시 해 볼래요</button>
+            <button id="racetrack-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -3955,6 +3993,44 @@
             <button id="tower-make-step" class="btn wide" type="button" disabled>선생님, 한 번 옮겨 주세요</button>
             <button id="tower-make-back" class="btn wide" type="button" disabled>처음 모습으로</button>
             <button id="tower-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-racetrack" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>가로</h2>
+          <div class="stepper">
+            <button id="racetrack-make-w-fewer" class="btn" type="button" aria-label="가로 한 칸 줄이기">−</button>
+            <strong id="racetrack-make-w"></strong>
+            <button id="racetrack-make-w-more" class="btn" type="button" aria-label="가로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>세로</h2>
+          <div class="stepper">
+            <button id="racetrack-make-h-fewer" class="btn" type="button" aria-label="세로 한 칸 줄이기">−</button>
+            <strong id="racetrack-make-h"></strong>
+            <button id="racetrack-make-h-more" class="btn" type="button" aria-label="세로 한 칸 늘리기">＋</button>
+          </div>
+          <h2>칸을 누르면</h2>
+          <div id="racetrack-make-tool" class="segment column">
+            <button class="btn" type="button" data-tool="road" aria-pressed="true">길 칸과 벽 칸 바꾸기</button>
+            <button class="btn" type="button" data-tool="start" aria-pressed="false">출발 칸 고르기</button>
+            <button class="btn" type="button" data-tool="finish" aria-pressed="false">결승선 고르기</button>
+            <button class="btn" type="button" data-tool="flag" aria-pressed="false">깃발 칸 고르기</button>
+          </div>
+          <button id="racetrack-make-clear" class="btn wide" type="button">모두 길 칸으로</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 눌러 길을 그리고 출발 칸과 결승선을 정해요. 가장 적게 움직여도 여러 번 걸리는 길을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="racetrack-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="racetrack-make-solve" class="btn primary huge" type="button">선생님, 가장 적게 몇 번이에요?</button>
+            <p id="racetrack-make-result" class="make-result" aria-live="polite"></p>
+            <button id="racetrack-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

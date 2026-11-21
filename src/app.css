@@ -14904,3 +14904,344 @@ button.fr-chip {
   min-width: 56px;
   min-height: 56px;
 }
+
+/* ---- 모눈 자동차 경주: 길 칸과 벽, 칸마다의 점, 결승선, 깃발 칸, 지나온 길, 차 ----
+   색만으로 알리지 않는다. 벽은 빗금, 결승선은 체크 무늬의 굵은 선, 결승선 너머는 점이 옅은 밝은 바탕,
+   깃발 칸은 깃발 그림과 점선 테두리(선이 닿은 뒤에는 실선), 출발 칸은 네모 테두리, 벽에 닿아 가지 못한 선은 점선이다.
+   누를 수 있는 판은 다음에 갈 수 있는 아홉 점이 동그라미이고, 동그라미마다 칸 하나만 한 누르는 자리가 있다
+   (사다리의 판은 가로 10칸, 세로 9칸 안이라 1180×820 화면에서 한 칸이 44픽셀보다 크다). 움직이는 그림은 없다. */
+.rt-board.live {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.rt-board.live .rt-svg {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: 100%;
+}
+
+.rt-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rt-board.small .rt-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.board-area > .rt-board.small,
+.door-picture > .rt-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .rt-board.small {
+  width: 90px;
+  height: 60px;
+}
+
+.level .rt-board.small {
+  width: 90px;
+  height: 66px;
+}
+
+.menu-picture > .rt-board {
+  height: 76px;
+}
+
+.note-picture .rt-board.small {
+  width: 180px;
+  height: 140px;
+}
+
+.rt-outside {
+  stroke: none;
+}
+
+.rt-wall-fill {
+  fill: #d9dee3;
+}
+
+.rt-wall-hatch {
+  stroke: #9aa5b1;
+  stroke-width: 6;
+}
+
+.rt-beyond {
+  fill: #f3f9f1;
+}
+
+.rt-road {
+  fill: #ffffff;
+}
+
+.rt-dot {
+  fill: #9aa5b1;
+}
+
+.rt-dot.far {
+  fill: #c3ccd5;
+}
+
+.rt-wall {
+  stroke: #1f2933;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.rt-finish-base {
+  stroke: #ffffff;
+  stroke-width: 16;
+}
+
+.rt-finish {
+  stroke: #1f2933;
+  stroke-width: 16;
+  stroke-dasharray: 16 16;
+}
+
+.rt-start {
+  fill: none;
+  stroke: #52606d;
+  stroke-width: 4;
+}
+
+.rt-flag {
+  fill: #fff4e6;
+  stroke: #e8590c;
+  stroke-width: 5;
+  stroke-dasharray: 12 8;
+}
+
+.rt-flag.done {
+  stroke-dasharray: none;
+}
+
+.rt-flag-pole {
+  stroke: #9c3b06;
+  stroke-width: 5;
+}
+
+.rt-flag-cloth {
+  fill: #e8590c;
+}
+
+.rt-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linejoin: round;
+}
+
+.rt-step {
+  fill: var(--accent);
+}
+
+.rt-speed {
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-dasharray: 10 10;
+  opacity: 0.45;
+}
+
+.rt-speed-head {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5;
+  opacity: 0.45;
+}
+
+.rt-blocked {
+  stroke: #c92a2a;
+  stroke-width: 6;
+  stroke-dasharray: 6 12;
+  stroke-linecap: round;
+}
+
+.rt-blocked-end {
+  fill: none;
+  stroke: #c92a2a;
+  stroke-width: 5;
+  stroke-dasharray: 6 8;
+}
+
+/* 차는 누름을 받지 않는다(제자리 동그라미가 차 밑에 있어도 눌린다) */
+.rt-car,
+.rt-car-eye {
+  pointer-events: none;
+}
+
+.rt-car {
+  fill: #0b4f5c;
+  stroke: #ffffff;
+  stroke-width: 5;
+}
+
+.rt-car-eye {
+  fill: #ffffff;
+}
+
+.rt-pick {
+  cursor: pointer;
+  outline: none;
+}
+
+.rt-pick-area {
+  fill: transparent;
+}
+
+.rt-pick-ring {
+  fill: rgb(28 126 214 / 10%);
+  stroke: var(--accent);
+  stroke-width: 5;
+}
+
+.rt-pick-core {
+  fill: var(--accent);
+  opacity: 0.5;
+}
+
+.rt-pick:hover .rt-pick-ring,
+.rt-pick:focus-visible .rt-pick-ring {
+  fill: rgb(28 126 214 / 30%);
+  stroke-width: 8;
+}
+
+.rt-pick:focus-visible .rt-pick-area {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.rt-card {
+  width: min(100%, 228px);
+}
+
+.rt-card.big {
+  width: min(100%, 460px);
+}
+
+.rt-card .rt-board.small {
+  height: 250px;
+}
+
+.rt-card.big .rt-board.small {
+  height: 290px;
+}
+
+.rt-step-no {
+  fill: #0b4f5c;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 8;
+}
+
+.rt-speed-line strong {
+  font-size: 22px;
+}
+
+.rt-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* 직접 만들기의 모눈: 칸마다 단추(1180×820에서 가로 9칸, 세로 8칸이어도 한 칸이 44픽셀보다 크다) */
+.rt-make {
+  position: relative;
+  --cell: min(calc(100cqw / var(--w)), calc(100cqh / var(--h)), 64px);
+  width: calc(var(--cell) * var(--w));
+  height: calc(var(--cell) * var(--h));
+  margin: 0 auto;
+}
+
+.rt-make-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--w), var(--cell));
+  grid-template-rows: repeat(var(--h), var(--cell));
+}
+
+.rt-make-cell {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #cbd2d9;
+  border-radius: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rt-make-cell.road {
+  background: #ffffff;
+}
+
+.rt-make-cell.wall {
+  background: repeating-linear-gradient(45deg, #d9dee3 0 6px, #9aa5b1 6px 9px);
+}
+
+.rt-make-cell.start::after {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  border: 3px solid #52606d;
+  border-radius: 4px;
+}
+
+.rt-make-cell.flag::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border: 3px dashed #e8590c;
+  border-radius: 6px;
+  background: #fff4e6;
+}
+
+.rt-make-cell.finish-top {
+  border-top: 8px dashed #1f2933;
+}
+
+.rt-make-cell.finish-bottom {
+  border-bottom: 8px dashed #1f2933;
+}
+
+.rt-make-cell.finish-left {
+  border-left: 8px dashed #1f2933;
+}
+
+.rt-make-cell.finish-right {
+  border-right: 8px dashed #1f2933;
+}
+
+.rt-make-cell:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.rt-make-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#make-racetrack .side,
+#make-racetrack .choices {
+  gap: 8px;
+}
+
+#make-racetrack .stepper .btn {
+  min-width: 56px;
+  min-height: 56px;
+}

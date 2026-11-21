@@ -75,6 +75,7 @@ function drawCounts() {
     ['regionmap', '구역 지도 맞히기'],
     ['blackhole', '블랙홀'],
     ['tower', '탑 옮기기'],
+    ['racetrack', '모눈 자동차 경주'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

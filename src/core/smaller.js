@@ -66,6 +66,8 @@ import { smallBoards as smallBlackholeBoards } from './blackhole-ladder.js';
 import { checkBoard as checkBlackhole } from './blackhole.js';
 import { smallBoards as smallTowerBoards } from './tower-ladder.js';
 import { checkBoard as checkTower } from './tower.js';
+import { smallBoards as smallRacetrackBoards } from './racetrack-ladder.js';
+import { checkBoard as checkRacetrack } from './racetrack.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -984,5 +986,16 @@ export function smallerTower(origin, turn = 0) {
   const list = smallTowerBoards(origin);
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
+// ---- 모눈 자동차 경주: 같은 종류로 크기가 작은 길 ----
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower };
+/**
+ * 같은 종류(곧은 길, ㄱ자 길과 ㄷ자 길, 깃발 판, ㄹ자 길이면 ㄱ자 길과 ㄷ자 길)로 크기가 작고 가장 적은 움직임 수가 적은 판을 낸다
+ * (src/core/racetrack-ladder.js의 smallBoards). 곧은 길(3번이면 넘는다)처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerRacetrack(origin, turn = 0) {
+  if (!origin.board || checkRacetrack(origin.board) !== null) return null;
+  const list = smallRacetrackBoards(origin);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack };
