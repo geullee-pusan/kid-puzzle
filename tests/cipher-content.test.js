@@ -101,7 +101,7 @@ test('글자는 한글 자모와 숫자만 쓴다: 대본과 이 형식의 화�
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 보상 낱말이 없다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(`${said} ${own} ${messages.join(' ')}`, /별|점수|순위|레벨|연속|대각/);
+  assert.doesNotMatch(`${said} ${own} ${messages.join(' ')}`, /별|점수|순위|레벨|연속/);
   // 다른 글자를 누르면: 그 글자를 열쇠만큼 밀면 무엇이 되는지만 말한다
   assert.equal(fill(T.play.wrong, { f: 'ㄱ', k: 3, face: 'ㄹ' }), 'ㄱ 글자를 앞으로 3칸 밀면 ㄹ 글자가 돼요.');
   assert.equal(fill(T.play['wrap-c'], { f: 'ㅎ', k: 3, face: 'ㄷ' }), 'ㅎ 다음은 다시 ㄱ이라서, ㅎ 글자를 3칸 밀면 ㄷ 글자가 돼요.');

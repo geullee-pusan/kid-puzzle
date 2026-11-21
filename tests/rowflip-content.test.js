@@ -67,7 +67,6 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다. 되는 판의 "불가능해요"에는 되는 판이라는 사실만 말한다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(`${said} ${visibleText(html)}`, /대각/);
   assert.match(T.play['possible-press'], /^이 판은 모두 흰 칸으로 만들 수 있어요\./);
   assert.match(T.play['possible-press-untried'], /^이 판은 모두 흰 칸으로 만들 수 있어요\./);
   assert.match(code, /frame\.say\(round\.moveCount === 0 \? T\.play\['possible-press-untried'\] : T\.play\['possible-press'\]\);/);

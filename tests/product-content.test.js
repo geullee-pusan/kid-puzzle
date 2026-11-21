@@ -67,7 +67,6 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다. 줄의 곱이 다르면 두 수의 곱과 단서를 그대로 말한다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(`${said} ${visibleText(html)}`, /대각/);
   // 곱이 다른 줄: "3 × 4는 12인데, 단서는 15예요." 수 뒤에 붙는 말은 받침을 보고 고른다
   const off = (a, b, clue, face = '위에서 2번째 가로줄') => fill(T.play[`off-${endsClosed(b) ? 'c' : 'o'}${endsClosed(clue) ? 'c' : 'o'}`], { face, k: a, n: b, total: a * b, f: clue });
   assert.equal(off(3, 4, 15), '위에서 2번째 가로줄의 3 × 4는 12인데, 단서는 15예요.');

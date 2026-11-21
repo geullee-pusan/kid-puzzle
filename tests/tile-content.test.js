@@ -169,9 +169,6 @@ test('판에 무늬 입히기는 힌트 칸에 있는 도구다. 무엇을 알�
   assert.equal(T.pattern.button.none, '판에 무늬 입히기');
   assert.match(T.pattern.button.checker, /바둑판 무늬/);
   assert.match(T.pattern.button.stripe, /비스듬한 줄무늬/);
-  // '대각'은 3학년이 모르는 말이라 쓰지 않는다.
-  for (const [path, text] of strings) assert.doesNotMatch(text, /대각/, `${path}: ${text}`);
-  assert.doesNotMatch(screenText, /대각/);
   // 색마다 모양이 따로 있다(색만으로 가리지 않는다).
   assert.deepEqual(Object.values(T.pattern.marks), ['동그라미', '세모', '네모']);
   assert.equal(fill(T.pattern.count, { n: 7 }), '7칸');

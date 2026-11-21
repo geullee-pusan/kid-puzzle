@@ -66,12 +66,10 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
   assert.deepEqual(T.times, { 1: '한', 2: '두', 3: '세', 4: '네' });
 });
 
-test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 어려운 말(대각)이 없다', () => {
+test('한 일과 사실만 말한다. 판정하는 말과 칭찬 낱말이 없다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  // '대각'은 3학년 아이가 모르는 말이라 쓰지 않는다(조각 덮기와 같다). "비스듬한 줄"이라고 한다
-  assert.doesNotMatch(said, /대각/);
-  assert.doesNotMatch(visibleText(html), /대각/);
+  // 줄 이름은 "비스듬한 줄"이라고 한다("대각선"도 쓸 수 있는 말이지만 이 형식은 처음 쓴 이름을 그대로 쓴다)
   assert.match(T.rules.all, /비스듬한 줄 여덟 줄/);
   assert.equal(fill(T.play.unequal, { total: 8, n: 5 }), '카드를 모두 놓았어요. 줄 8개 가운데 합이 같은 줄은 5개예요.');
   assert.equal(fill(T.play.off, { total: 3, k: 11, n: 2 }), '카드를 모두 놓았어요. 줄 3개 가운데 합이 11인 줄은 2개예요.');

@@ -70,7 +70,6 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 갇혔다고 미리 알리는 말이 없다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(`${said} ${visibleText(html)}`, /대각/);
   // 하는 동안의 말에는 "갇혔어요", "나갈 수 없게 됐어요"가 없다. 더 갈 곳이 아예 없는 방에서만 그 사실을 말한다
   for (const [key, text] of Object.entries(T.play)) assert.doesNotMatch(text, /갇혔|갇혀|(?<!지)나갈 수 없/, key);
   for (const [key, text] of Object.entries(T.status)) assert.doesNotMatch(text, /갇혔|갇혀|(?<!지)나갈 수 없/, key);

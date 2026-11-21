@@ -68,11 +68,11 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
   assert.ok(partitionOf(five, T.levels[4].picture.regions).bad.length === 0);
 });
 
-test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 어려운 말(대각, 비둘기집)이 없다', () => {
+test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 어려운 말(비둘기집)이 없다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(said, /대각|비둘기/);
-  assert.doesNotMatch(visibleText(html), /대각|비둘기/);
+  assert.doesNotMatch(said, /비둘기/);
+  assert.doesNotMatch(visibleText(html), /비둘기/);
   // 체스의 말과 이름을 쓰지 않는다. 놓는 것은 구슬이다
   assert.doesNotMatch(`${said} ${own}`, /체스|킹|퀸|나이트|비숍|룩|임금/);
   assert.match(T.rules.king, /구슬끼리 변도 꼭짓점도 닿으면 안 돼요\./);

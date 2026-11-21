@@ -194,7 +194,7 @@ test('글의 빈칸({이름})은 정해진 이름만 쓰고, 채울 값이 모�
 test('화면 글에 영어 낱말이 없고, "~요"로 끝나는 말투다. 한 문장은 60자를 넘지 않는다. 쓰지 않는 낱말이 없다', () => {
   for (const [path, text] of strings) assert.doesNotMatch(text.replace(/\{[^{}]*\}/g, ''), /[A-Za-z]/, `${path}: ${text}`);
   assert.doesNotMatch(own, /[A-Za-z]/);
-  assert.doesNotMatch([own, ...strings.map(([, text]) => text)].join(' '), /별|점수|순위|레벨|연속|잘했|틀렸|대각선/);
+  assert.doesNotMatch([own, ...strings.map(([, text]) => text)].join(' '), /별|점수|순위|레벨|연속|잘했|틀렸/);
   const spoken = [
     ...Object.values(T.home.ask),
     T.home.pick,

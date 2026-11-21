@@ -134,7 +134,6 @@ test('사실만 말한다. 판정하는 말, 칭찬 낱말, 돈과 내기와 점
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
   assert.doesNotMatch(`${said} ${own}`, /돈|내기|걸어|걸고|판돈|상금|점수|득점|이겼|이기면|이긴|진 쪽|점을/);
-  assert.doesNotMatch(`${said} ${visibleText(html)}`, /대각/);
   // 짐작은 적어 두기만 한다
   assert.equal(T.play.guessed, '짐작을 적어 두었어요. 던지기를 눌러 열 번까지 해 볼 수 있어요.');
   assert.match(code, /round\.guess = choice;[\s\S]*?frame\.say\(T\.play\.guessed\);/);

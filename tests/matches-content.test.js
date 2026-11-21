@@ -68,7 +68,6 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다. k개를 빼거나 옮겼는데 할 일과 다르면 정사각형의 수를 그대로 말한다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  assert.doesNotMatch(`${said} ${visibleText(html)}`, /대각/);
   assert.equal(fill(T.play['count-remove'], { k: 2, n: 4 }), '성냥을 2개 뺐어요. 지금 정사각형은 4개예요.');
   assert.equal(fill(T.play['count-move'], { k: 3, n: 6 }), '성냥을 3개 옮겼어요. 지금 정사각형은 6개예요.');
   assert.equal(fill(T.play.loose, { n: 5, k: 1 }), '정사각형은 5개인데, 어느 정사각형의 변도 아닌 성냥이 1개 있어요.');
