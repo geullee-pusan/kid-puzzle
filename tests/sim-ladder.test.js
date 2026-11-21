@@ -10,9 +10,9 @@ import { brutePaintCount } from './helpers/brute-sim.js';
 
 const SEEDS = Array.from({ length: 60 }, (_, index) => index + 1);
 
-test('사다리: 여섯 단계이고 표시는 기본·기본·응용·응용·도전·도전, 맨 위는 직접 만들기', () => {
+test('사다리: 여섯 단계이고 표시는 기본·기본·응용·도전·도전·도전, 맨 위는 직접 만들기', () => {
   assert.deepEqual(LADDER.map((rung) => rung.level), [1, 2, 3, 4, 5, 6]);
-  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'basic', 'applied', 'applied', 'challenge', 'challenge']);
+  assert.deepEqual(LADDER.map((rung) => rung.tag), ['basic', 'basic', 'applied', 'challenge', 'challenge', 'challenge']);
   assert.deepEqual(LADDER.map((rung) => rung.mode), ['game', 'paint', 'game', 'game', 'paint', 'make']);
   assert.deepEqual(LADDER.map((rung) => rung.n ?? null), [5, 5, 6, 6, 6, null]);
   assert.equal(TOP_LEVEL, 5);

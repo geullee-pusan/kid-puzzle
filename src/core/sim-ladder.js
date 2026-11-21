@@ -28,7 +28,7 @@ export const LADDER = [
   { level: 1, tag: 'basic', mode: 'game', n: 5, small: 4, order: 'first', teacher: 'easy', hint: 'five' },
   { level: 2, tag: 'basic', mode: 'paint', n: 5, small: 4, hint: 'paint' },
   { level: 3, tag: 'applied', mode: 'game', n: 6, small: 5, order: 'choose', teacher: 'fair', hint: 'choose' },
-  { level: 4, tag: 'applied', mode: 'game', n: 6, small: 5, order: 'choose', teacher: 'best', hint: 'choose' },
+  { level: 4, tag: 'challenge', mode: 'game', n: 6, small: 5, order: 'choose', teacher: 'best', hint: 'choose' },
   { level: 5, tag: 'challenge', mode: 'paint', n: 6, small: 5, hint: 'six' },
   { level: 6, tag: 'challenge', mode: 'make', order: 'choose', teacher: 'best', hint: 'choose' },
 ];
