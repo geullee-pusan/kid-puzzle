@@ -64,6 +64,8 @@ import { smallBoards as smallRegionmapBoards } from './regionmap-ladder.js';
 import { checkBoard as checkRegionmap } from './regionmap.js';
 import { smallBoards as smallBlackholeBoards } from './blackhole-ladder.js';
 import { checkBoard as checkBlackhole } from './blackhole.js';
+import { smallBoards as smallTowerBoards } from './tower-ladder.js';
+import { checkBoard as checkTower } from './tower.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -970,4 +972,17 @@ export function smallerBlackhole(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole };
+// ---- 탑 옮기기: 종류가 같고 원판이 하나 적은 판 ----
+
+/**
+ * 종류가 같고 원판이 하나 적은 판을 낸다(src/core/tower-ladder.js의 smallBoards). 탑은 원판이 하나 적은 같은 탑(원판 2개까지),
+ * 표 만들기는 원판 3개까지의 표(원판 3개 표가 가장 작다), 몇 번째 판은 원판이 하나 적은 탑에서 그 탑 안의 차례를 묻는다(원판 3개까지),
+ * 흩어진 탑은 가장 큰 원판이나 가장 작은 원판을 뺀 판이다(가장 적은 횟수가 2번 이상인 판만). 더 줄일 수 없으면 없다.
+ */
+export function smallerTower(origin, turn = 0) {
+  if (!origin.board || checkTower(origin.board) !== null) return null;
+  const list = smallTowerBoards(origin);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower };

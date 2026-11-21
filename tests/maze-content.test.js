@@ -82,7 +82,7 @@ test('규칙 설명은 세 문장 안이고, 주사위 눈과 가는 쪽, 묻는
   // 형식이 단계(직접 만든 판은 exits)로 규칙 글을 고른다.
   assert.match(code, /ruleLine: \(round\) => T\.rules\[round\.custom \? 'exits' : rungOf\(round\.level\)\.hint\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 40);
+  assert.equal(guides.length, 41);
   assert.ok(sentenceCount(guides[12]) <= 3, guides[12]);
   assert.match(guides[12], /길이 많은 출구에 손님도 많이 갈까요\?$/);
   // 판 위의 주사위 안내도 같은 말이다.

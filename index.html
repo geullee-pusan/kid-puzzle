@@ -469,6 +469,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="tower-title">
+            <h2 id="tower-title">탑 옮기기</h2>
+            <div class="door-picture"><div id="home-tower-sample"></div></div>
+            <p id="home-tower-ask" class="door-ask">탑을 깃발 기둥으로 옮길 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-tower-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-tower-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -607,6 +617,9 @@
               </li>
               <li>
                 <button id="home-blackhole-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-blackhole-blank"></span></span><span class="menu-name">블랙홀</span></button>
+              </li>
+              <li>
+                <button id="home-tower-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-tower-blank"></span></span><span class="menu-name">탑 옮기기</span></button>
               </li>
             </ul>
           </div>
@@ -822,6 +835,9 @@
             <!-- 블랙홀: 세모꼴로 놓인 동그라미 칸들. 내 수는 속이 찬 동그라미, 선생님 수는 점선 네모, 돌은 점이 박힌 회색 동그라미다.
                  아이 차례에 빈칸을 누르면 내 다음 수가 놓인다. 끝나면 남은 빈칸이 블랙홀(검은 소용돌이)이 되고 빨려 들어간 수는 옅어진다 -->
             <div id="blackhole-board" hidden></div>
+            <!-- 탑 옮기기: 받침 위의 기둥 셋과 원판들(크기는 너비와 적힌 수), 깃발 기둥. 기둥을 누르면 맨 위 원판을 들어 올리고, 다른 기둥을 누르면 내려놓는다.
+                 끌어서 옮겨도 된다. 표 만들기에서는 판 아래에 표가 있다 -->
+            <div id="tower-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -956,6 +972,14 @@
               <span class="block-numbers">
                 <span id="blackhole-left-line">빈칸 <strong id="blackhole-left">5</strong>개</span>
                 <span id="blackhole-sums-line" hidden>남은 합: 나 <strong id="blackhole-kid-sum">0</strong>, 선생님 <strong id="blackhole-teacher-sum">0</strong></span>
+              </span>
+            </span>
+            <!-- 탑 옮기기: 윗줄에 할 일이나 사실 한 줄(들어 올린 원판, 놓을 수 없는 까닭, 다 쌓였는지), 그 아래에 옮긴 횟수, 가장 적게 옮기는 판은 이 판에서 가장 적게 옮긴 횟수 -->
+            <span id="tower-count" class="count tile-count block-count" hidden>
+              <span id="tower-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>옮긴 횟수 <strong id="tower-moves">0</strong>번</span>
+                <span id="tower-best-line" hidden>이 판에서 가장 적게 옮긴 것: <strong id="tower-best"></strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1475,6 +1499,52 @@
               <p class="pad-note bh-next">선생님이 놓을 수 <strong id="blackhole-teacher-next" class="bh-chip teacher">1</strong></p>
               <p class="pad-note">빈칸을 누르면 그 칸에 내 수가 놓여요.</p>
             </div>
+          </div>
+          <!-- 탑 옮기기: 옮기는 법, 표 만들기의 원판 수와 짐작(숫자판), 몇 번째 판의 물음과 원판 고르기와 옮긴 원판의 줄.
+               가장 적게 옮기는 판은 다 쌓은 뒤에 "처음 모습으로 다시 해 볼래요"와 "여기까지 할래요". 안 되는 판이 없어서 안 된다고 답하는 단추가 없다 -->
+          <div id="tower-pad" class="pad" hidden>
+            <div id="tower-help" class="choices">
+              <h2>옮기는 법</h2>
+              <p class="pad-note">기둥을 누르면 맨 위의 원판을 들어 올리고, 다른 기둥을 누르면 그 기둥에 내려놓아요.</p>
+              <p class="pad-note">원판이 있는 기둥에서 다른 기둥까지 끌어서 옮겨도 돼요.</p>
+            </div>
+            <div id="tower-size-box" class="choices" hidden>
+              <h2>원판 수</h2>
+              <div id="tower-sizes" class="segment tw-sizes">
+                <button class="btn" type="button" data-n="1" aria-pressed="true">1개</button>
+                <button class="btn" type="button" data-n="2" aria-pressed="false">2개</button>
+                <button class="btn" type="button" data-n="3" aria-pressed="false">3개</button>
+                <button class="btn" type="button" data-n="4" aria-pressed="false">4개</button>
+              </div>
+            </div>
+            <div id="tower-guess-box" class="choices" hidden>
+              <h2 id="tower-guess-ask"></h2>
+              <div class="answer-line"><strong id="tower-typed" class="answer-box" aria-live="polite"></strong>번</div>
+              <div id="tower-keys" class="keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="tower-guess-note" class="btn good huge" type="button" disabled>짐작 적기</button>
+              <button id="tower-guess-skip" class="btn wide" type="button">모르겠어요</button>
+            </div>
+            <div id="tower-which-box" class="choices" hidden>
+              <h2 id="tower-which-ask"></h2>
+              <div id="tower-which-choices" class="tw-choices"></div>
+              <h2>옮긴 원판</h2>
+              <p class="pad-note">칸마다 위의 작은 수는 몇 번째인지, 아래의 큰 수는 움직인 원판이에요.</p>
+              <div id="tower-record-box"></div>
+            </div>
+            <button id="tower-again" class="btn huge" type="button" hidden>처음 모습으로 다시 해 볼래요</button>
+            <button id="tower-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -3849,6 +3919,42 @@
             <button id="blackhole-make-solve" class="btn primary huge" type="button">선생님, 누가 이길까요?</button>
             <p id="blackhole-make-result" class="make-result" aria-live="polite"></p>
             <button id="blackhole-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-tower" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>원판 수</h2>
+          <div class="stepper">
+            <button id="tower-make-fewer" class="btn" type="button" aria-label="원판 하나 줄이기">−</button>
+            <strong id="tower-make-n"></strong>
+            <button id="tower-make-more" class="btn" type="button" aria-label="원판 하나 늘리기">＋</button>
+          </div>
+          <h2>원판마다 꽂을 기둥</h2>
+          <div id="tower-make-discs" class="tw-make-discs"></div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">원판마다 꽂을 기둥을 골라요. 원판 수가 같아도 가장 적게 옮기는 횟수가 아주 다른 판을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="tower-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <!-- 원판 일곱 개의 기둥 고르기가 왼쪽 칸을 채우므로 깃발 기둥과 "모두 왼쪽에 쌓기"는 이 칸 위에 둔다 -->
+          <div class="choices">
+            <h2>깃발 기둥</h2>
+            <div id="tower-make-target" class="segment three">
+              <button class="btn" type="button" data-peg="0" aria-pressed="false">왼쪽</button>
+              <button class="btn" type="button" data-peg="1" aria-pressed="false">가운데</button>
+              <button class="btn" type="button" data-peg="2" aria-pressed="true">오른쪽</button>
+            </div>
+            <button id="tower-make-clear" class="btn wide" type="button">모두 왼쪽에 쌓기</button>
+            <button id="tower-make-solve" class="btn primary huge" type="button">선생님, 가장 적게 몇 번이에요?</button>
+            <p id="tower-make-result" class="make-result" aria-live="polite"></p>
+            <button id="tower-make-step" class="btn wide" type="button" disabled>선생님, 한 번 옮겨 주세요</button>
+            <button id="tower-make-back" class="btn wide" type="button" disabled>처음 모습으로</button>
+            <button id="tower-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

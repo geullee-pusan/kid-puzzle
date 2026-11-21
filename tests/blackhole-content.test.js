@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="blackhole-title"', 'id="make-title"'), part('id="blackhole-count"', 'id="domino-count"'), part('id="blackhole-pad"', 'id="domino-pad"'), part('id="make-blackhole"', '<script')].map(visibleText).join(' ');
+const own = [part('id="blackhole-title"', 'id="tower-title"'), part('id="blackhole-count"', 'id="tower-count"'), part('id="blackhole-pad"', 'id="tower-pad"'), part('id="make-blackhole"', 'id="make-tower"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -75,14 +75,14 @@ test('규칙은 세 문장 안이고, 번갈아 1부터 차례로 놓는 것, �
   assert.match(code, /ruleLine: \(\) => T\.rules\.game,/);
   // 직접 만들기의 안내 글도 세 문장 안이다(형식마다 하나, 이 형식이 맨 뒤). 나중에 두는 쪽이 이기는 판을 만들어 보라고 권한다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 40);
+  assert.equal(guides.length, 41);
   assert.ok(sentenceCount(guides[39]) <= 3, guides[39]);
   assert.match(guides[39], /^칸을 누르면 고른 것이 놓이거나 치워져요\./);
   assert.match(guides[39], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?$/);
 });
 
 test('시계가 아니라 남은 빈칸의 수를, 끝나면 남은 합을 보인다. 점수, 별, 연달아 이긴 수가 없다', () => {
-  const foot = visibleText(part('id="blackhole-count"', 'id="domino-count"'));
+  const foot = visibleText(part('id="blackhole-count"', 'id="tower-count"'));
   assert.match(foot, /빈칸\s+5\s+개/);
   assert.match(foot, /남은 합: 나\s+0\s+, 선생님\s+0/);
   assert.match(code, /\$\('blackhole-left'\)\.textContent = String\(now\.empty\.length\);/);
@@ -212,7 +212,7 @@ test('풀이와 직접 만들기: 둘 차례인 쪽부터 둘 다 잘 두면 어
   assert.equal(fill(T.solution.margin, { k: 2 }), '남은 합이 2만큼 차이 나요.');
   assert.equal(fill(T.make.big, { n: EXACT_LEFT }), '빈칸이 9개보다 많으면 선생님도 끝까지 다 따져 볼 수 없어요. 수를 몇 개 더 놓아 보세요.');
   assert.match(code, /const line = result\.exact \? endLine\(sideToMove\(board\), result\.value\) : fill\(T\.make\.big, \{ n: EXACT_LEFT \}\);/);
-  const make = part('id="make-blackhole"', '<script');
+  const make = part('id="make-blackhole"', 'id="make-tower"');
   for (const id of ['blackhole-make-rows-fewer', 'blackhole-make-rows', 'blackhole-make-rows-more', 'blackhole-make-tool-rock', 'blackhole-make-tool-kid', 'blackhole-make-tool-teacher', 'blackhole-make-first-kid', 'blackhole-make-first-teacher', 'blackhole-make-board', 'blackhole-make-placing', 'blackhole-make-solve', 'blackhole-make-result', 'blackhole-make-play']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -233,16 +233,16 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 끝난 �
   assert.match(part('id="blackhole-title"', '</section>'), /<h2 id="blackhole-title">블랙홀<\/h2>/);
   assert.ok(visibleText(part('id="blackhole-title"', '</section>')).includes(T.home.ask.small));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-blackhole-make" class="menu-item"/);
-  const pad = part('id="blackhole-pad"', 'id="domino-pad"');
+  const pad = part('id="blackhole-pad"', 'id="tower-pad"');
   assert.match(pad, /id="blackhole-first"[^>]*>먼저 둘래요</);
   assert.match(pad, /id="blackhole-second"[^>]*>나중에 둘래요</);
   // 카드는 구역 지도 맞히기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="regionmap-title"') < html.indexOf('id="blackhole-title"'));
   assert.ok(html.indexOf('id="blackhole-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(형식 목록의 맨 뒤, 구역 지도 맞히기 다음)
-  assert.match(read('src/main.js'), /regionmap: createRegionmap\(frame\), blackhole: createBlackhole\(frame\) \};/);
+  assert.match(read('src/main.js'), /regionmap: createRegionmap\(frame\), blackhole: createBlackhole\(frame\), /);
   assert.match(read('src/check-main.js'), /\['blackhole', '블랙홀'\]/);
-  assert.match(read('src/core/smaller.js'), /regionmap: smallerRegionmap, blackhole: smallerBlackhole \};/);
+  assert.match(read('src/core/smaller.js'), /regionmap: smallerRegionmap, blackhole: smallerBlackhole, /);
   assert.match(code, /smaller: \(round, turn\) => smallerBlackhole\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 없다(선생님과 두는 게임). 규칙 글은 왼쪽 칸에 둔다

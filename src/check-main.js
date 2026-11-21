@@ -74,6 +74,7 @@ function drawCounts() {
     ['net', '그물 끊기'],
     ['regionmap', '구역 지도 맞히기'],
     ['blackhole', '블랙홀'],
+    ['tower', '탑 옮기기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

@@ -160,7 +160,7 @@ function trace(overrides = {}) {
 }
 
 test('형식마다 값을 따로 둔다: 한붓그리기는 1단계에서 시작하고, 그림을 만들어 내는 단계는 1~7단계다', () => {
-  assert.deepEqual(Object.keys(TUNING.formats).sort(), ['block', 'code', 'coins', 'cups', 'dandelion', 'duel', 'logic', 'maze', 'river', 'rulehunt', 'swap', 'tax', 'tile', 'trace', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole'].sort());
+  assert.deepEqual(Object.keys(TUNING.formats).sort(), ['block', 'code', 'coins', 'cups', 'dandelion', 'duel', 'logic', 'maze', 'river', 'rulehunt', 'swap', 'tax', 'tile', 'trace', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole', 'tower'].sort());
   assert.deepEqual(recommend([], 'trace'), { level: 1, small: false, offerHarder: false, harderLevel: null, reason: 'start' });
   assert.equal(tuningFor('trace').startLevel, 1);
   assert.equal(tuningFor('trace').bottomLevel, 1);
