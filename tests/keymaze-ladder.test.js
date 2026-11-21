@@ -132,12 +132,14 @@ test('나갈 수 있는 판은 단계의 잣대에 맞는다(전략 9.1절: 아�
 test('판을 만드는 시간: 단계마다 판 1~30번을 만드는 데 한 판에 0.2초가 걸리지 않는다', () => {
   for (let level = 1; level <= TOP_LEVEL; level++) {
     for (const seed of SEEDS.slice(0, 30)) {
-      // 다른 테스트와 함께 돌 때는 한 번 잰 값이 튈 수 있어서, 세 번까지 재어 가장 빠른 값으로 본다(기준은 그대로)
+      // 벽시계 시간은 다른 테스트 파일과 함께 돌 때 기다린 시간까지 들어가서 튄다. 이 프로세스가 실제로 쓴 CPU 시간으로 잰다(기준은 그대로).
+      // 그래도 튀는 경우에 대비해 세 번까지 재어 가장 작은 값으로 본다
       let ms = Infinity;
       for (let tries = 0; tries < 3 && ms >= 200; tries++) {
-        const at = process.hrtime.bigint();
+        const at = process.cpuUsage();
         generateBoard(level, seed);
-        ms = Math.min(ms, Number(process.hrtime.bigint() - at) / 1e6);
+        const used = process.cpuUsage(at);
+        ms = Math.min(ms, (used.user + used.system) / 1000);
       }
       assert.ok(ms < 200, `${level}단계 ${seed}번: ${ms}ms`);
     }
