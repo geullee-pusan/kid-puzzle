@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="net-title"', 'id="make-title"'), part('id="net-loop"', 'id="why"'), part('id="net-count"', 'id="domino-count"'), part('id="net-pad"', 'id="domino-pad"'), part('id="net-again"', 'id="fair-reason-box"'), part('id="make-net"', '<script')].map(visibleText).join(' ');
+const own = [part('id="net-title"', 'id="regionmap-title"'), part('id="net-loop"', 'id="regionmap-left"'), part('id="net-count"', 'id="regionmap-count"'), part('id="net-pad"', 'id="regionmap-pad"'), part('id="net-again"', 'id="fair-reason-box"'), part('id="make-net"', 'id="make-regionmap"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -85,7 +85,7 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.equal(fill(T.status.done, { k: 4 }), '더 끊을 줄이 없어요. 끊은 줄은 4개예요');
   // 판 아래에는 끊은 줄, 남은 줄, 조각의 수만 적는다. 누른 수나 무른 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /moveCount|splitCount|restoreCount|undoCount|resetCount|wrongCount|loopCount/, line.trim());
-  const foot = part('id="net-count"', 'id="domino-count"');
+  const foot = part('id="net-count"', 'id="regionmap-count"');
   assert.equal([...foot.matchAll(/<strong/g)].length, 3);
   assert.match(visibleText(foot), /끊은 줄\s+0\s+개\s+남은 줄\s+0\s+개\s+조각\s+1\s+개/);
 });
@@ -120,7 +120,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(T.rules.one, '줄을 누르면 끊어지고, 끊은 줄을 다시 누르면 이어져요. 그물이 두 조각으로 갈라지지 않게 끊어요.');
   assert.match(code, /ruleLine: \(round\) => `\$\{T\.rules\[startPieces\(round\.board\) > 1 \? 'many' : 'one'\]\} \$\{T\.asks\[round\.mode\]\}`,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 38);
+  assert.equal(guides.length, 39);
   assert.ok(sentenceCount(guides[37]) <= 3, guides[37]);
   assert.match(guides[37], /^매듭을 놓고 이웃한 두 매듭을 차례로 누르면 줄이 이어져요\./);
   assert.match(guides[37], /매듭 6개로는 몇 줄까지 끊을 수 있는 그물을 만들 수 있을까요\?$/);
@@ -262,7 +262,7 @@ test('풀이와 직접 만들기: 끊는 방법(둘이면 둘 다)을 그리고,
   assert.match(code, /const line = result\.max === 0 \? T\.make\.none : result\.pieces > 1 \? fill\(T\.make\.many, \{ n: result\.pieces, k: result\.max \}\) : fill\(T\.make\.one, \{ k: result\.max, n: left \}\);/);
   // 그물을 바꾸면 앞의 대답이 맞지 않으니 말로 덮는다
   assert.match(code, /if \(said\) frame\.talkers\.make\.say\(T\.make\.changed\);/);
-  const make = part('id="make-net"', '<script');
+  const make = part('id="make-net"', 'id="make-regionmap"');
   for (const id of ['net-make-drop', 'net-make-clear', 'net-make-board', 'net-make-solve', 'net-make-result', 'net-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="net-make-solve"[^>]*>선생님, 끊어 보세요</);
   assert.match(make, /id="net-make-play"[^>]*>내가 해 볼래요</);
@@ -280,18 +280,18 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="net-title"', '</section>'), /<h2 id="net-title">그물 끊기<\/h2>/);
   assert.ok(visibleText(part('id="net-title"', '</section>')).includes(T.home.ask.cut));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-net-make" class="menu-item"/);
-  const pad = part('id="net-pad"', 'id="domino-pad"');
+  const pad = part('id="net-pad"', 'id="regionmap-pad"');
   assert.deepEqual([...pad.matchAll(/data-twin="(\w+)">([^<]+)</g)].map((match) => [match[1], match[2]]), [['left', '왼쪽 그물'], ['same', '똑같아요'], ['right', '오른쪽 그물']]);
   assert.match(pad, /id="net-guess-go"[^>]*>이만큼 끊을 것 같아요</);
-  assert.match(part('id="net-loop"', 'id="why"'), /aria-pressed="false" hidden>고리 찾기</);
+  assert.match(part('id="net-loop"', 'id="regionmap-left"'), /aria-pressed="false" hidden>고리 찾기</);
   assert.equal(T.tool.off, '고리 찾기');
   // 카드는 핀에 실 감기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="pins-title"') < html.indexOf('id="net-title"'));
   assert.ok(html.indexOf('id="net-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 핀에 실 감기 다음)
-  assert.match(read('src/main.js'), /pins: createPins\(frame\), net: createNet\(frame\) \};/);
+  // 틀이 형식을 안다(핀에 실 감기 다음)
+  assert.match(read('src/main.js'), /pins: createPins\(frame\), net: createNet\(frame\), /);
   assert.match(read('src/check-main.js'), /\['net', '그물 끊기'\]/);
-  assert.match(read('src/core/smaller.js'), /pins: smallerPins, net: smallerNet \};/);
+  assert.match(read('src/core/smaller.js'), /pins: smallerPins, net: smallerNet, /);
   assert.match(code, /smaller: \(round, turn\) => smallerNet\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 규칙 글은 왼쪽 칸에 둔다

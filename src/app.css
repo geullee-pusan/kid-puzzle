@@ -13844,3 +13844,341 @@ button.fr-chip {
   margin-top: 4px;
   text-align: center;
 }
+
+/* ---- 구역 지도 맞히기: 네모 칸, 칠한 구역(색과 칸 가운데의 무늬), 물은 네모(옅은 점선과 번호), 고르는 중인 네모(금빛) ----
+   색만으로 알리지 않는다. 숲은 세모 나무, 바다는 물결 두 줄, 모래밭은 점 셋, 들판은 풀 세 포기가 칸 가운데에 그려진다.
+   눈에 띄게 한 물음(목록에서 누른 것, 맞지 않는 물음)은 굵은 실선 테두리, 고르는 중인 네모는 굵은 금빛 테두리, 한 모서리만 고른 칸은 금빛 점선이다. */
+.rm-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .rm-board,
+.door-picture > .rm-board,
+.menu-picture > .rm-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.rm-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 칸 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 104px);
+  max-height: calc(var(--h) * 104px);
+}
+
+.rm-board.small .rm-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.rm-board.live .rm-svg {
+  touch-action: none;
+  user-select: none;
+}
+
+.rm-board.live .rm-cell-group {
+  cursor: pointer;
+}
+
+.rm-cell {
+  fill: #ffffff;
+}
+
+.rm-fill.r0 {
+  fill: #b2f2bb;
+}
+
+.rm-fill.r1 {
+  fill: #a5d8ff;
+}
+
+.rm-fill.r2 {
+  fill: #ffec99;
+}
+
+.rm-fill.r3 {
+  fill: #fcc2d7;
+}
+
+.rm-glyph.g0 {
+  fill: #2b8a3e;
+}
+
+.rm-glyph.g1 path {
+  fill: none;
+  stroke: #1864ab;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.rm-glyph.g2 {
+  fill: #b35c00;
+}
+
+.rm-glyph.g3 path {
+  fill: none;
+  stroke: #a61e4d;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rm-grid {
+  fill: none;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.rm-ask {
+  fill: none;
+  stroke: #495057;
+  stroke-width: 4;
+  stroke-dasharray: 10 8;
+  opacity: 0.55;
+}
+
+.rm-ask.strong {
+  stroke: #c92a2a;
+  stroke-width: 9;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
+.rm-no circle {
+  fill: #ffffff;
+  stroke: #495057;
+  stroke-width: 3;
+}
+
+.rm-no text {
+  fill: #212529;
+  font-size: 20px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.rm-no.strong circle {
+  stroke: #c92a2a;
+  stroke-width: 5;
+}
+
+.rm-pick {
+  fill: rgba(252, 196, 25, 0.22);
+  stroke: #e67700;
+  stroke-width: 10;
+}
+
+.rm-anchor {
+  fill: rgba(252, 196, 25, 0.22);
+  stroke: #e67700;
+  stroke-width: 7;
+  stroke-dasharray: 12 7;
+}
+
+.rm-live {
+  fill: none;
+  stroke: #e67700;
+  stroke-width: 6;
+  stroke-dasharray: 9 6;
+}
+
+/* 칸 위의 테두리, 번호, 무늬는 누르는 것을 가로막지 않는다(칸이 받는다) */
+.rm-grid,
+.rm-ask,
+.rm-no,
+.rm-pick,
+.rm-anchor,
+.rm-live,
+.rm-glyph {
+  pointer-events: none;
+}
+
+.rm-cell-group:focus {
+  outline: none;
+}
+
+.rm-cell-group:focus-visible > rect {
+  stroke: #e67700;
+  stroke-width: 8;
+}
+
+.board-foot:has(> #regionmap-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+#regionmap-status {
+  height: auto;
+  min-height: 22px;
+}
+
+/* 오른쪽 칸: 할 일 고르기, 묻기와 칠하기, 물은 것의 목록 */
+.rm-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.rm-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rm-tools .btn {
+  min-height: 52px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rm-tools .btn[aria-pressed='true'] {
+  color: var(--ink);
+  background: #fff3bf;
+  border-color: #e67700;
+  box-shadow: inset 0 0 0 2px #e67700;
+}
+
+.rm-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rm-palette {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rm-brush {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 4px 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rm-brush[aria-pressed='true'] {
+  color: var(--ink);
+  background: #fff3bf;
+  border-color: #e67700;
+  box-shadow: inset 0 0 0 3px #e67700;
+}
+
+.rm-swatch {
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+
+.rm-swatch .rm-cell {
+  stroke: #868e96;
+  stroke-width: 4;
+}
+
+.rm-erase-mark {
+  stroke: #868e96;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.rm-list-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.rm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.rm-row {
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 10px;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rm-row[aria-pressed='true'] {
+  border-color: #c92a2a;
+  background: #fff5f5;
+}
+
+#make-regionmap .rm-list {
+  max-height: 260px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .rm-board.small {
+  width: 80px;
+  height: 80px;
+}
+
+.level .rm-board.small {
+  width: 72px;
+  height: 72px;
+}
+
+.menu-picture > .rm-board {
+  height: 76px;
+}
+
+.resume.note-picture .rm-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드. big은 한 장, mid는 두 장을 나란히 */
+.rm-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 140px);
+}
+
+.rm-card > .rm-board {
+  height: 140px;
+}
+
+.rm-card.mid {
+  width: min(100%, 215px);
+}
+
+.rm-card.mid > .rm-board {
+  height: 205px;
+}
+
+.rm-card.big {
+  width: min(100%, 320px);
+}
+
+.rm-card.big > .rm-board {
+  height: 300px;
+}
+
+.rm-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}

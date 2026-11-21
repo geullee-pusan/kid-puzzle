@@ -60,6 +60,8 @@ import { smallBoards as smallPinsBoards } from './pins-ladder.js';
 import { checkBoard as checkPins } from './pins.js';
 import { smallBoards as smallNetBoards } from './net-ladder.js';
 import { checkBoard as checkNet } from './net.js';
+import { smallBoards as smallRegionmapBoards } from './regionmap-ladder.js';
+import { checkBoard as checkRegionmap } from './regionmap.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -942,4 +944,16 @@ export function smallerNet(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet };
+// ---- 구역 지도 맞히기: 구역의 수가 같고 가로세로가 더 작은 지도 ----
+
+/**
+ * 가로와 세로가 한 칸씩 작은 판, 그다음 두 칸씩(안 되면 가로 한 칸, 세로 두 칸) 작은 판을 낸다(src/core/regionmap-ladder.js의 smallBoards).
+ * 구역의 수와 이름은 원래 판과 같고, 구역마다 2칸 이상이다. 더 줄일 수 없으면 없다.
+ */
+export function smallerRegionmap(origin, turn = 0) {
+  if (!origin.board || checkRegionmap(origin.board) !== null) return null;
+  const list = smallRegionmapBoards(origin);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap };

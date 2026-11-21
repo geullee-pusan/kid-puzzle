@@ -449,6 +449,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="regionmap-title">
+            <h2 id="regionmap-title">구역 지도 맞히기</h2>
+            <div class="door-picture"><div id="home-regionmap-sample"></div></div>
+            <p id="home-regionmap-ask" class="door-ask">숨은 지도를 알아낼 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-regionmap-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-regionmap-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -582,6 +592,9 @@
               <li>
                 <button id="home-net-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-net-blank"></span></span><span class="menu-name">그물 끊기</span></button>
               </li>
+              <li>
+                <button id="home-regionmap-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-regionmap-blank"></span></span><span class="menu-name">구역 지도 맞히기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -695,6 +708,8 @@
           <button id="pins-numbers" class="btn wide" type="button" aria-pressed="false" hidden>핀마다 칸 수 적기</button>
           <!-- 그물 끊기: 남은 줄로 된 고리 하나(가장 짧은 것)를 판에 금빛 점선 띠로 그리는 도구. 고리가 없으면 그렇다고 판 아래에 적는다. 처음 켜면 힌트 하나로 센다 -->
           <button id="net-loop" class="btn wide" type="button" aria-pressed="false" hidden>고리 찾기</button>
+          <!-- 구역 지도 맞히기: 지금까지의 대답과 맞는 지도가 몇 가지인지 판 아래에 적는 도구(칸이 16개 이하인 판에서만 보인다). 처음 켜면 힌트 하나로 센다 -->
+          <button id="regionmap-left" class="btn wide" type="button" aria-pressed="false" hidden>맞는 지도 세어 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -788,6 +803,9 @@
             <div id="pins-board" hidden></div>
             <!-- 그물 끊기: 매듭과 줄. 줄을 누르면 끊기고(가운데가 빈 가는 점선), 다시 누르면 이어진다. 갈라진 조각은 색과 선의 모양, 매듭의 모양이 다르다 -->
             <div id="net-board" hidden></div>
+            <!-- 구역 지도 맞히기: 네모 칸들. 묻는 동안에는 끌거나 두 모서리를 눌러 네모를 고르고, 칠하는 동안에는 누르거나 끌어 칠한다.
+                 물은 네모는 옅은 점선 테두리와 번호로 남는다. 구역마다 색과 칸 가운데의 무늬가 다르다 -->
+            <div id="regionmap-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -904,6 +922,15 @@
                 <span>끊은 줄 <strong id="net-cut">0</strong>개</span>
                 <span>남은 줄 <strong id="net-left">0</strong>개</span>
                 <span>조각 <strong id="net-pieces">1</strong>개</span>
+              </span>
+            </span>
+            <!-- 구역 지도 맞히기: 윗줄에 할 일이나 사실 한 줄(고른 네모, 방금 들은 대답), 그 아래에 물은 네모의 수, 칠한 칸의 수, (도구를 켜면) 맞는 지도의 수 -->
+            <span id="regionmap-count" class="count tile-count block-count" hidden>
+              <span id="regionmap-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>물은 네모 <strong id="regionmap-asked">0</strong>개</span>
+                <span>칠한 칸 <strong id="regionmap-painted">0</strong>개 / <strong id="regionmap-cells">16</strong>개</span>
+                <span id="regionmap-fit" aria-live="polite" hidden></span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1387,6 +1414,25 @@
               <button class="btn big" type="button" data-twin="right">오른쪽 그물</button>
             </div>
             <p id="net-howto" class="pad-note">줄을 누르면 끊어져요. 끊은 줄을 다시 누르면 이어져요. 줄 가까이 아무 곳이나 눌러도 돼요.</p>
+          </div>
+          <!-- 구역 지도 맞히기: 처음 알려 준 구역마다의 칸 수, 할 일 고르기(네모로 묻기, 지도 칠하기), 묻기("물어보기", "다시 고르기")나
+               칠하기(구역 고르기와 지우개, "이 지도예요"), 물은 것의 목록(누르면 그 네모가 판에 굵게 보인다) -->
+          <div id="regionmap-pad" class="pad rm-pad" hidden>
+            <p id="regionmap-totals" class="pad-note best-line"></p>
+            <div class="rm-tools" role="group" aria-label="할 일 고르기">
+              <button id="regionmap-ask-mode" class="btn" type="button" aria-pressed="true">네모로 묻기</button>
+              <button id="regionmap-paint-mode" class="btn" type="button" aria-pressed="false">지도 칠하기</button>
+            </div>
+            <div id="regionmap-ask-box" class="rm-box">
+              <button id="regionmap-ask" class="btn primary big" type="button">물어보기</button>
+              <button id="regionmap-clear-pick" class="btn" type="button">다시 고르기</button>
+            </div>
+            <div id="regionmap-paint-box" class="rm-box" hidden>
+              <div id="regionmap-palette" class="rm-palette" role="group" aria-label="칠할 구역"></div>
+              <button id="regionmap-submit" class="btn good big" type="button">이 지도예요</button>
+            </div>
+            <h2 class="rm-list-title">물은 것</h2>
+            <ol id="regionmap-list" class="rm-list"></ol>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -3700,6 +3746,28 @@
             <button id="net-make-solve" class="btn primary huge" type="button">선생님, 끊어 보세요</button>
             <p id="net-make-result" class="make-result" aria-live="polite"></p>
             <button id="net-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-regionmap" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="지도 칠하기">
+          <h2>지도 칠하기</h2>
+          <div id="regionmap-make-palette" class="rm-palette" role="group" aria-label="칠할 구역"></div>
+          <button id="regionmap-make-clear" class="btn wide" type="button">모두 지우기</button>
+          <p class="pad-note">구역을 고르고 칸을 누르거나 끌어서 칠해요. 같은 구역으로 칠한 칸을 다시 누르면 지워져요.</p>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 모두 칠해 숨길 지도를 만들어요. 선생님이 네모를 골라 물어서 알아내 볼게요. 선생님이 네모를 많이 물어야 하는 지도도 만들 수 있을까요?</p>
+          <div class="board-area"><div id="regionmap-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="regionmap-make-solve" class="btn primary huge" type="button">선생님, 물어 보세요</button>
+            <p id="regionmap-make-result" class="make-result" aria-live="polite"></p>
+            <ol id="regionmap-make-list" class="rm-list"></ol>
           </div>
         </section>
       </main>

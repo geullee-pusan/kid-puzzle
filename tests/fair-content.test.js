@@ -180,7 +180,7 @@ test('규칙 설명과 힌트: 규칙은 세 문장 안, 힌트는 종류마다 
   // 동전 둘의 판(더 작은 판이 없다)의 힌트 1은 "더 작은 판"이 아니다
   assert.notEqual(T.hints.coins[0], '더 작은 판이라면 할 수 있을까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 38);
+  assert.equal(guides.length, 39);
   assert.ok(sentenceCount(guides[33]) <= 3, guides[33]);
   assert.match(guides[33], /주사위 둘로 공정한 규칙을 몇 가지나 만들 수 있을까요\?$/);
 });

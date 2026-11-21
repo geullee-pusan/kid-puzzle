@@ -72,6 +72,7 @@ function drawCounts() {
     ['foxrabbit', '여우와 토끼'],
     ['pins', '핀에 실 감기'],
     ['net', '그물 끊기'],
+    ['regionmap', '구역 지도 맞히기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
