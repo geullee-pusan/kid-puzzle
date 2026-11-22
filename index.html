@@ -499,6 +499,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="tilings-title">
+            <h2 id="tilings-title">도미노 깔기 모두 찾기</h2>
+            <div class="door-picture"><div id="home-tilings-sample"></div></div>
+            <p id="home-tilings-ask" class="door-ask">도미노로 덮는 방법은 몇 가지일까요?</p>
+            <div class="door-foot">
+              <button id="home-tilings-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-tilings-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -646,6 +656,9 @@
               </li>
               <li>
                 <button id="home-discpair-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-discpair-blank"></span></span><span class="menu-name">원판 둘씩 옮기기</span></button>
+              </li>
+              <li>
+                <button id="home-tilings-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-tilings-blank"></span></span><span class="menu-name">도미노 깔기 모두 찾기</span></button>
               </li>
             </ul>
           </div>
@@ -872,6 +885,24 @@
             <!-- 원판 둘씩 옮기기: 둥글게 놓인 칸과 칸을 잇는 고리, 칸마다 쌓인 원판과 그 수. 원판이 있는 칸을 누르면 원판 하나를 들고,
                  금빛 점선 테두리의 옆 칸을 누르면 그리로 옮긴다 -->
             <div id="discpair-board" hidden></div>
+            <!-- 도미노 깔기 모두 찾기: 위에 띠(붙어 있는 두 칸을 누르거나 따라 그으면 도미노가 놓이고, 놓인 도미노를 누르면 들어낸다)나 계단
+                 (한 칸 위나 두 칸 위의 계단을 눌러 오른다), 아래에 적어 둔 깔기(오르기)의 목록. 목록은 늘 같은 차례로 놓이고 그림마다 차례의 수가 있다 -->
+            <div id="tilings-board" class="tl-board" hidden>
+              <div id="tilings-live"></div>
+              <div class="tl-lower">
+                <div class="tl-list-box">
+                  <!-- 목록의 이름과, 다 덮은 깔기(맨 위까지 오른 오르기)를 목록에 적는 단추. 단추의 글은 대본에서 채운다 -->
+                  <div class="tl-list-head">
+                    <h3 id="tilings-list-title" class="tl-list-title"></h3>
+                    <button id="tilings-record" class="btn primary" type="button" hidden disabled>이 깔기 적어 두기</button>
+                  </div>
+                  <p id="tilings-list-empty" class="tl-list-empty"></p>
+                  <div id="tilings-list" class="tl-grid"></div>
+                </div>
+                <!-- 표 만들기에서만 보인다: 길이마다 자물쇠를 연 수와 짐작 -->
+                <div id="tilings-table-box" class="tl-table-box" hidden></div>
+              </div>
+            </div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1031,6 +1062,20 @@
               <span class="block-numbers">
                 <span>옮긴 횟수 <strong id="discpair-moves">0</strong>번</span>
                 <span id="discpair-shapes-line" class="dp-off">동그라미 칸의 원판 <strong id="discpair-circle">0</strong>개, 네모 칸의 원판 <strong id="discpair-square">0</strong>개</span>
+              </span>
+            </span>
+            <!-- 도미노 깔기 모두 찾기: 윗줄에 할 일이나 사실 한 줄(다 덮었는지, 더 놓을 자리가 없는지, 적어 두었는지), 그 아래에 칸 수와 놓은 도미노와 빈칸의 수
+                 (계단은 계단 칸 수와 오른 계단). 칸이 홀수 개인 판은 이 수로 덮을 수 없는 것이 보인다. 자물쇠에 넣어 본 수는 적지 않는다 -->
+            <span id="tilings-count" class="count tile-count block-count" hidden>
+              <span id="tilings-status" class="tile-status" aria-live="polite"></span>
+              <span id="tilings-strip-numbers" class="block-numbers">
+                <span>칸 <strong id="tilings-cells">0</strong>개</span>
+                <span>놓은 도미노 <strong id="tilings-placed">0</strong>개</span>
+                <span>빈칸 <strong id="tilings-empty">0</strong>칸</span>
+              </span>
+              <span id="tilings-stairs-numbers" class="block-numbers" hidden>
+                <span>계단 <strong id="tilings-steps">0</strong>칸</span>
+                <span>오른 계단 <strong id="tilings-climbed">0</strong>칸</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1620,6 +1665,48 @@
             <div id="discpair-maybe" class="choices">
               <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="discpair-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+          </div>
+          <!-- 도미노 깔기 모두 찾기: 표 만들기에서는 셀 판의 길이(표는 판 아래에 있다). 그 아래 자물쇠: 맞는 수를 넣으면 열린다. 몇 번이든 다시 넣는다.
+               짐작하는 차례에는 같은 숫자판으로 짐작을 적는다(맞다 다르다 하지 않는다) -->
+          <div id="tilings-pad" class="pad" hidden>
+            <div id="tilings-size-box" class="choices" hidden>
+              <h2>세는 판</h2>
+              <div id="tilings-sizes" class="segment tl-sizes">
+                <button class="btn" type="button" data-size="1" aria-pressed="true">2×1</button>
+                <button class="btn" type="button" data-size="2" aria-pressed="false">2×2</button>
+                <button class="btn" type="button" data-size="3" aria-pressed="false">2×3</button>
+                <button class="btn" type="button" data-size="4" aria-pressed="false">2×4</button>
+                <button class="btn" type="button" data-size="5" aria-pressed="false">2×5</button>
+                <button class="btn" type="button" data-size="6" aria-pressed="false">2×6</button>
+              </div>
+            </div>
+            <div class="choices">
+              <div class="tl-lock-line">
+                <span id="tilings-lock" class="tl-lock"></span>
+                <h2 id="tilings-ask">모두 몇 가지일까요?</h2>
+              </div>
+              <p id="tilings-lock-note" class="pad-note">맞는 수를 넣으면 자물쇠가 열려요. 몇 번이든 다시 넣어도 돼요.</p>
+              <p id="tilings-zero-note" class="pad-note" hidden>덮을 수 없는 판이면 0을 넣어요.</p>
+              <p id="tilings-guess-note" class="pad-note" hidden>짐작은 적어 두기만 해요.</p>
+              <div class="answer-line"><strong id="tilings-typed" class="answer-box" aria-live="polite"></strong>가지</div>
+              <div id="tilings-keys" class="keys tl-keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="tilings-open" class="btn good huge" type="button" disabled>열어 보기</button>
+              <button id="tilings-guess-go" class="btn good huge" type="button" hidden disabled>짐작 적기</button>
+              <button id="tilings-guess-skip" class="btn wide" type="button" hidden>모르겠어요</button>
+              <p id="tilings-guess-line" class="pad-note best-line" hidden></p>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -2337,6 +2424,8 @@
             <button id="blackhole-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
             <!-- 그물 끊기에서만 보인다. 끝난 뒤에 "같은 단계 새 판" 앞으로 옮겨 놓는다. 같은 그물을 처음 모습부터 다시 끊는다 -->
             <button id="net-again" class="btn wide after-extra" type="button" hidden>같은 그물 다르게 끊기</button>
+            <!-- 도미노 깔기 모두 찾기에서만 보인다. "풀이 보기" 대신 덮는 방법을 모두 그린다(적어 둔 것은 실선, 적지 않은 것은 점선 테두리). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
+            <button id="tilings-all" class="btn wide after-extra primary" type="button" hidden>전부 보여 줘</button>
             <!-- 공정한 게임일까의 도전 판에서만 보인다. 까닭을 적어 남길 수 있다(안 써도 된다). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
             <div id="fair-reason-box" class="after-extra fr-reason" hidden>
               <label for="fair-reason">까닭 남기기</label>
@@ -4101,6 +4190,39 @@
             <button id="discpair-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 그린 그림: 되는 판은 모을 수 있는 칸에 굵은 테두리, 안 되는 판은 색을 켠 판 -->
             <div id="discpair-make-picture" class="dp-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-tilings" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>줄 수</h2>
+          <div class="stepper">
+            <button id="tilings-make-rows-fewer" class="btn" type="button" aria-label="줄 하나 줄이기">−</button>
+            <strong id="tilings-make-rows"></strong>
+            <button id="tilings-make-rows-more" class="btn" type="button" aria-label="줄 하나 늘리기">＋</button>
+          </div>
+          <h2>칸 수</h2>
+          <div class="stepper">
+            <button id="tilings-make-cols-fewer" class="btn" type="button" aria-label="칸 하나 줄이기">−</button>
+            <strong id="tilings-make-cols"></strong>
+            <button id="tilings-make-cols-more" class="btn" type="button" aria-label="칸 하나 늘리기">＋</button>
+          </div>
+          <button id="tilings-make-clear" class="btn wide" type="button">빠진 칸 모두 되살리기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">줄 수와 칸 수를 정하고, 칸을 눌러 빼거나 되살려요. 빠진 칸은 덮지 않아요. 덮는 방법이 꼭 한 가지뿐인 모양을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="tilings-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="tilings-make-solve" class="btn primary huge" type="button">선생님, 세어 보세요</button>
+            <p id="tilings-make-result" class="make-result" aria-live="polite"></p>
+            <button id="tilings-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 늘어놓은 깔기: 덮는 방법을 모두 차례대로 -->
+            <div id="tilings-make-picture" class="tl-make-picture"></div>
           </div>
         </section>
       </main>

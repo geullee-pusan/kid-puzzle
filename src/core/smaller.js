@@ -70,6 +70,8 @@ import { smallBoards as smallRacetrackBoards } from './racetrack-ladder.js';
 import { checkBoard as checkRacetrack } from './racetrack.js';
 import { smallBoards as smallDiscpairBoards, solveOnce as solveDiscpair } from './discpair-ladder.js';
 import { checkBoard as checkDiscpair } from './discpair.js';
+import { smallBoards as smallTilingsBoards } from './tilings-ladder.js';
+import { checkBoard as checkTilings, keysOf as keysOfTilings, strip as tilingsStrip } from './tilings.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1009,5 +1011,18 @@ export function smallerDiscpair(origin, turn = 0) {
   if (!origin.board || checkDiscpair(origin.board) !== null) return null;
   return wrap(pickByTurn(smallDiscpairBoards(origin), solveDiscpair(origin.board).possible, turn));
 }
+// ---- 도미노 깔기 모두 찾기: 오른쪽 열을 뗀 짧은 띠, 칸이 적은 계단 ----
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair };
+/**
+ * 같은 줄 수로 가로가 한 칸이나 두 칸 짧은 띠(표 만들기는 지금 세는 띠보다 짧은 2줄 띠), 칸이 적은 계단을 낸다(src/core/tilings-ladder.js의 smallBoards).
+ * 덮을 수 있는 판에서는 방법이 더 적은 판만, 덮을 수 없는 판(칸이 홀수 개인 세 줄 판)에서는 덮을 수 있는 판부터 덮을 수 없는 판과 번갈아 낸다.
+ * 2×1 띠, 3×1 띠, 3×2 띠, 계단 1칸처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerTilings(origin, turn = 0) {
+  if (!origin.board || checkTilings(origin.board) !== null) return null;
+  const base = origin.board.table ? tilingsStrip(2, origin.size ?? 1) : origin.board;
+  const possible = base.shape === 'stairs' || keysOfTilings(base).length > 0;
+  return wrap(pickByTurn(smallTilingsBoards(origin), possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings };

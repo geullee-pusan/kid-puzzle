@@ -15480,3 +15480,445 @@ button.fr-chip {
   min-width: 56px;
   min-height: 56px;
 }
+
+/* ---- 도미노 깔기 모두 찾기: 위에 띠나 계단, 아래에 적어 둔 깔기(오르기)의 목록 ----
+   색만으로 알리지 않는다. 띠는 조각 덮기의 판이다(도미노는 굵은 테두리, 빠진 칸은 어둡게 메우고 빗금, 더 놓을 자리가 없는 빈칸은 굵은 점선).
+   계단은 칸마다 번호를 적고, 지금 선 계단에는 큰 동그라미, 밟은 계단에는 작은 점, 오른 걸음은 굽은 선, 오를 수 있는 계단은 점선 테두리다.
+   목록의 그림마다 위에 차례의 수를 적는다. 방금 적은 것은 굵은 실선, 같다고 짚은 것은 굵은 점선 테두리다.
+   전부 보여 줘에서 아이가 적어 둔 것은 실선, 적지 않은 것은 점선 테두리다. */
+.board-area:has(> #tilings-board:not([hidden])) {
+  padding: 4px;
+}
+
+.tl-board {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* 띠와 계단: 칸 하나가 너무 커지지 않게, 목록의 자리를 남긴다 */
+#tilings-live {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: min(calc(var(--h, 2) * 104px + 10px), 50%);
+}
+
+/* 표 만들기: 띠를 낮게 그려 판 아래에 표가 다 들어가게 한다 */
+.tl-board.with-table #tilings-live {
+  height: min(140px, 36%);
+}
+
+#tilings-live.tl-stairs {
+  height: min(260px, 50%);
+}
+
+/* 아래: 목록과(표 만들기에서는) 표 */
+.tl-lower {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.tl-list-box {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tl-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tl-list-head .btn {
+  flex: none;
+}
+
+.tl-list-title {
+  margin: 0;
+  font-size: 19px;
+}
+
+
+.tl-list-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  word-break: keep-all;
+}
+
+.tl-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  padding: 4px;
+}
+
+.tl-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 6px;
+  border: 2px solid #ced4da;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.tl-item-no {
+  font-size: 18px;
+  font-weight: 900;
+  color: #495057;
+  line-height: 18px;
+}
+
+.tl-item-picture {
+  width: calc(var(--w) * 20px + 4px);
+  height: calc(var(--h) * 20px + 4px);
+}
+
+#sheet .tl-item-picture {
+  width: calc(var(--w) * 30px + 4px);
+  height: calc(var(--h) * 30px + 4px);
+}
+
+.tl-item-picture > .tile-board,
+.tl-item-picture > .tl-stairs {
+  height: 100%;
+}
+
+/* 방금 적은 것: 굵은 실선, 같다고 짚은 것: 굵은 점선 */
+.tl-item.fresh {
+  border: 4px solid var(--bar);
+  padding: 0 4px 4px;
+}
+
+.tl-item.same {
+  border: 5px dashed #e67700;
+  padding: 0 3px 3px;
+}
+
+/* 전부 보여 줘: 적어 둔 것은 실선, 적지 않은 것은 점선 */
+.tl-item.found {
+  border: 3px solid var(--bar);
+}
+
+.tl-item.missed {
+  border: 3px dashed var(--muted);
+}
+
+#sheet .tl-grid {
+  flex: none;
+  overflow: visible;
+  justify-content: center;
+}
+
+/* 계단 */
+.tl-stairs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tl-stairs-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: calc(var(--n) * 110px);
+}
+
+.tl-stairs.small .tl-stairs-svg {
+  max-width: none;
+}
+
+.tl-stairs.live .tl-stairs-svg {
+  user-select: none;
+}
+
+.tl-stairs.live .tl-step-group {
+  cursor: pointer;
+}
+
+.tl-hit {
+  fill: transparent;
+}
+
+.tl-ground {
+  fill: #ced4da;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.tl-step {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 3;
+}
+
+.tl-step-no {
+  font-size: 30px;
+  font-weight: 700;
+  fill: #495057;
+}
+
+.tl-stairs.small .tl-step-no {
+  display: none;
+}
+
+.tl-target {
+  fill: rgba(252, 196, 25, 0.25);
+  stroke: #b08900;
+  stroke-width: 6;
+  stroke-dasharray: 12 8;
+}
+
+.tl-hop {
+  fill: none;
+  stroke: #c2255c;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.tl-mark {
+  fill: #c2255c;
+}
+
+.tl-climber {
+  fill: #fff;
+  stroke: var(--bar);
+  stroke-width: 8;
+}
+
+.tl-step-group:focus {
+  outline: none;
+}
+
+.tl-step-group:focus-visible .tl-step {
+  stroke: var(--gold);
+  stroke-width: 8;
+}
+
+/* 판 아래: 글과 수(글이 길면 두 줄이 된다), 그 아래 줄 오른쪽에 적어 두기와 무르기 */
+#tilings-count .tile-status {
+  height: auto;
+  min-height: 22px;
+}
+
+.board-foot:has(> #tilings-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸: 길이 고르기, 표, 자물쇠 */
+.tl-sizes {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.tl-sizes .btn {
+  min-height: 48px;
+  padding: 2px;
+  font-size: 18px;
+}
+
+.tl-table-box {
+  flex: none;
+  align-self: flex-start;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.tl-table {
+  border-collapse: collapse;
+  font-size: 18px;
+}
+
+.tl-table th,
+.tl-table td {
+  min-width: 56px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.tl-table tr:first-child th {
+  background: #f1f3f5;
+}
+
+/* 지금 세는(짐작하는) 줄: 굵은 글자와 굵은 테두리 */
+.tl-table tr.now th,
+.tl-table tr.now td {
+  border-top: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  font-weight: 700;
+}
+
+.tl-lock-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tl-lock {
+  flex: none;
+  width: 40px;
+  height: 48px;
+}
+
+.tl-lock-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tl-shackle {
+  fill: none;
+  stroke: #495057;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.tl-lock-body {
+  fill: #fcc419;
+  stroke: #495057;
+  stroke-width: 4;
+}
+
+.tl-keyhole {
+  fill: #495057;
+}
+
+.tl-keys {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tl-keys .key {
+  min-height: 52px;
+}
+
+#tilings-pad .answer-box {
+  height: 54px;
+}
+
+/* 종이의 그림 */
+.tl-card {
+  width: min(100%, 300px);
+}
+
+.tl-card.big {
+  width: min(100%, 460px);
+}
+
+.tl-card-picture {
+  height: 150px;
+}
+
+.tl-card.big .tl-card-picture {
+  height: 230px;
+}
+
+.tl-card-picture > .tile-board,
+.tl-card-picture > .tl-stairs {
+  height: 100%;
+}
+
+.tl-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.tl-numbers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.tl-number-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tl-number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  padding: 4px 6px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.tl-number-name {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.tl-number strong {
+  font-size: 26px;
+}
+
+/* 직접 만들기 */
+.tl-make-picture .tl-grid {
+  overflow: visible;
+}
+
+.tl-make-picture .tl-item-picture {
+  width: calc(var(--w) * 18px + 4px);
+  height: calc(var(--h) * 18px + 4px);
+}
+
+#make-tilings .side,
+#make-tilings .choices {
+  gap: 10px;
+}
+
+#make-tilings .stepper .btn {
+  min-width: 56px;
+  min-height: 56px;
+}
+
+#make-tilings .board-area > div {
+  height: min(330px, 100%);
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기, 처음 화면 카드의 작은 계단 */
+.door-picture > .tl-stairs {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .tl-stairs.small {
+  width: 90px;
+  height: 60px;
+}
+
+.level .tl-stairs.small {
+  width: 80px;
+  height: 64px;
+}
+
+.resume.note-picture .tl-stairs.small {
+  width: 100%;
+  height: 120px;
+}

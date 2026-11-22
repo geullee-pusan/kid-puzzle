@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="discpair-title"', 'id="make-title"'), part('id="discpair-color"', 'id="why"'), part('id="discpair-count"', 'id="domino-count"'), part('id="discpair-pad"', 'id="domino-pad"'), part('id="make-discpair"', '<script')].map(visibleText).join(' ');
+const own = [part('id="discpair-title"', 'id="tilings-title"'), part('id="discpair-color"', 'id="why"'), part('id="discpair-count"', 'id="tilings-count"'), part('id="discpair-pad"', 'id="tilings-pad"'), part('id="make-discpair"', 'id="make-tilings"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const circleOf = (piles) => piles.filter((_, cell) => cell % 2 === 0).reduce((sum, value) => sum + value, 0);
@@ -78,7 +78,7 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.doesNotMatch(code + board, /Math\.random/);
   // 판 아래에는 옮긴 횟수와(색을 켜면) 모양마다의 원판 수만 적는다. 무른 수나 해 본 수는 적지 않는다
   for (const line of code.split('\n')) if (/textContent/.test(line)) assert.doesNotMatch(line, /undoCount|resetCount|loopCount|wrongCount|moveCount|impossibleCount|colorCount/, line.trim());
-  const foot = part('id="discpair-count"', 'id="domino-count"');
+  const foot = part('id="discpair-count"', 'id="tilings-count"');
   assert.equal([...foot.matchAll(/<strong/g)].length, 3);
   assert.match(visibleText(foot), /옮긴 횟수\s+0\s+번/);
   assert.match(visibleText(foot), /동그라미 칸의 원판\s+0\s+개, 네모 칸의 원판\s+0\s+개/);
@@ -101,7 +101,7 @@ test('규칙 설명은 세 문장 안이다. 두 원판을 같은 칸에서 골�
   // 1단계(모두 되는 판)에는 "불가능해요" 단추가 없다
   assert.match(code, /const hasImpossible = \(round\) => round\.mode !== 'gather';/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 43);
+  assert.equal(guides.length, 44);
   const mine = guides[42];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^칸을 눌러 원판을 놓거나 빼요\./);
@@ -196,7 +196,7 @@ test('풀이와 직접 만들기: 되는 판은 가장 적게 옮기는 차례, 
   assert.match(code, /if \(totalOf\(piles\) >= MAX_TOTAL\) \{/);
   // 따져 준 뒤에 판을 고치면 앞의 판에 한 말을 덮는다
   assert.match(code, /if \(said\) frame\.talkers\.make\.say\(T\.make\.changed\);/);
-  const make = part('id="make-discpair"', '<script');
+  const make = part('id="make-discpair"', 'id="make-tilings"');
   for (const id of ['discpair-make-fewer', 'discpair-make-n', 'discpair-make-more', 'discpair-make-tool', 'discpair-make-clear', 'discpair-make-board', 'discpair-make-solve', 'discpair-make-result', 'discpair-make-play', 'discpair-make-picture']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -216,16 +216,16 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="discpair-title"', '</section>'), /<h2 id="discpair-title">원판 둘씩 옮기기<\/h2>/);
   assert.ok(visibleText(part('id="discpair-title"', '</section>')).includes(T.home.ask.gather));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-discpair-make" class="menu-item"/);
-  assert.match(part('id="discpair-pad"', 'id="domino-pad"'), /id="discpair-impossible"[^>]*>불가능해요</);
+  assert.match(part('id="discpair-pad"', 'id="tilings-pad"'), /id="discpair-impossible"[^>]*>불가능해요</);
   assert.match(part('id="discpair-color"', 'id="why"'), /aria-pressed="false" hidden>색 켜기</);
   assert.equal(T.tool.off, '색 켜기');
   // 카드는 모눈 자동차 경주 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="racetrack-title"') < html.indexOf('id="discpair-title"'));
   assert.ok(html.indexOf('id="discpair-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(모눈 자동차 경주 다음)
-  assert.match(read('src/main.js'), /racetrack: createRacetrack\(frame\), discpair: createDiscpair\(frame\) \};/);
+  assert.match(read('src/main.js'), /racetrack: createRacetrack\(frame\), discpair: createDiscpair\(frame\), /);
   assert.match(read('src/check-main.js'), /\['discpair', '원판 둘씩 옮기기'\]/);
-  assert.match(read('src/core/smaller.js'), /racetrack: smallerRacetrack, discpair: smallerDiscpair \};/);
+  assert.match(read('src/core/smaller.js'), /racetrack: smallerRacetrack, discpair: smallerDiscpair, /);
   assert.match(code, /smaller: \(round, turn\) => smallerDiscpair\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 둥글어 규칙 글은 왼쪽 칸에 둔다
@@ -253,7 +253,7 @@ test('화면: 칸(누르는 자리)이 가장 큰 고리에서도 44픽셀보다
   assert.match(plain, /\.dp-disc\.fresh \.dp-disc-top,[^{]*\{[^}]*stroke-dasharray/);
   assert.match(plain, /\.dp-ring \{[^}]*stroke-dasharray/);
   assert.match(board, /'dp-count'/);
-  assert.match(visibleText(part('id="discpair-pad"', 'id="domino-pad"')), /방금 옮긴 원판에는 점선이 둘려 있어서 이번에는 다시 옮길 수 없어요\./);
+  assert.match(visibleText(part('id="discpair-pad"', 'id="tilings-pad"')), /방금 옮긴 원판에는 점선이 둘려 있어서 이번에는 다시 옮길 수 없어요\./);
 });
 
 /** 끝까지 한 판의 기록 하나 */

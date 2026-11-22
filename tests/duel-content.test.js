@@ -144,7 +144,7 @@ test('규칙 설명은 세 문장을 넘지 않고, 마지막 수를 둔 쪽이 
   assert.match(part('id="duel-pad"', 'id="leave-ask"'), /id="duel-take"[^>]*>가져가기</);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 나중에 두는 쪽이 이기는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 43, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 44, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[5]) <= 3, guides[5]);
   assert.match(guides[5], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?/);
 });
@@ -862,7 +862,7 @@ test('index.html: 누가 이길까의 카드, 판, 답하는 칸, 도구가 있�
 
 test('처음 화면: 카드가 가로 1280px에서 한 줄에 넉 장씩 놓이고, 앞의 두 줄(여덟 장)은 굴리지 않고 보인다', () => {
   const cards = part('id="doors"', 'id="make-menu"');
-  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 44);
+  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 45);
   const css = read('src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const doors = css.match(/\n\.doors \{([^}]*)\}/)[1];
   const [, width] = doors.match(/grid-template-columns:\s*repeat\(auto-fill,\s*minmax\((\d+)px,\s*1fr\)\)/);
@@ -871,8 +871,8 @@ test('처음 화면: 카드가 가로 1280px에서 한 줄에 넉 장씩 놓이�
   // 가로 1280px(안쪽 1256px)에서 한 줄에 넉 장이라, 여덟 장까지 두 줄이다.
   const perRow = Math.floor((1256 + Number(gap)) / (Number(width) + Number(gap)));
   assert.equal(perRow, 4);
-  // 마흔네 장이라 열한 줄이다(셋째 줄은 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람, 넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 방 한 번씩 돌기, 규칙 기계와 규칙이 깨지는 판, 똑같이 섞이게 자르기, 눈대중, 여섯째 줄은 자르고 붙이기, 접히는 모양 가리기, 도미노 가로세로, 조각 가짓수 찾기, 일곱째 줄은 마법 네모와 겹친 칸, 닿지 않게 놓기와 구역 긋기, 열쇠 미로, 암호 놀이, 여덟째 줄은 수열 길 퍼즐, 팬케이크 뒤집기, 곱 단서 퍼즐, 세모 피하기, 아홉째 줄은 성냥개비, 공정한 게임일까, 줄 뒤집기 판, 여우와 토끼, 열째 줄은 핀에 실 감기, 그물 끊기, 구역 지도 맞히기, 블랙홀, 열한째 줄은 탑 옮기기, 모눈 자동차 경주, 원판 둘씩 옮기기, 퍼즐 만들기).
-  assert.ok(Math.ceil(44 / perRow) === 11);
+  // 마흔다섯 장이라 열두 줄이다(셋째 줄은 조각 못 들어가게 막기, 강 건너기, 컵 뒤집기와 세 색 무리, 민들레와 바람, 넷째 줄은 주사위 미로와 길 세기, 숨은 규칙 찾기, 엉킨 그림 풀기, 켜고 끄기와 숫자 마술, 다섯째 줄은 방 한 번씩 돌기, 규칙 기계와 규칙이 깨지는 판, 똑같이 섞이게 자르기, 눈대중, 여섯째 줄은 자르고 붙이기, 접히는 모양 가리기, 도미노 가로세로, 조각 가짓수 찾기, 일곱째 줄은 마법 네모와 겹친 칸, 닿지 않게 놓기와 구역 긋기, 열쇠 미로, 암호 놀이, 여덟째 줄은 수열 길 퍼즐, 팬케이크 뒤집기, 곱 단서 퍼즐, 세모 피하기, 아홉째 줄은 성냥개비, 공정한 게임일까, 줄 뒤집기 판, 여우와 토끼, 열째 줄은 핀에 실 감기, 그물 끊기, 구역 지도 맞히기, 블랙홀, 열한째 줄은 탑 옮기기, 모눈 자동차 경주, 원판 둘씩 옮기기, 도미노 깔기 모두 찾기, 열두째 줄은 퍼즐 만들기).
+  assert.ok(Math.ceil(45 / perRow) === 12);
   // 높이 800px에서 하던 판 띠가 있어도(카드 칸의 높이 426px) 두 줄이 굴리지 않고 들어간다.
   assert.ok(2 * Number(low) + Number(gap) <= 426);
   // 그리고 셋째 줄의 윗부분(제목 한 줄, 40px)이 보여서 카드가 더 있다는 것을 알 수 있다.

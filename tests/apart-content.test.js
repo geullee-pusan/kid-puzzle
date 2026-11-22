@@ -105,7 +105,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'place' \? round\.board\.touch : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 43);
+  assert.equal(guides.length, 44);
   assert.ok(sentenceCount(guides[25]) <= 3, guides[25]);
   assert.match(guides[25], /^칸을 누르면 판에서 빠지고, 다시 누르면 돌아와요\./);
   assert.match(guides[25], /구역으로는 가장 많이 놓는 수를 보일 수 없는 판도 만들 수 있을까요\?$/);
