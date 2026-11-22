@@ -828,6 +828,9 @@
           <button id="product-pairs" class="btn wide" type="button" aria-pressed="false" hidden>곱이 되는 두 수 보기</button>
           <!-- 성냥개비: 판에서 찾은 정사각형마다 테두리를 그리는 도구(크기마다 선의 모양이 다르다). 크기마다의 수는 오른쪽에 적는다 -->
           <button id="matches-outline" class="btn wide" type="button" aria-pressed="false" hidden>정사각형 모두 보기</button>
+          <!-- 성냥개비: 성냥 하나만 빼는 판(1단계와 그 작은 판)에서 성냥 자리마다 해 본 경우의 남는 정사각형 수를 적는 도구(아직 해 보지 않은 경우는 빈 동그라미).
+               몇 가지를 해 보았는지는 오른쪽에 적는다. 해 보지 않은 경우의 수는 보이지 않는다. 처음 켜면 힌트 하나로 센다 -->
+          <button id="matches-cases" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</button>
           <!-- 공정한 게임일까: 판에 모든 경우의 표(칸마다 누가 가져가는지)와 몇 가지씩인지를 그리는 도구. 이 형식의 중심 도구라 힌트로 세지 않는다 -->
           <button id="fair-table" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 세어 보기</button>
           <!-- 줄 뒤집기 판: 칸 두 개를 눌러 네 칸(두 칸을 마주 보는 모서리로 하는 네 칸)을 표시하고, 그 네 칸의 검은 칸 수를 판 아래에 적는 도구. 무엇이 그대로인지는 말하지 않는다 -->
@@ -1537,8 +1540,9 @@
               <button id="sim-impossible" class="btn huge" type="button">세모 없이는 안 돼요</button>
             </div>
           </div>
-          <!-- 성냥개비: 빼기와 옮기기의 누르는 법. 사다리에 안 되는 판이 없어서 안 된다고 답하는 단추가 없다.
-               "정사각형 모두 보기"를 켜면 그 아래에 크기마다의 정사각형 수가 보인다 -->
+          <!-- 성냥개비: 빼기와 옮기기의 누르는 법. "정사각형 모두 보기"를 켜면 그 아래에 크기마다의 정사각형 수가 보인다.
+               "모든 경우 펼쳐 보기"를 켜면 해 본 경우의 수와 남는 정사각형 수마다 몇 가지인지가 보인다.
+               안 되는 판이 섞이는 1단계의 판에만 "불가능해요" 단추가 있다 -->
           <div id="matches-pad" class="pad" hidden>
             <div id="matches-remove-box" class="choices">
               <h2>성냥 빼기</h2>
@@ -1553,6 +1557,15 @@
             <div id="matches-size-box" class="mt-size-box" hidden>
               <h2>찾은 정사각형</h2>
               <div id="matches-size-list" aria-live="polite"></div>
+            </div>
+            <div id="matches-cases-box" class="mt-size-box" hidden>
+              <h2>성냥 하나만 빼 보기</h2>
+              <p class="pad-note">해 본 경우마다 성냥 자리에 남은 정사각형 수를 적어요. 빈 동그라미는 아직 해 보지 않은 경우예요.</p>
+              <div id="matches-cases-list" aria-live="polite"></div>
+            </div>
+            <div id="matches-maybe" class="choices" hidden>
+              <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="matches-impossible" class="btn huge" type="button">불가능해요</button>
             </div>
           </div>
           <!-- 공정한 게임일까: 먼저 짐작을 고르고(맞다 틀리다 하지 않는다), 던지기와 컴퓨터에게 던지게 하기를 해 본 뒤 답을 고른다.

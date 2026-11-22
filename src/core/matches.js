@@ -294,3 +294,35 @@ export function solve(board, { keep = 3 } = {}) {
   });
   return { possible: count > 0, count, ways, examples };
 }
+
+// ---- 모든 경우 펼쳐 보기(성냥 하나만 빼는 판) ----
+
+/**
+ * 성냥 하나만 빼는 모든 경우: 성냥마다 그 성냥 하나만 뺐을 때 남는 정사각형의 수. 경우의 수는 성냥의 수와 같다.
+ * @returns {{edge: number, squares: number}[]} 변 번호 차례
+ */
+export function oneOutCases(w, h, matches) {
+  return matches.map((edge) => ({ edge, squares: countSquares(w, h, matches.filter((item) => item !== edge)) }));
+}
+
+/** 성냥 하나만 빼는 모든 경우에서 남는 정사각형 수의 가짓수(작은 것부터) */
+export function oneOutCounts(w, h, matches) {
+  return [...new Set(oneOutCases(w, h, matches).map((item) => item.squares))].sort((a, b) => a - b);
+}
+
+/**
+ * 해 본 경우: 놓인 모습 가운데 처음 성냥에서 딱 하나만 빠진 것의 그 성냥(빼기 판에서 k가 1일 때 쓴다).
+ * @param {object} board 판
+ * @param {number[][]} tried 해 본 모습들(놓인 성냥)
+ * @returns {Set<number>} 해 본 경우의 성냥(변 번호)
+ */
+export function triedOneOut(board, tried) {
+  const start = new Set(board.matches);
+  const out = new Set();
+  for (const on of tried) {
+    if (on.length !== board.matches.length - 1 || !on.every((edge) => start.has(edge))) continue;
+    const now = new Set(on);
+    out.add(board.matches.find((edge) => !now.has(edge)));
+  }
+  return out;
+}

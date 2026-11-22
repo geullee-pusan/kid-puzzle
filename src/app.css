@@ -12119,6 +12119,29 @@ button.pd-clue {
   pointer-events: none;
 }
 
+/* "모든 경우 펼쳐 보기": 성냥 자리마다 그 성냥 하나만 뺐을 때 남는 정사각형 수. 아직 해 보지 않은 경우는 수 없는 점선 동그라미 */
+.mt-case {
+  pointer-events: none;
+}
+
+.mt-case-ring {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-dasharray: 5 5;
+}
+
+.mt-case.tried .mt-case-ring {
+  stroke-width: 4;
+  stroke-dasharray: none;
+}
+
+.mt-case-n {
+  font-size: 24px;
+  font-weight: 800;
+  fill: var(--ink);
+}
+
 .board-foot:has(> #matches-count:not([hidden])) {
   justify-content: flex-end;
 }

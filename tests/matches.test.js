@@ -15,11 +15,14 @@ import {
   fullGrid,
   isDone,
   looseMatches,
+  oneOutCases,
+  oneOutCounts,
   sizeCounts,
   solve,
   squaresIn,
   squaresOf,
   tally,
+  triedOneOut,
   waysOf,
 } from '../src/core/matches.js';
 import { createRng, randInt } from '../src/core/rng.js';
@@ -227,4 +230,38 @@ test('모눈 줄이기: 성냥을 둘러싼 가장 작은 모눈으로 옮겨도
   }
   // 3×3 모눈의 오른쪽 아래 칸 하나는 1×1 모눈이 된다
   assert.deepEqual(cropEdges(3, 3, [8, 11, 22, 23]), { w: 1, h: 1, matches: [0, 1, 2, 3] });
+});
+
+test('모든 경우 펼쳐 보기(성냥 하나만 빼기): 성냥마다의 남는 정사각형 수가 그 성냥을 빼고 글자로 센 수와 같고, 하나를 빼는 풀이의 답과 맞는다', () => {
+  const rng = createRng(20261122);
+  for (let trial = 0; trial < 300; trial++) {
+    const [w, h] = SIZES[randInt(rng, 0, SIZES.length - 1)];
+    const edges = randomEdges(rng, w, h, 0.6 + rng() * 0.4);
+    if (edges.length === 0) continue;
+    const cases = oneOutCases(w, h, edges);
+    assert.deepEqual(
+      cases.map((item) => item.edge),
+      edges,
+    );
+    for (const item of cases) assert.equal(item.squares, bruteSquares(w, h, edges.filter((edge) => edge !== item.edge)).length);
+    const counts = oneOutCounts(w, h, edges);
+    assert.deepEqual(counts, [...new Set(cases.map((item) => item.squares))].sort((a, b) => a - b));
+    // 하나를 빼서 n개를 남기는 방법의 수는 남는 수가 n인 경우의 수와 같다(n이 남는 수에 없으면 안 되는 판)
+    const n = randInt(rng, 0, squaresOf(w, h).length);
+    const board = { w, h, matches: edges, kind: 'remove', k: 1, n, tidy: false };
+    assert.equal(solve(board).count, cases.filter((item) => item.squares === n).length);
+    assert.equal(solve(board).possible, counts.includes(n));
+  }
+  // 2×2를 다 채운 판은 어느 성냥을 빼도 3개, 3×2를 다 채운 판은 5개나 6개다
+  assert.deepEqual(oneOutCounts(2, 2, fullGrid(2, 2)), [3]);
+  assert.deepEqual(oneOutCounts(3, 2, fullGrid(3, 2)), [5, 6]);
+});
+
+test('해 본 경우: 처음 성냥에서 딱 하나만 빠진 모습의 그 성냥만 센다(더 많이 뺀 모습, 같은 모습은 세지 않는다)', () => {
+  const board = { w: 2, h: 2, matches: fullGrid(2, 2), kind: 'remove', k: 1, n: 4, tidy: false };
+  const without = (...gone) => board.matches.filter((edge) => !gone.includes(edge));
+  assert.deepEqual([...triedOneOut(board, [])], []);
+  assert.deepEqual([...triedOneOut(board, [without(3), without(5), without(3), without(1, 2), board.matches])].sort((a, b) => a - b), [3, 5]);
+  // 처음 판에 없던 변이 든 모습은 세지 않는다
+  assert.deepEqual([...triedOneOut({ ...board, matches: without(0) }, [without(0, 4).concat([0]).sort((a, b) => a - b)])], []);
 });

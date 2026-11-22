@@ -1,14 +1,19 @@
 // 성냥개비의 사다리(단계)와 판 내기. 순수 함수만 둔다.
 // (단계, 판 번호) → 판. 같은 번호는 늘 같은 판이다. 처음 모습(칸 몇 개의 테두리를 합친 성냥)과 빼거나 옮길 수 k를 시드 난수(rng.js)로 고르고,
 // 풀이 프로그램이 모든 방법을 해 보아 끝난 모습의 정사각형 수마다 방법의 수를 센 뒤, 답의 수가 알맞은 n을 고른다.
-// 그래서 사다리와 작은 판에는 안 되는 판이 없다(안 되는 판은 직접 만들기에서만 나온다. 선생님은 모든 방법을 해 보고 말한다).
+// 1단계(작은 판에서 빼기)에만 안 되는 판이 섞인다: 여섯 판에 둘(판 번호를 6으로 나눈 나머지가 2와 5)이고, 연달아 나오지 않는다.
+// 안 되는 판은 모두 성냥 하나만 빼는 판이라 경우가 성냥의 수(12~17가지)뿐이고, "모든 경우 펼쳐 보기"로 하나하나 보일 수 있다.
+// 첫 안 되는 판(2번)은 2×2를 다 채운 판에서 하나를 빼서 4개를 남기는 판이다(어느 성냥을 빼도 3개가 남는다).
+// 나머지 안 되는 판은 하나를 빼서 남는 수가 한두 가지인 모양에서, 남는 가장 작은 수 바로 아래부터 지금 수 바로 아래까지 가운데 남지 않는 수를 묻는다.
+// 성냥을 둘 이상 빼거나 옮기는 판의 안 되는 수는 경우가 너무 많아 펼쳐 보일 수 없어서 직접 만들기에서만 나온다(선생님은 모든 방법을 해 보고 말한다).
+// 작은 판에는 안 되는 판이 없다.
 //
 // 고르는 잣대
 //   - 답(할 일에 맞는 방법)의 수가 1 이상 most 이하
 //   - 답의 몫(답의 수 ÷ 해 보는 방법의 수)이 share 이하: 아무렇게나 해도 맞는 판을 뺀다
 //   - n이 1 이상이다. 빼기 판은 n이 지금 정사각형의 수와 다르다(칸들의 테두리로 만든 처음 모습에서 성냥을 빼면 정사각형이 늘 줄어든다).
 //     옮기기 판은 같은 수도 묻는다(딱 k개를 옮겨야 하니 손대지 않은 모습은 답이 아니다. "옮겨도 그대로 3개" 같은 판이 된다)
-import { boardKey, countSquares, cropEdges, fullGrid, looseMatches, outlineOf, sameBoard, squaresOf, tally } from './matches.js';
+import { boardKey, countSquares, cropEdges, fullGrid, looseMatches, oneOutCounts, outlineOf, sameBoard, solve, squaresOf, tally } from './matches.js';
 import { createRng, randInt, seedFrom } from './rng.js';
 
 /**
@@ -18,6 +23,8 @@ import { createRng, randInt, seedFrom } from './rng.js';
  *         | 'move'(모두 변이 되게 옮기기) | 'make'(직접 만든다)
  *   spec  sizes(모눈의 크기 [w, h] 목록), cells(처음 모습의 칸 수 범위), kind, ks(k의 후보), tidy, most, share
  *   first 1번 판에만 쓰는 판(실패할 수 없는 판)
+ *   impossible 안 되는 판이 섞이는가. none은 2번 판(첫 안 되는 판), noSpec은 나머지 안 되는 판을 만드는 값
+ *         (sizes와 cells는 spec과 같고, counts는 하나를 빼서 남는 수의 가짓수의 위 끝)
  */
 export const LADDER = [
   {
@@ -26,6 +33,9 @@ export const LADDER = [
     mode: 'little',
     spec: { sizes: [[2, 2], [3, 2]], cells: [3, 6], kind: 'remove', ks: [1, 2], tidy: false, most: 12, share: 0.4 },
     first: { w: 2, h: 2, matches: fullGrid(2, 2), kind: 'remove', k: 1, n: 3, tidy: false },
+    impossible: true,
+    none: { w: 2, h: 2, matches: fullGrid(2, 2), kind: 'remove', k: 1, n: 4, tidy: false },
+    noSpec: { sizes: [[3, 2]], cells: [4, 6], counts: 2 },
   },
   { level: 2, tag: 'basic', mode: 'grid', spec: { sizes: [[3, 3]], cells: [6, 9], kind: 'remove', ks: [2, 3, 4], tidy: false, most: 12, share: 0.08 } },
   { level: 3, tag: 'applied', mode: 'shift', spec: { sizes: [[3, 2], [3, 3]], cells: [2, 6], kind: 'move', ks: [1, 2], tidy: false, most: 12, share: 0.1 } },
@@ -88,6 +98,44 @@ export function figureOf(w, h, cells) {
 
 // ---- 판 고르기 ----
 
+/** 그 판 번호가 안 되는 판의 자리인가(안 되는 판이 섞이는 단계에서 여섯 판에 둘) */
+export const impossibleAt = (rung, seed) => rung.impossible === true && [1, 4].includes((seed - 1) % 6);
+
+/**
+ * 성냥 하나만 빼는 판에서 안 되는 정사각형 수들(작은 것부터): 하나를 빼서 남는 수의 가짓수가 most 이하인 모양에서,
+ * 남는 가장 작은 수보다 하나 작은 수(1 이상)부터 지금 수보다 하나 작은 수까지 가운데 남지 않는 수.
+ */
+export function impossibleTargets(w, h, matches, most) {
+  const counts = oneOutCounts(w, h, matches);
+  if (counts.length > most) return [];
+  const now = countSquares(w, h, matches);
+  const targets = [];
+  for (let n = Math.max(1, counts[0] - 1); n < now; n++) if (!counts.includes(n)) targets.push(n);
+  return targets;
+}
+
+/** 안 되는 판이 그 잣대에 맞는가(테스트가 쓴다) */
+export function goodImpossible(rung, board) {
+  if (board.kind !== 'remove' || board.k !== 1 || board.tidy) return false;
+  if (!rung.noSpec.sizes.some(([w, h]) => board.w <= w && board.h <= h)) return false;
+  if (looseMatches(board.w, board.h, board.matches).length > 0) return false;
+  return impossibleTargets(board.w, board.h, board.matches, rung.noSpec.counts).includes(board.n);
+}
+
+/** 안 되는 판 하나를 시드 난수로 고른다(성냥 하나만 빼는 판). 없으면 null */
+function pickImpossible(rng, spec) {
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const [across, down] = spec.sizes[randInt(rng, 0, spec.sizes.length - 1)];
+    const most = Math.min(spec.cells[1], across * down);
+    const size = randInt(rng, Math.min(spec.cells[0], most), most);
+    const { w, h, matches } = cropEdges(across, down, figureOf(across, down, connectedCells(rng, across, down, size)));
+    const targets = impossibleTargets(w, h, matches, spec.counts);
+    if (targets.length === 0) continue;
+    return { w, h, matches, kind: 'remove', k: 1, n: targets[randInt(rng, 0, targets.length - 1)], tidy: false };
+  }
+  return null;
+}
+
 /** 처음 모습과 k에 대해, 잣대에 맞는 n들(작은 것부터) */
 export function goodTargets(spec, w, h, matches, k) {
   const counted = tally(w, h, matches, spec.kind, k);
@@ -131,6 +179,13 @@ function pick(rng, spec) {
 /** 그 단계의 판 번호로 만드는 판 */
 function boardAt(rung, seed) {
   if (seed === 1 && rung.first) return { ...rung.first, matches: rung.first.matches.slice() };
+  if (impossibleAt(rung, seed)) {
+    if (seed === 2) return { ...rung.none, matches: rung.none.matches.slice() };
+    // 되는 판과 시드를 따로 둔다(되는 판의 자리에는 안 되는 판이 섞이기 전과 같은 판이 나온다)
+    const board = pickImpossible(createRng(seedFrom('matches-no', rung.level, seed)), rung.noSpec);
+    if (!board || solve(board).possible) throw new Error(`안 되는 판을 만들지 못했어요: ${rung.level}단계 ${seed}번`);
+    return board;
+  }
   const board = pick(createRng(seedFrom('matches', rung.level, seed)), rung.spec);
   if (!board) throw new Error(`판을 만들지 못했어요: ${rung.level}단계 ${seed}번`);
   return board;

@@ -8,14 +8,20 @@
 // 판 아래에는 지금 정사각형의 수와 뺀(옮긴) 성냥의 수를 늘 적는다. 선생님은 판정하지 않는다.
 // 빼거나 옮긴 성냥이 k개가 되었는데 할 일과 다르면 지금 정사각형의 수(또는 변이 아닌 성냥의 수)를 그대로 말한다. 같은 모습을 다시 만들면 그렇다고 말한다.
 // 할 일대로 되면 끝난다. 답은 여럿일 수 있고 어느 것이든 된다.
+// 1단계(little)에는 할 일대로 되는 방법이 없는 판이 섞인다(모두 성냥 하나만 빼는 판). 이 단계의 판에는 "불가능해요" 단추가 있다.
+//   되는 판에 누르면 틀렸다고 하지 않고 되는 방법이 있다는 사실만 말한다. 판은 그대로 이어진다.
+//   안 되는 판을 "불가능해요"로 끝내면 성냥 자리마다 그 성냥 하나만 뺐을 때 남는 정사각형 수를 판에 적고, 남는 수가 어떤 수뿐인지 판 아래에 적는다.
 // 판의 종류(mode)
 //   little 작은 판에서 빼기(1단계)   grid 3×3 판에서 빼기(2단계)   shift 옮겨서 맞추기(3단계)
 //   tidy   모두 변이 되게 빼기(4단계)  move 모두 변이 되게 옮기기(5단계)  made 직접 만든 판
 // 왼쪽 칸의 "정사각형 모두 보기"를 켜면 판에서 찾은 정사각형마다 테두리를 그리고(크기마다 선의 모양이 다르다), 크기마다의 수를 오른쪽에 적는다.
 // 처음 켤 때 힌트 하나로 센다.
+// 1단계의 성냥 하나만 빼는 판에는 "모든 경우 펼쳐 보기"도 있다. 켜면 성냥 자리마다 동그라미를 그리고, 해 본 경우(그 성냥 하나만 뺀 모습)에는
+//   남은 정사각형 수를 적는다. 해 보지 않은 경우의 수는 보이지 않는다(답을 알려 주지 않는다). 몇 가지를 해 보았는지와 남은 수마다 몇 가지인지는 오른쪽에 적는다.
+//   처음 켤 때 힌트 하나로 센다.
 import T from '../content/matches.json';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/matches-ladder.js';
-import { MAX_K, boardKey, changedCount, checkBoard, copyBoard, countSquares, edgeCount, edgeEnds, edgesFit, edgesOk, fullGrid, isDone, looseMatches, sizeCounts, solve, squaresIn, squaresOf, tally, vEdge } from '../core/matches.js';
+import { MAX_K, boardKey, changedCount, checkBoard, copyBoard, countSquares, edgeCount, edgeEnds, edgesFit, edgesOk, fullGrid, isDone, looseMatches, oneOutCases, oneOutCounts, sizeCounts, solve, squaresIn, squaresOf, tally, triedOneOut, vEdge } from '../core/matches.js';
 import { smallerMatches } from '../core/smaller.js';
 import { fill, ordinal } from '../core/text.js';
 import { boardCard, drawBoard, drawMini, sizeSample } from '../ui/matches-board.js';
@@ -45,6 +51,25 @@ export function createMatches(frame) {
   let made = null; // 직접 만들기에서 선생님이 따진 것(판을 고치면 지운다)
 
   const ruleKey = (board) => (board.tidy ? `${board.kind}-tidy` : board.kind);
+  /** "불가능해요" 단추가 있는 판: 안 되는 판이 섞이는 1단계의 판(작은 판도) */
+  const hasImpossible = (round) => round.mode === 'little';
+  /** "모든 경우 펼쳐 보기"가 있는 판: 1단계의 성냥 하나만 빼는 판 */
+  const hasCases = (round) => hasImpossible(round) && round.board.kind === 'remove' && round.board.k === 1 && !round.board.tidy;
+  /** 해 본 경우(그 성냥 하나만 뺀 모습을 만들어 본 성냥) */
+  const triedOf = (round) => triedOneOut(round.board, round.tries.map((key) => (key === '' ? [] : key.split(',').map(Number))));
+  /**
+   * 경우 표시: 성냥마다 그 성냥 하나만 뺐을 때 남는 정사각형 수. all이 아니면 해 본 경우만 수를 적는다
+   * @returns {{edge: number, squares: number | null}[]}
+   */
+  function casesOf(round, all) {
+    const tried = all ? null : triedOf(round);
+    return oneOutCases(round.board.w, round.board.h, round.board.matches).map((item) => ({ edge: item.edge, squares: all || tried.has(item.edge) ? item.squares : null }));
+  }
+  /** 안 되는 판의 까닭 글: 성냥을 하나씩 빼 보면 남는 수가 한 가지인지 두 가지인지 */
+  function reasonLine(group, board, prefix = 'reason') {
+    const [n, k] = oneOutCounts(board.w, board.h, board.matches);
+    return fill(group[`${prefix}-${k === undefined ? 'one' : 'two'}`], { total: board.matches.length, n, k });
+  }
   /** 힌트의 종류: 약속이 있는 판, 빼기, 옮겨서 정사각형을 늘리거나 그대로 두는 판(새 정사각형을 닫아야 한다), 줄이는 판 */
   function hintKey(board) {
     if (board.tidy) return 'tidy';
@@ -73,10 +98,14 @@ export function createMatches(frame) {
 
   // ---- 판 ----
   function draw() {
-    const { round } = frame;
+    const { round, solution } = frame;
     const { board } = round;
     const playing = !round.done;
     const squares = squaresIn(board.w, board.h, round.on);
+    // 경우 표시: 하는 동안은 도구를 켰을 때 해 본 경우만, 안 되는 판을 끝냈으면 모든 경우(까닭)
+    const reason = !playing && solution?.possible === false && hasCases(round);
+    const looking = playing && round.casesOn && hasCases(round);
+    const cases = reason ? casesOf(round, true) : looking ? casesOf(round, false) : null;
     drawBoard($('matches-board'), {
       w: board.w,
       h: board.h,
@@ -85,6 +114,7 @@ export function createMatches(frame) {
       kind: board.kind,
       pick: playing ? pick : null,
       outline: round.outlineOn ? squares : null,
+      cases,
       onEdge: playing ? tapEdge : undefined,
       // 빼기 판은 성냥과 뺀 자리만 누를 수 있다
       tappable: board.kind === 'remove' ? (edge, state) => state !== 'empty' : undefined,
@@ -102,6 +132,13 @@ export function createMatches(frame) {
     $('matches-outline').setAttribute('aria-pressed', String(round.outlineOn));
     $('matches-size-box').hidden = !round.outlineOn;
     drawSizes(board, round.on);
+    $('matches-cases').hidden = !hasCases(round);
+    $('matches-cases').disabled = !playing;
+    $('matches-cases').setAttribute('aria-pressed', String(looking));
+    $('matches-cases-box').hidden = !looking;
+    if (looking) drawCases(round);
+    $('matches-maybe').hidden = !hasImpossible(round);
+    $('matches-impossible').disabled = !playing;
     $('undo').disabled = !playing || round.moves.length === 0;
     $('reset').disabled = !playing || round.on.join() === board.matches.join();
     frame.showWhy();
@@ -109,7 +146,10 @@ export function createMatches(frame) {
 
   function statusOf(round, playing) {
     const { board } = round;
-    if (!playing) return isDone(board, round.on) ? fill(T.status.done, { n: board.n }) : '';
+    if (!playing) {
+      if (isDone(board, round.on)) return fill(T.status.done, { n: board.n });
+      return frame.solution?.possible === false && hasCases(round) ? reasonLine(T.status, board) : '';
+    }
     if (pick !== null) return T.status.picked;
     if (changedCount(board, round.on) === board.k) return fill(T.status[`full-${board.kind}`], { k: board.k });
     return T.status[board.kind];
@@ -135,6 +175,19 @@ export function createMatches(frame) {
       items.append(item);
     });
     list.replaceChildren(items, paragraph(fill(T.sizes.total, { n: total })));
+  }
+
+  /** "모든 경우 펼쳐 보기"의 오른쪽 글: 해 본 경우의 수, 남은 정사각형 수마다 몇 가지인지 */
+  function drawCases(round) {
+    const cases = casesOf(round, false);
+    const tried = cases.filter((item) => item.squares !== null);
+    const total = cases.length;
+    const key = tried.length === 0 ? 'none' : tried.length === total ? 'all' : 'tried';
+    const lines = [paragraph(fill(T.cases[key], { total, n: tried.length }))];
+    const byCount = new Map();
+    for (const item of tried) byCount.set(item.squares, (byCount.get(item.squares) ?? 0) + 1);
+    for (const [n, k] of [...byCount].sort((a, b) => a[0] - b[0])) lines.push(paragraph(fill(T.cases.count, { n, k })));
+    $('matches-cases-list').replaceChildren(...lines);
   }
 
   function paragraph(text) {
@@ -232,7 +285,8 @@ export function createMatches(frame) {
     const key = round.on.join(',');
     const again = round.tries.includes(key);
     round.fullCount += 1;
-    round.wrongCount += 1;
+    // 안 되는 판에서 빼 보는 것은 경우를 하나씩 해 보는 일이라 틀린 답으로 세지 않는다
+    if (frame.solution?.possible !== false) round.wrongCount += 1;
     if (!again) round.tries = [...round.tries, key].slice(-MAX_TRIES);
     frame.note('full', { again });
     draw();
@@ -293,9 +347,50 @@ export function createMatches(frame) {
     frame.keep();
   }
 
+  /** 왼쪽 칸의 "모든 경우 펼쳐 보기": 해 본 경우마다 남은 정사각형 수를 성냥 자리에 적는다. 처음 켤 때 힌트 하나로 센다 */
+  function toggleCases() {
+    const { round } = frame;
+    if (!round || round.done || !hasCases(round)) return;
+    round.casesOn = !round.casesOn;
+    if (round.casesOn) {
+      round.casesShown = true;
+      round.casesCount += 1;
+    }
+    frame.note('cases', { on: round.casesOn });
+    draw();
+    frame.keep();
+  }
+
+  /** "불가능해요". 되는 판이면 틀렸다고 하지 않고 되는 방법이 있다는 사실만 말한다. 판은 그대로 이어진다 */
+  function sayImpossible() {
+    const { round, solution } = frame;
+    if (!round || round.done || !hasImpossible(round)) return;
+    const correct = solution.possible === false;
+    const guess = correct ? null : 'impossible-on-possible';
+    round.answers.push({ t: frame.stamp(), answer: 'impossible', correct, guess });
+    frame.note('answer', { answer: 'impossible', correct, guess });
+    if (correct) {
+      pick = null;
+      frame.finish('solved');
+      return;
+    }
+    round.impossibleCount += 1;
+    round.wrongCount += 1;
+    flash = null;
+    // 되는 방법이 있다는 말은 지금 모습에 기대지 않지만, 모습이 바뀌면 지금 정사각형의 수로 덮는다
+    told = true;
+    frame.persist();
+    draw();
+    frame.say(round.moveCount === 0 ? T.play['possible-press-untried'] : T.play['possible-press']);
+  }
+
   // ---- 끝났을 때 하는 말: 한 일을 그대로 말한다 ----
   function rightLine(round, solution) {
     const { board } = round;
+    if (round.answers.at(-1)?.answer === 'impossible') {
+      const tried = triedOf(round).size;
+      return [tried > 0 ? fill(T.right['impossible-tried'], { k: tried }) : T.right['impossible-untried'], reasonLine(T.right, board)];
+    }
     const parts = [fill(T.right[`done-${board.kind}`], { k: board.k, n: board.n })];
     if (board.tidy) parts.push(T.right.tidy);
     parts.push(solution.count === 1 ? T.right.one : fill(T.right.more, { n: solution.count }));
@@ -312,7 +407,11 @@ export function createMatches(frame) {
 
   function solutionPages(round, solution) {
     const { board } = round;
-    if (!solution.possible) return [{ say: T.solution.none, nodes: [rowOf([boardCard({ w: board.w, h: board.h, on: board.matches, kind: board.kind }, '', { big: true })])] }];
+    if (!solution.possible) {
+      // 성냥 하나만 빼는 판은 모든 경우의 남는 수를 판에 적어 보인다
+      if (hasCases(round)) return [{ say: reasonLine(T.solution, board, 'none'), nodes: [rowOf([boardCard({ w: board.w, h: board.h, on: board.matches, kind: board.kind, cases: casesOf(round, true) }, T.solution['note-cases'], { big: true })])] }];
+      return [{ say: T.solution.none, nodes: [rowOf([boardCard({ w: board.w, h: board.h, on: board.matches, kind: board.kind }, '', { big: true })])] }];
+    }
     const [example] = solution.examples;
     const say = solution.count === 1 ? T.solution.one : fill(T.solution.more, { n: solution.count });
     const view = { w: board.w, h: board.h, on: example.matches, origin: board.matches, kind: board.kind };
@@ -324,10 +423,13 @@ export function createMatches(frame) {
     const gone = new Set((item.gone ?? []).map((spot) => (spot.side === 'v' ? vEdge(item.w, item.h, spot.r, spot.c) : spot.r * item.w + spot.c)));
     const on = fullGrid(item.w, item.h).filter((edge) => !gone.has(edge));
     const outline = squaresIn(item.w, item.h, on).filter((square) => item.outline.includes(square.size));
-    return { w: item.w, h: item.h, on, origin: fullGrid(item.w, item.h), kind: 'remove', outline };
+    // 경우 표시: 성냥마다 그 성냥 하나만 뺐을 때 남는 정사각형 수
+    const cases = item.cases === true ? oneOutCases(item.w, item.h, on) : null;
+    return { w: item.w, h: item.h, on, origin: fullGrid(item.w, item.h), kind: 'remove', outline, cases };
   }
 
-  /** "왜 그럴까?": 크기를 정해 놓고 세기 → 한 변이 2개, 3개인 것 → 크기마다 나누어 세기(이름) → 성냥 하나가 빠진 판 */
+  /** "왜 그럴까?": 크기를 정해 놓고 세기 → 한 변이 2개, 3개인 것 → 크기마다 나누어 세기(이름) → 성냥 하나가 빠진 판
+   *  → 2×2 판에서 하나만 빼는 12가지 → 3×2 판의 17가지와 모든 경우 따지기(이름) */
   function whyPages() {
     return T.why.map((slide) => ({
       say: slide.say,
@@ -481,6 +583,8 @@ export function createMatches(frame) {
 
   // ---- 단추 잇기 ----
   $('matches-outline').addEventListener('click', toggleOutline);
+  $('matches-cases').addEventListener('click', toggleCases);
+  $('matches-impossible').addEventListener('click', sayImpossible);
   $('matches-make-fewer').addEventListener('click', () => resize(draft.size - 1));
   $('matches-make-more').addEventListener('click', () => resize(draft.size + 1));
   $('matches-make-full').addEventListener('click', () => changeDraft({ ...draft, on: fullGrid(draft.size, draft.size) }));
@@ -507,6 +611,10 @@ export function createMatches(frame) {
       outlineOn: false, // 지금 "정사각형 모두 보기"를 켜 두었는가
       outlineShown: false, // 한 번이라도 켰는가
       outlineCount: 0, // 켠 수
+      casesOn: false, // 지금 "모든 경우 펼쳐 보기"를 켜 두었는가
+      casesShown: false, // 한 번이라도 켰는가
+      casesCount: 0, // 켠 수
+      impossibleCount: 0, // 되는 판에 "불가능해요"를 누른 수
       moveCount: 0, // 성냥을 빼거나 돌려놓거나 옮긴 수
       takeCount: 0, // 그 가운데 뺀 것
       backCount: 0, // 그 가운데 뺀 자리에 돌려놓은 것
@@ -515,7 +623,7 @@ export function createMatches(frame) {
       fullCount: 0, // 빼거나 옮긴 성냥이 k개인데 할 일과 다르던 수
       undoCount: 0,
       resetCount: 0,
-      wrongCount: 0, // 사실과 다른 답의 수(k개를 빼거나 옮겼는데 할 일과 다르던 것)
+      wrongCount: 0, // 사실과 다른 답의 수(k개를 빼거나 옮겼는데 할 일과 다르던 것, 되는 판에 누른 "불가능해요")
     };
   }
 
@@ -537,13 +645,16 @@ export function createMatches(frame) {
       if (!edgesFit(saved.board, saved.on) || !Array.isArray(saved.moves) || !saved.moves.every((on) => edgesFit(saved.board, on))) return false;
       if (!Array.isArray(saved.tries) || !saved.tries.every((item) => typeof item === 'string')) return false;
       if (typeof saved.outlineOn !== 'boolean' || typeof saved.outlineShown !== 'boolean') return false;
-      return [saved.outlineCount, saved.moveCount, saved.takeCount, saved.backCount, saved.shiftCount, saved.limitCount, saved.fullCount, saved.undoCount, saved.resetCount, saved.wrongCount].every(count);
+      if (typeof saved.casesOn !== 'boolean' || typeof saved.casesShown !== 'boolean') return false;
+      return [saved.casesCount, saved.impossibleCount, saved.outlineCount, saved.moveCount, saved.takeCount, saved.backCount, saved.shiftCount, saved.limitCount, saved.fullCount, saved.undoCount, saved.resetCount, saved.wrongCount].every(count);
     },
     /** 판 화면에서 이 형식의 것(판, 판 아래의 글, 왼쪽 칸의 도구)을 보이거나 감춘다 */
     showParts(on) {
       $('matches-board').hidden = !on;
       $('matches-count').hidden = !on;
       $('matches-outline').hidden = !on;
+      // "모든 경우 펼쳐 보기"는 그 도구가 있는 판에서만 draw가 보인다
+      if (!on) $('matches-cases').hidden = true;
       if (on) {
         // 앞의 형식이 감춰 둔 무르기와 되돌리기를 여기서 다시 보이게 한다.
         $('undo').hidden = false;
@@ -565,7 +676,7 @@ export function createMatches(frame) {
     hints: (round) => T.hints[hintKey(round.board)],
     touched: (round) => round.moveCount > 0,
     /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
-    view: (round) => ({ on: round.on.slice(), changed: changedCount(round.board, round.on), squares: countSquares(round.board.w, round.board.h, round.on), tries: round.tries.length, outline: round.outlineOn }),
+    view: (round) => ({ on: round.on.slice(), changed: changedCount(round.board, round.on), squares: countSquares(round.board.w, round.board.h, round.on), tries: round.tries.length, outline: round.outlineOn, cases: round.casesOn }),
     /** 이 판보다 작은 판: 같은 할 일의 더 작은 모눈 */
     smaller: (round, turn) => smallerMatches({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
@@ -573,10 +684,13 @@ export function createMatches(frame) {
         mode: round.mode,
         board: copyBoard(round.board),
         solution: { possible: solution.possible, count: solution.count, ways: solution.ways },
-        // 질문 힌트와 "정사각형 모두 보기"를 함께 센다.
-        hintsOpened: round.hintsOpened + (round.outlineShown ? 1 : 0),
+        // 질문 힌트와 "정사각형 모두 보기", "모든 경우 펼쳐 보기"를 함께 센다.
+        hintsOpened: round.hintsOpened + (round.outlineShown ? 1 : 0) + (round.casesShown ? 1 : 0),
         outlineShown: round.outlineShown,
         outlineCount: round.outlineCount,
+        casesShown: round.casesShown,
+        casesCount: round.casesCount,
+        impossibleCount: round.impossibleCount,
         // 판을 떠날 때 놓인 성냥, 할 일과 달랐던 모습들
         on: round.on,
         tries: round.tries,

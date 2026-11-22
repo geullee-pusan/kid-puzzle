@@ -24,7 +24,7 @@ const css = read('src/app.css');
 
 const VALUES = { k: 2, f: 3, n: 5, no: '첫 ', face: '위에서 첫 번째 줄의 가로 자리, 왼쪽에서 2번째', total: 276 };
 /** 그림과 판의 값은 글이 아니다 */
-const DATA_KEYS = ['picture', 'blank', 'seed', 'w', 'h', 'outline', 'gone', 'side', 'r', 'c', 'level'];
+const DATA_KEYS = ['picture', 'blank', 'seed', 'w', 'h', 'outline', 'gone', 'side', 'r', 'c', 'level', 'cases'];
 
 function allStrings(value, path = '') {
   if (typeof value === 'string') return [[path, value]];
@@ -153,10 +153,10 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
   for (const [path, text] of strings) assert.doesNotMatch(text.replace(/\{[^{}]*\}/g, ''), /[A-Za-z]/, `${path}: ${text}`);
   assert.doesNotMatch(own, /[A-Za-z]/);
   assert.doesNotMatch(own, /별|점수|순위|레벨|연속/);
-  const spoken = [...Object.values(T.home.ask), T.home.pick, ...Object.values(T.rules), ...Object.values(T.play), ...Object.values(T.hints).flat(), ...Object.values(T.right), T.solution.one, T.solution.more, T.solution.none, ...Object.values(T.sizes), ...Object.entries(T.make).filter(([key]) => !['size', 'count', 'other'].includes(key)).map(([, text]) => text), ...T.why.map((slide) => slide.say)];
+  const spoken = [...Object.values(T.home.ask), T.home.pick, ...Object.values(T.rules), ...Object.values(T.play), ...Object.values(T.hints).flat(), ...Object.values(T.right), T.solution.one, T.solution.more, T.solution.none, T.solution['none-one'], T.solution['none-two'], ...Object.values(T.sizes), ...Object.values(T.cases), ...Object.entries(T.make).filter(([key]) => !['size', 'count', 'other'].includes(key)).map(([, text]) => text), ...T.why.map((slide) => slide.say)];
   for (const text of spoken) for (const sentence of sentences(text)) assert.match(sentence, /요[.?!]$/, sentence);
   for (const text of Object.values(T.status)) assert.match(text, /요$/, text);
-  for (const text of [T.make.other, T.solution['note-remove'], T.solution['note-move']]) assert.match(text, /요$/, text);
+  for (const text of [T.make.other, T.solution['note-remove'], T.solution['note-move'], T.solution['note-cases']]) assert.match(text, /요$/, text);
   for (const slide of T.why) for (const item of slide.figures) assert.match(item.note, /요$/, item.note);
   for (const [path, text] of strings) for (const sentence of sentences(fill(text, VALUES))) assert.ok([...sentence].length <= 60, `${path}: ${sentence}`);
 });
@@ -168,7 +168,7 @@ function figureEdges(item) {
 }
 
 test('"왜 그럴까?": 크기를 정해 놓고 세기 → 한 변이 2개, 3개인 것 → 크기마다 나누어 세기(이름) → 성냥 하나가 빠진 판(글자로 찾아 다시 센다)', () => {
-  assert.equal(T.why.length, 4);
+  assert.equal(T.why.length, 6);
   for (const slide of T.why) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
   const bySize = (item) => {
     const found = bruteSquares(item.w, item.h, figureEdges(item));
@@ -206,6 +206,62 @@ test('"왜 그럴까?": 크기를 정해 놓고 세기 → 한 변이 2개, 3개
   for (const [path, text] of strings) if (!path.startsWith('why[2]') && !path.startsWith('why[3]')) assert.doesNotMatch(text, /크기마다 나누어 세기/, path);
 });
 
+/** 성냥을 하나씩 빼서 글자로 센 남는 정사각형 수(성냥마다) */
+const oneOut = (w, h, edges) => edges.map((edge) => bruteSquares(w, h, edges.filter((item) => item !== edge)).length);
+
+test('"왜 그럴까?"의 끝 두 장: 2×2 판의 12가지는 늘 3개, 3×2 판의 17가지는 5개나 6개(성냥을 하나씩 빼서 글자로 센다). 모든 경우 따지기(이름)는 끝 장에서만', () => {
+  const [, , , , fifth, sixth] = T.why;
+  for (const slide of [fifth, sixth]) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
+  const two = fifth.figures[0];
+  assert.deepEqual([two.w, two.h, two.cases], [2, 2, true]);
+  const twoEdges = figureEdges(two);
+  assert.equal(twoEdges.length, 12);
+  assert.deepEqual([...new Set(oneOut(2, 2, twoEdges))], [3]);
+  assert.match(fifth.say, /성냥 12개를 하나씩 모두 빼 보면 정사각형은 늘 3개 남아요./);
+  assert.match(fifth.say, /하나를 빼서 4개를 남길 수는 없어요.$/);
+  assert.equal(bruteSquares(2, 2, twoEdges).length, 5);
+  assert.match(two.note, /어느 성냥을 빼도 3개예요/);
+  const three = sixth.figures[0];
+  assert.deepEqual([three.w, three.h, three.cases], [3, 2, true]);
+  const threeEdges = figureEdges(three);
+  assert.equal(threeEdges.length, 17);
+  assert.deepEqual([...new Set(oneOut(3, 2, threeEdges))].sort((a, b) => a - b), [5, 6]);
+  assert.equal(bruteSquares(3, 2, threeEdges).length, 8);
+  assert.match(sixth.say, /^3×2 판은 성냥이 17개라서 17가지를 모두 해 보면 돼요./);
+  assert.match(sixth.say, /남는 수는 5개나 6개뿐이라서 7개는 안 돼요./);
+  assert.match(three.note, /어느 성냥을 빼도 5개나 6개예요/);
+  assert.match(sixth.say, /모든 경우 따지기라고 불러요.$/);
+  for (const [path, text] of strings) if (path !== 'why[5].say') assert.doesNotMatch(text, /모든 경우 따지기/, path);
+  // 그림의 경우 표시는 풀이 프로그램이 성냥마다 센 수다
+  assert.match(code, /const cases = item\.cases === true \? oneOutCases\(item\.w, item\.h, on\) : null;/);
+});
+
+test('안 되는 판: "불가능해요"는 1단계의 판에만 있다. 되는 판에 누르면 되는 방법이 있다는 사실만 말한다. 끝내면 성냥을 하나씩 빼서 남는 수를 말한다', () => {
+  assert.match(code, /const hasImpossible = \(round\) => round\.mode === 'little';/);
+  assert.match(code, /const hasCases = \(round\) => hasImpossible\(round\) && round\.board\.kind === 'remove' && round\.board\.k === 1 && !round\.board\.tidy;/);
+  for (const key of ['possible-press', 'possible-press-untried']) {
+    assert.match(T.play[key], /^이 판은 할 일대로 되는 방법이 있어요\./, key);
+    assert.doesNotMatch(T.play[key], /틀|아니에요|잘못/, key);
+  }
+  assert.equal(fill(T.right['reason-one'], { total: 12, n: 3 }), '성냥 12개를 하나씩 빼 보면 정사각형은 늘 3개 남아요.');
+  assert.equal(fill(T.right['reason-two'], { total: 17, n: 5, k: 6 }), '성냥 17개를 하나씩 빼 보면 정사각형은 5개나 6개 남아요.');
+  assert.equal(fill(T.status['reason-two'], { n: 2, k: 3 }), '어느 성냥을 빼도 정사각형은 2개나 3개예요');
+  assert.equal(fill(T.solution['none-one'], { total: 12, n: 3 }), '이 판은 할 일대로 되는 방법이 없어요. 성냥 12개를 하나씩 빼 보면 정사각형은 늘 3개 남아요.');
+  assert.equal(fill(T.cases.tried, { total: 13, n: 4 }), '성냥 하나만 빼는 경우 13가지 가운데 4가지를 해 보았어요.');
+  assert.equal(fill(T.cases.count, { n: 3, k: 2 }), '정사각형 3개가 남은 경우가 2가지예요.');
+  assert.equal(fill(T.right['impossible-tried'], { k: 5 }), '성냥 하나만 빼는 경우 5가지를 해 본 뒤에 안 되는 판이라고 했어요.');
+  // 까닭의 수는 풀이 프로그램이 성냥마다 센 수의 가짓수다(한 가지면 "늘", 두 가지면 "나")
+  assert.match(code, /const \[n, k\] = oneOutCounts\(board\.w, board\.h, board\.matches\);/);
+  // 하는 동안의 경우 표시는 해 본 경우만 수를 적는다(답을 알려 주지 않는다). 끝난 안 되는 판은 모든 경우를 적는다
+  assert.match(code, /squares: all \|\| tried\.has\(item\.edge\) \? item\.squares : null/);
+  assert.match(code, /const cases = reason \? casesOf\(round, true\) : looking \? casesOf\(round, false\) : null;/);
+  assert.match(code, /round\.wrongCount \+= 1;\n {4}flash = null;\n {4}\/\/ 되는 방법이 있다는 말은/);
+  // 직접 만든 판은 되는 판만 해 보므로 단추가 없다
+  assert.doesNotMatch(code, /mode === 'made' \|\| round\.mode === 'little'/);
+  // 이 형식의 대본 가운데 안 되는 판을 말하는 것은 1단계의 판에서만 쓰인다
+  assert.match(code, /if \(!round \|\| round\.done \|\| !hasImpossible\(round\)\) return;/);
+});
+
 test('풀이와 직접 만들기: 방법의 수와 한 가지 방법을 보이고, 안 되는 판은 모든 방법을 해 보고 없다고 말한다', () => {
   assert.equal(fill(T.solution.more, { n: 4 }), '이렇게 하면 돼요. 이렇게 되는 방법은 모두 4가지예요.');
   assert.equal(fill(T.make.none, { total: 10626 }), '모든 방법 10626가지를 다 해 보았는데, 할 일대로 되는 방법은 없어요.');
@@ -233,8 +289,12 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="matches-title"', '</section>'), /<h2 id="matches-title">성냥개비<\/h2>/);
   assert.ok(visibleText(part('id="matches-title"', '</section>')).includes(T.home.ask.little));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-matches-make" class="menu-item"/);
-  assert.doesNotMatch(visibleText(part('id="matches-pad"', 'id="fair-pad"')), /불가능해요|안 돼요/);
+  // "불가능해요" 단추와 "모든 경우 펼쳐 보기"(감춰 두고 그 판에서만 보인다)
+  assert.match(part('id="matches-pad"', 'id="fair-pad"'), /<div id="matches-maybe" class="choices" hidden>/);
+  assert.match(part('id="matches-pad"', 'id="fair-pad"'), /id="matches-impossible" class="btn huge" type="button">불가능해요</);
+  assert.match(part('id="matches-pad"', 'id="fair-pad"'), /<div id="matches-cases-box" class="mt-size-box" hidden>/);
   assert.match(part('id="matches-outline"', 'id="fair-table"'), /aria-pressed="false" hidden>정사각형 모두 보기</);
+  assert.match(part('id="matches-outline"', 'id="fair-table"'), /id="matches-cases" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</);
   // 카드는 세모 피하기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="sim-title"') < html.indexOf('id="matches-title"'));
   assert.ok(html.indexOf('id="matches-title"') < html.indexOf('id="make-title"'));
@@ -250,7 +310,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   // 판을 그리는 조각은 글을 적지 않는다. 타이머가 없다
   assert.doesNotMatch(board + code, /setInterval|setTimeout|requestAnimationFrame/);
   // 도구를 처음 켜면 힌트 하나로 센다
-  assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.outlineShown \? 1 : 0\),/);
+  assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.outlineShown \? 1 : 0\) \+ \(round\.casesShown \? 1 : 0\),/);
 });
 
 test('화면: 변마다 누르는 마름모가 44픽셀보다 크다. 성냥, 빈 자리, 처음 자리, 옮겨 온 성냥, 고른 성냥, 정사각형의 크기는 색만이 아니라 모양으로도 보인다', () => {

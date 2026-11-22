@@ -7,6 +7,8 @@
 //   옮겨 온 성냥  막대 둘레에 넓은 금빛 점선 띠
 //   고른 성냥 막대 둘레에 굵은 고리(짧은 점선)
 //   정사각형  크기마다 선의 모양이 다르다: 한 변이 성냥 1개는 실선, 2개는 긴 점선, 3개는 짧은 점선, 4개는 긴 점선과 점을 번갈아
+//   경우 표시 "모든 경우 펼쳐 보기"에서 성냥 자리마다 그 성냥 하나만 뺐을 때 남는 정사각형 수(흰 동그라미에 굵은 수).
+//             아직 해 보지 않은 경우는 수 없이 점선 동그라미다
 // 누르는 자리는 변마다 마름모 하나다(변의 두 끝과 양옆 칸의 가운데를 잇는다). 마름모끼리 겹치지 않고 빈틈없이 판을 덮는다.
 // 글자(읽어 주는 이름)는 형식(src/formats/matches.js)이 대본에서 채워 건넨다. 이 파일에는 글을 적지 않는다.
 import { edgeCount, edgeEnds } from '../core/matches.js';
@@ -19,6 +21,7 @@ export const PAD = 0.5;
 const STICK = 15; // 막대의 굵기
 const INSET = 13; // 막대 끝과 모눈의 점 사이
 const HEAD = 11; // 머리의 반지름
+const CASE_R = 17; // 경우 표시 동그라미의 반지름(막대 길이의 반쯤이라 성냥이 보인다)
 /** 정사각형의 테두리를 칸 안쪽으로 들이는 거리(크기마다). 큰 것일수록 바깥에 그려 겹쳐도 보이게 한다 */
 const OUTLINE_INSET = [22, 15, 8, 3];
 
@@ -84,9 +87,10 @@ function rhombus(at) {
  *   onEdge    (변 번호) → 눌렀을 때. 없으면 누를 수 없다
  *   tappable  (변 번호, 모습) → 누를 수 있는가(없으면 모두)
  *   labels    { board, edge(변 번호, 모습) } 읽어 줄 이름
+ *   cases     경우 표시: [{ edge, squares }] squares는 그 성냥 하나만 뺐을 때 남는 정사각형 수, 아직 해 보지 않았으면 null
  */
 export function boardSvg(view) {
-  const { w, h, on, kind, pick = null, outline = null, onEdge, tappable, labels } = view;
+  const { w, h, on, kind, pick = null, outline = null, onEdge, tappable, labels, cases = null } = view;
   const origin = view.origin ?? on;
   const now = new Set(on);
   const start = new Set(origin);
@@ -126,6 +130,21 @@ export function boardSvg(view) {
     if (state === 'moved') svg.append(stickRect(at, INSET - 6, STICK + 16, 'mt-moved'));
     svg.append(match(at));
     if (state === 'picked') svg.append(stickRect(at, INSET - 8, STICK + 18, 'mt-pick'));
+  }
+  // 경우 표시: 성냥 자리의 가운데에 동그라미(해 본 경우는 남는 정사각형 수)
+  for (const item of cases ?? []) {
+    const at = spot(w, h, item.edge);
+    const cx = (at.x1 + at.x2) / 2;
+    const cy = (at.y1 + at.y2) / 2;
+    const tried = Number.isInteger(item.squares);
+    const group = make('g', {}, tried ? 'mt-case tried' : 'mt-case');
+    group.append(make('circle', { cx, cy, r: CASE_R }, 'mt-case-ring'));
+    if (tried) {
+      const text = make('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, 'mt-case-n');
+      text.textContent = String(item.squares);
+      group.append(text);
+    }
+    svg.append(group);
   }
   // 누르는 자리
   if (onEdge) {
