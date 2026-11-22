@@ -108,7 +108,7 @@ test('규칙 설명은 세 문장 안이다. 숨은 단서가 있는 판은 물�
   assert.match(code, /const ruleKey = \(round\) => \(hiddenCount\(round\.board\) > 0 \? 'hidden' : 'full'\);/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\)\], \{ n: numbersOf\(round\.board\.n\) \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 44);
+  assert.equal(guides.length, 45);
   assert.ok(sentenceCount(guides[30]) <= 3, guides[30]);
   assert.match(guides[30], /곱을 몇 개 숨겨도 답이 한 가지뿐인 판을 만들 수 있을까요\?$/);
 });

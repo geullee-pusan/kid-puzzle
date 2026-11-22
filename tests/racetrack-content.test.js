@@ -111,7 +111,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 두
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(round\.board\.flags\.length > 0 \? 'flag' : 'fewest'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 44);
+  assert.equal(guides.length, 45);
   assert.ok(sentenceCount(guides[41]) <= 3, guides[41]);
   assert.match(guides[41], /^칸을 눌러 길을 그리고 출발 칸과 결승선을 정해요\./);
   assert.match(guides[41], /여러 번 걸리는 길을 만들 수 있을까요\?$/);
@@ -261,7 +261,8 @@ test('화면: 벽은 빗금, 결승선은 체크 무늬 선, 깃발 칸은 점�
   assert.match(plain, /\.rt-flag \{[^}]*stroke-dasharray/);
   assert.match(plain, /\.rt-flag\.done \{\s*stroke-dasharray: none;/);
   assert.match(plain, /\.rt-blocked \{[^}]*stroke-dasharray/);
-  assert.doesNotMatch(plain.slice(plain.indexOf('.rt-board.live')), /animation|transition/);
+  // 이 형식의 그림만 본다(뒤에 더한 형식의 그림은 그 형식의 테스트가 본다)
+  assert.doesNotMatch(plain.slice(plain.indexOf('.rt-board.live'), plain.indexOf('.fg-board')), /animation|transition/);
   // 직접 만들기의 칸도 44픽셀보다 크다(가로 9칸, 세로 8칸까지. 판 칸이 가로 476픽셀, 세로 432픽셀쯤)
   assert.match(code, /MAKE_W/);
   assert.ok(476 / 9 >= 44 && 432 / 8 >= 44);

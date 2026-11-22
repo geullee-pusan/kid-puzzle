@@ -509,6 +509,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="fingers-title">
+            <h2 id="fingers-title">손가락 더하기</h2>
+            <div class="door-picture"><div id="home-fingers-sample"></div></div>
+            <p id="home-fingers-ask" class="door-ask">선생님 손을 다 빼 볼까요?</p>
+            <div class="door-foot">
+              <button id="home-fingers-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-fingers-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -659,6 +669,9 @@
               </li>
               <li>
                 <button id="home-tilings-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-tilings-blank"></span></span><span class="menu-name">도미노 깔기 모두 찾기</span></button>
+              </li>
+              <li>
+                <button id="home-fingers-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-fingers-blank"></span></span><span class="menu-name">손가락 더하기</span></button>
               </li>
             </ul>
           </div>
@@ -903,6 +916,9 @@
                 <div id="tilings-table-box" class="tl-table-box" hidden></div>
               </div>
             </div>
+            <!-- 손가락 더하기: 위에 선생님의 두 손(손가락이 아래로), 아래에 내 두 손. 내 차례에는 내 손을 누르고(금빛 고리), 칠 선생님 손을 누른다.
+                 방금 친 것은 화살과 "+친 손가락 수"로 보인다. 빠진 손은 회색 주먹이다 -->
+            <div id="fingers-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1076,6 +1092,13 @@
               <span id="tilings-stairs-numbers" class="block-numbers" hidden>
                 <span>계단 <strong id="tilings-steps">0</strong>칸</span>
                 <span>오른 계단 <strong id="tilings-climbed">0</strong>칸</span>
+              </span>
+            </span>
+            <!-- 손가락 더하기: 윗줄에 할 일이나 사실 한 줄(방금 누가 어느 손으로 어느 손을 쳤는지, 칠 수 없는 손을 눌렀는지, 어떻게 끝났는지), 그 아래에 친 횟수. 시계는 없다 -->
+            <span id="fingers-count" class="count tile-count block-count" hidden>
+              <span id="fingers-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>친 횟수 <strong id="fingers-taps">0</strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1707,6 +1730,23 @@
               <button id="tilings-guess-go" class="btn good huge" type="button" hidden disabled>짐작 적기</button>
               <button id="tilings-guess-skip" class="btn wide" type="button" hidden>모르겠어요</button>
               <p id="tilings-guess-line" class="pad-note best-line" hidden></p>
+            </div>
+          </div>
+          <!-- 손가락 더하기: 위에 빠지는 수와 규칙, 누가 먼저 치는지(또는 손가락이 펴진 판에서 시작한다는 것), 내 손과 선생님 손의 모양.
+               먼저 칠지 고르는 판은 먼저 고른다. 차례가 오면 판에서 내 손을 누르고 칠 선생님 손을 누른다 -->
+          <div id="fingers-pad" class="pad" hidden>
+            <p id="fingers-limit-line" class="pad-note best-line"></p>
+            <p id="fingers-first-line" class="pad-note" hidden></p>
+            <p class="pad-note fg-legend"><span class="fg-chip kid" aria-hidden="true"></span>내 손 <span class="fg-chip teacher" aria-hidden="true"></span>선생님 손</p>
+            <div id="fingers-order" class="choices" hidden>
+              <h2>먼저 칠까요?</h2>
+              <button id="fingers-first" class="btn huge" type="button">먼저 칠래요</button>
+              <button id="fingers-second" class="btn huge" type="button">나중에 칠래요</button>
+            </div>
+            <div id="fingers-turn-box" class="choices" hidden>
+              <h2 id="fingers-turn" aria-live="polite"></h2>
+              <p class="pad-note">내 손을 하나 누른 다음, 칠 선생님 손을 눌러요.</p>
+              <p class="pad-note">고른 손을 다시 누르면 고르기를 그만둬요.</p>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -2426,6 +2466,9 @@
             <button id="net-again" class="btn wide after-extra" type="button" hidden>같은 그물 다르게 끊기</button>
             <!-- 도미노 깔기 모두 찾기에서만 보인다. "풀이 보기" 대신 덮는 방법을 모두 그린다(적어 둔 것은 실선, 적지 않은 것은 점선 테두리). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
             <button id="tilings-all" class="btn wide after-extra primary" type="button" hidden>전부 보여 줘</button>
+            <!-- 손가락 더하기에서만 보인다. 블랙홀처럼 끝난 뒤에 "같은 단계 새 판"(진 판 뒤)이나 "직접 만들기" 앞으로 옮겨 놓는다 -->
+            <button id="fingers-swap" class="btn wide after-extra" type="button" hidden>자리를 바꿔서 다시 치기</button>
+            <button id="fingers-replay" class="btn wide after-extra" type="button" hidden>방금 판 다시 보기</button>
             <!-- 공정한 게임일까의 도전 판에서만 보인다. 까닭을 적어 남길 수 있다(안 써도 된다). "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
             <div id="fair-reason-box" class="after-extra fr-reason" hidden>
               <label for="fair-reason">까닭 남기기</label>
@@ -4223,6 +4266,41 @@
             <button id="tilings-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 늘어놓은 깔기: 덮는 방법을 모두 차례대로 -->
             <div id="tilings-make-picture" class="tl-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-fingers" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>손이 빠지는 손가락 수</h2>
+          <div class="stepper">
+            <button id="fingers-make-limit-fewer" class="btn" type="button" aria-label="하나 줄이기">−</button>
+            <strong id="fingers-make-limit"></strong>
+            <button id="fingers-make-limit-more" class="btn" type="button" aria-label="하나 늘리기">＋</button>
+          </div>
+          <h2>규칙</h2>
+          <div class="bh-make-pair fg-make-rules">
+            <button id="fingers-make-rule-basic" class="btn" type="button" aria-pressed="true">되거나 넘으면 빠지기</button>
+            <button id="fingers-make-rule-wrap" class="btn" type="button" aria-pressed="false">넘으면 넘은 만큼 남기</button>
+          </div>
+          <h2>먼저 칠 사람</h2>
+          <div class="bh-make-pair">
+            <button id="fingers-make-first-kid" class="btn" type="button" aria-pressed="true">나</button>
+            <button id="fingers-make-first-teacher" class="btn" type="button" aria-pressed="false">선생님</button>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">빠지는 수와 규칙을 정하고, 손을 눌러 손가락을 펴요. 나중에 치는 쪽이 이기는 판을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="fingers-make-board"></div></div>
+          <p id="fingers-make-placing" class="pad-note" aria-live="polite"></p>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="fingers-make-solve" class="btn primary huge" type="button">선생님, 누가 이길까요?</button>
+            <p id="fingers-make-result" class="make-result" aria-live="polite"></p>
+            <button id="fingers-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

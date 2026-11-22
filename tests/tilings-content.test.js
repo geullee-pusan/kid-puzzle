@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="tilings-title"', 'id="make-title"'), part('id="tilings-count"', 'id="domino-count"'), part('id="tilings-pad"', 'id="domino-pad"'), part('id="tilings-all"', 'id="fair-reason-box"'), part('id="make-tilings"', '<script')].map(visibleText).join(' ');
+const own = [part('id="tilings-title"', 'id="fingers-title"'), part('id="tilings-count"', 'id="fingers-count"'), part('id="tilings-pad"', 'id="fingers-pad"'), part('id="tilings-all"', 'id="fingers-swap"'), part('id="make-tilings"', 'id="make-fingers"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 /** 그림의 깔기가 그 판을 빈틈없이 덮는 깔기 가운데 하나인가 */
@@ -102,12 +102,12 @@ test('규칙 설명은 세 문장 안이다. 뒤집어 같은 모양도 따로 �
   assert.match(T.rules.stairs, /한 칸이나 두 칸씩/);
   assert.equal(fill(T.rules.table, { face: '2×6 판' }), '도미노 한 개는 붙어 있는 두 칸을 덮어요. 2×1 판부터 2×6 판까지 덮는 방법을 세어 표를 채워요. 그다음 더 긴 판을 짐작해요.');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 44);
+  assert.equal(guides.length, 45);
   const mine = guides[43];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^줄 수와 칸 수를 정하고, 칸을 눌러 빼거나 되살려요\./);
   // 덮을 수 없는 판이 나오는 세 줄 판에서는 0을 넣으면 된다고 판 옆에 적는다
-  assert.match(visibleText(part('id="tilings-pad"', 'id="domino-pad"')), /덮을 수 없는 판이면 0을 넣어요\./);
+  assert.match(visibleText(part('id="tilings-pad"', 'id="fingers-pad"')), /덮을 수 없는 판이면 0을 넣어요\./);
   assert.match(code, /\$\('tilings-zero-note'\)\.hidden = !\(locking && !round\.done && round\.board\.h === 3 && !isStairs\(round\.board\)\);/);
 });
 
@@ -214,7 +214,7 @@ test('"왜 그럴까?": 맨 왼쪽 끝은 세운 도미노 하나이거나 눕�
 });
 
 test('전부 보여 줘: 끝난 뒤에만 열리고, 풀이 보기 대신이다. 적어 둔 것은 실선, 적지 않은 것은 점선 테두리다', () => {
-  assert.match(part('id="tilings-all"', 'id="fair-reason-box"'), /id="tilings-all"[^>]*hidden>전부 보여 줘</);
+  assert.match(part('id="tilings-all"', 'id="fingers-swap"'), /id="tilings-all"[^>]*hidden>전부 보여 줘</);
   assert.equal(T.solution['all-title'], '전부 보여 줘');
   assert.match(code, /const done = round\.done && !round\.side;\s*\$\('tilings-all'\)\.hidden = !done;/);
   assert.match(code, /\$\('after-solution'\)\.hidden = true;/);
@@ -237,15 +237,15 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 직접 �
   assert.match(part('id="tilings-title"', '</section>'), /<h2 id="tilings-title">도미노 깔기 모두 찾기<\/h2>/);
   assert.ok(visibleText(part('id="tilings-title"', '</section>')).includes(T.home.ask.count));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-tilings-make" class="menu-item"/);
-  assert.match(visibleText(part('id="tilings-pad"', 'id="domino-pad"')), /맞는 수를 넣으면 자물쇠가 열려요\. 몇 번이든 다시 넣어도 돼요\./);
+  assert.match(visibleText(part('id="tilings-pad"', 'id="fingers-pad"')), /맞는 수를 넣으면 자물쇠가 열려요\. 몇 번이든 다시 넣어도 돼요\./);
   assert.deepEqual([...part('id="tilings-sizes"', '</div>').matchAll(/data-size="(\d)"/g)].map((match) => Number(match[1])), [1, 2, 3, 4, 5, 6]);
   // 카드는 원판 둘씩 옮기기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="discpair-title"') < html.indexOf('id="tilings-title"'));
   assert.ok(html.indexOf('id="tilings-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(원판 둘씩 옮기기 다음)
-  assert.match(read('src/main.js'), /discpair: createDiscpair\(frame\), tilings: createTilings\(frame\) \};/);
+  assert.match(read('src/main.js'), /discpair: createDiscpair\(frame\), tilings: createTilings\(frame\), /);
   assert.match(read('src/check-main.js'), /\['tilings', '도미노 깔기 모두 찾기'\]/);
-  assert.match(read('src/core/smaller.js'), /discpair: smallerDiscpair, tilings: smallerTilings \};/);
+  assert.match(read('src/core/smaller.js'), /discpair: smallerDiscpair, tilings: smallerTilings, /);
   assert.match(code, /smaller: \(round, turn\) => smallerTilings\(\{ mode: round\.mode, board: round\.board, size: round\.size \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

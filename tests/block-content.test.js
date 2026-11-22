@@ -96,7 +96,7 @@ test('규칙 설명은 세 문장을 넘지 않는다. 첫 단계는 "가장 적
   assert.equal(rungOf(MAKE_LEVEL).hint, 'more');
   // 직접 만들기 화면의 안내 글도 세 문장 안쪽이다. 크지만 몇 칸만 막으면 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 44, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 45, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[8]) <= 3, guides[8]);
   assert.match(guides[8], /몇 칸만 막으면 되는 판도 만들 수 있을까요\?/);
 });

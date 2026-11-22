@@ -15922,3 +15922,320 @@ button.fr-chip {
   width: 100%;
   height: 120px;
 }
+
+/* ---- 손가락 더하기: 위에 선생님의 두 손(손가락이 아래로), 아래에 내 두 손(손가락이 위로), 손마다 손가락 수 ----
+   색만으로 알리지 않는다. 내 손은 실선 테두리와 주황 소매, 손가락 수는 주황 동그라미(흰 수).
+   선생님 손은 점선 테두리와 줄무늬 파란 소매, 손가락 수는 파란 점선 네모(파란 수).
+   빠진 손은 손가락을 모두 접은 회색 주먹(점선)이고 손가락 수 자리에 "빠짐"이 적힌다.
+   손 하나의 누르는 자리는 그림 칸 전체(1180×820 화면에서 가로 100픽셀쯤)다. */
+.fg-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .fg-board,
+.door-picture > .fg-board,
+#make-fingers .board-area > .fg-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.fg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 손이 너무 커지지 않게 한다 */
+  max-width: 560px;
+  max-height: 640px;
+}
+
+.fg-board.small .fg-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.fg-board.live .fg-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.fg-board.live .fg-hand-group {
+  cursor: pointer;
+}
+
+.fg-spot {
+  fill: transparent;
+  stroke: none;
+}
+
+/* 누를 수 있는 손: 굵은 점선 테두리(내 손은 주황, 선생님 손은 파랑) */
+.fg-spot.open {
+  fill: #fff9db;
+  stroke: #e67700;
+  stroke-width: 4;
+  stroke-dasharray: 10 7;
+}
+
+.fg-spot.open.teacher {
+  fill: #e7f5ff;
+  stroke: #1864ab;
+}
+
+.fg-finger,
+.fg-palm {
+  fill: #ffd8a8;
+  stroke: #862e0c;
+  stroke-width: 4;
+}
+
+.fg-teacher .fg-finger,
+.fg-teacher .fg-palm {
+  fill: #ffe8cc;
+  stroke: #1864ab;
+  stroke-dasharray: 8 5;
+}
+
+.fg-finger.folded {
+  fill: #ffc078;
+}
+
+.fg-teacher .fg-finger.folded {
+  fill: #ffd8a8;
+}
+
+.fg-cuff {
+  fill: #f76707;
+  stroke: #862e0c;
+  stroke-width: 3;
+}
+
+.fg-teacher .fg-cuff {
+  fill: #74c0fc;
+  stroke: #1864ab;
+}
+
+.fg-stripe {
+  stroke: #1864ab;
+  stroke-width: 3;
+}
+
+/* 빠진 손: 회색 주먹 */
+.fg-out .fg-finger,
+.fg-out .fg-palm,
+.fg-out .fg-finger.folded {
+  fill: #dee2e6;
+  stroke: #868e96;
+  stroke-dasharray: 6 5;
+}
+
+.fg-out .fg-cuff {
+  fill: #ced4da;
+  stroke: #868e96;
+}
+
+.fg-count {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.fg-count.kid {
+  fill: #ffffff;
+}
+
+.fg-count.teacher {
+  fill: #1864ab;
+}
+
+.fg-count.out {
+  font-size: 24px;
+  fill: #495057;
+}
+
+.fg-count-back.kid {
+  fill: #f76707;
+  stroke: #862e0c;
+  stroke-width: 3;
+}
+
+.fg-count-back.teacher {
+  fill: #e7f5ff;
+  stroke: #1864ab;
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+.fg-name {
+  font-size: 26px;
+  font-weight: 700;
+  fill: #495057;
+}
+
+/* 내가 칠 손으로 고른 손: 굵은 금빛 고리 */
+.fg-picked {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 9;
+}
+
+.fg-ring {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 6;
+}
+
+/* 방금 친 것: 친 손에서 맞은 손으로 가는 화살과 친 손가락 수 */
+.fg-arrow {
+  stroke: #e8590c;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.fg-arrow-head {
+  fill: #e8590c;
+}
+
+.fg-plus-back {
+  fill: #fff4e6;
+  stroke: #e8590c;
+  stroke-width: 3;
+}
+
+.fg-plus {
+  font-size: 24px;
+  font-weight: 800;
+  fill: #d9480f;
+}
+
+/* 방금 맞은 손: 살짝 흔들린다 */
+.fg-bump {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fg-bump 0.3s ease-out;
+}
+
+@keyframes fg-bump {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-bump {
+    animation: none;
+  }
+}
+
+/* 그림과 표시는 누르는 것을 가로막지 않는다(밑의 손 칸이 눌린다) */
+.fg-hand,
+.fg-count,
+.fg-count-back,
+.fg-picked,
+.fg-ring,
+.fg-arrow,
+.fg-arrow-head,
+.fg-plus,
+.fg-plus-back,
+.fg-name {
+  pointer-events: none;
+}
+
+.fg-hand-group:focus {
+  outline: none;
+}
+
+.fg-hand-group:focus-visible .fg-spot {
+  stroke: var(--gold);
+  stroke-width: 9;
+}
+
+.board-foot:has(> #fingers-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸: 내 손과 선생님 손의 모양 */
+.fg-chip {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  margin: 0 6px;
+  vertical-align: middle;
+}
+
+.fg-chip.kid {
+  border-radius: 50%;
+  background: #f76707;
+  border: 3px solid #862e0c;
+}
+
+.fg-chip.teacher {
+  border-radius: 6px;
+  background: #e7f5ff;
+  border: 3px dashed #1864ab;
+}
+
+.fg-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .fg-board.small {
+  width: 80px;
+  height: 92px;
+}
+
+.level .fg-board.small {
+  width: 70px;
+  height: 80px;
+}
+
+.menu-picture > .fg-board {
+  height: 76px;
+}
+
+.resume.note-picture .fg-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 다시 보기, 풀이, "왜 그럴까?"의 그림 카드. 판 위의 종이(가로 470픽셀쯤, 사이 28픽셀)에 한 줄에 석 장이 굴리지 않고 들어간다. big은 한 장 */
+.fg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 134px);
+}
+
+.fg-card > .fg-board {
+  height: 160px;
+}
+
+.fg-card.big {
+  width: min(100%, 320px);
+}
+
+.fg-card.big > .fg-board {
+  height: 340px;
+}
+
+.fg-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.fg-make-rules .btn {
+  flex: 1 1 100%;
+}

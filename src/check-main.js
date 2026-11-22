@@ -78,6 +78,7 @@ function drawCounts() {
     ['racetrack', '모눈 자동차 경주'],
     ['discpair', '원판 둘씩 옮기기'],
     ['tilings', '도미노 깔기 모두 찾기'],
+    ['fingers', '손가락 더하기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

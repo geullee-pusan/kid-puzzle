@@ -72,6 +72,8 @@ import { smallBoards as smallDiscpairBoards, solveOnce as solveDiscpair } from '
 import { checkBoard as checkDiscpair } from './discpair.js';
 import { smallBoards as smallTilingsBoards } from './tilings-ladder.js';
 import { checkBoard as checkTilings, keysOf as keysOfTilings, strip as tilingsStrip } from './tilings.js';
+import { smallBoards as smallFingersBoards } from './fingers-ladder.js';
+import { checkBoard as checkFingers } from './fingers.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1025,4 +1027,17 @@ export function smallerTilings(origin, turn = 0) {
   return wrap(pickByTurn(smallTilingsBoards(origin), possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings };
+// ---- 손가락 더하기: 빠지는 수가 적은 판, 끝에 더 가까운 판 ----
+
+/**
+ * 손가락 하나씩에서 시작하는 판과 먼저 칠지 고르는 판은 같은 규칙으로 빠지는 수가 하나, 둘 적은 판(셋까지)을 낸다.
+ * 먼저 칠 쪽은 아이 자리에서 본 끝이 원래 판과 같게 고른다. 손가락이 펴진 판에서 아이가 이기는 판은 끝까지 남은 칠 수가 더 적은 판을 낸다
+ * (src/core/fingers-ladder.js의 smallBoards). 그런 판이 없으면 두 번 더 친 판, 그것도 없으면 없다.
+ */
+export function smallerFingers(origin, turn = 0) {
+  if (!origin.board || checkFingers(origin.board) !== null) return null;
+  const list = smallFingersBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers };
