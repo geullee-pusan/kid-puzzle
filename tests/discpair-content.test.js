@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="discpair-title"', 'id="tilings-title"'), part('id="discpair-color"', 'id="why"'), part('id="discpair-count"', 'id="tilings-count"'), part('id="discpair-pad"', 'id="tilings-pad"'), part('id="make-discpair"', 'id="make-tilings"')].map(visibleText).join(' ');
+const own = [part('id="discpair-title"', 'id="tilings-title"'), part('id="discpair-color"', 'id="signs-plus"'), part('id="discpair-count"', 'id="tilings-count"'), part('id="discpair-pad"', 'id="tilings-pad"'), part('id="make-discpair"', 'id="make-tilings"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const circleOf = (piles) => piles.filter((_, cell) => cell % 2 === 0).reduce((sum, value) => sum + value, 0);
@@ -101,7 +101,7 @@ test('규칙 설명은 세 문장 안이다. 두 원판을 같은 칸에서 골�
   // 1단계(모두 되는 판)에는 "불가능해요" 단추가 없다
   assert.match(code, /const hasImpossible = \(round\) => round\.mode !== 'gather';/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 45);
+  assert.equal(guides.length, 46);
   const mine = guides[42];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^칸을 눌러 원판을 놓거나 빼요\./);
@@ -217,7 +217,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.ok(visibleText(part('id="discpair-title"', '</section>')).includes(T.home.ask.gather));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-discpair-make" class="menu-item"/);
   assert.match(part('id="discpair-pad"', 'id="tilings-pad"'), /id="discpair-impossible"[^>]*>불가능해요</);
-  assert.match(part('id="discpair-color"', 'id="why"'), /aria-pressed="false" hidden>색 켜기</);
+  assert.match(part('id="discpair-color"', 'id="signs-plus"'), /aria-pressed="false" hidden>색 켜기</);
   assert.equal(T.tool.off, '색 켜기');
   // 카드는 모눈 자동차 경주 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="racetrack-title"') < html.indexOf('id="discpair-title"'));

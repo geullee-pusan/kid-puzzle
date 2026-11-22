@@ -93,7 +93,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있고, 직접 
   assert.match(T.rules.circle, /점이 늘면 조각은 몇 개가 될까요\?$/);
   assert.match(T.rules['prime-closed'], /^차림표: 수에 그 수를 곱하고, 그 수를 더하고, \{k\}을 더해요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 45);
+  assert.equal(guides.length, 46);
   assert.ok(sentenceCount(guides[17]) <= 3, guides[17]);
   assert.match(guides[17], /아무리 돌려도 되풀이되지 않는 기계도 만들 수 있을까요\?$/);
 });

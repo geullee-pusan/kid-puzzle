@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="fingers-title"', 'id="make-title"'), part('id="fingers-count"', 'id="domino-count"'), part('id="fingers-pad"', 'id="domino-pad"'), part('id="fingers-swap"', 'id="fair-reason-box"'), part('id="make-fingers"', '<script')].map(visibleText).join(' ');
+const own = [part('id="fingers-title"', 'id="signs-title"'), part('id="fingers-count"', 'id="signs-count"'), part('id="fingers-pad"', 'id="signs-pad"'), part('id="fingers-swap"', 'id="fair-reason-box"'), part('id="make-fingers"', 'id="make-signs"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -84,7 +84,7 @@ test('규칙은 세 문장 안이고, 치면 친 손가락 수만큼 늘어나�
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleOf\(round\.board\)\], \{ n: round\.board\.limit \}\),/);
   // 직접 만들기의 안내 글도 세 문장 안이다(형식마다 하나, 이 형식이 맨 뒤). 나중에 치는 쪽이 이기는 판을 만들어 보라고 권한다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 45);
+  assert.equal(guides.length, 46);
   const mine = guides[44];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^빠지는 수와 규칙을 정하고, 손을 눌러 손가락을 펴요\./);
@@ -92,7 +92,7 @@ test('규칙은 세 문장 안이고, 치면 친 손가락 수만큼 늘어나�
 });
 
 test('시계가 아니라 친 횟수를 보인다. 점수, 별, 연달아 이긴 수가 없다', () => {
-  const foot = visibleText(part('id="fingers-count"', 'id="domino-count"'));
+  const foot = visibleText(part('id="fingers-count"', 'id="signs-count"'));
   assert.match(foot, /친 횟수\s+0\s+번/);
   assert.match(code, /\$\('fingers-taps'\)\.textContent = String\(now\.moves\.length\);/);
   assert.doesNotMatch(code + board, /setInterval|requestAnimationFrame|Date\.now|performance\.now/);
@@ -230,7 +230,7 @@ test('풀이와 직접 만들기: 먼저 치는 쪽부터 둘 다 잘 치면 어
   assert.equal(T.solution['kid-win'], '내가 먼저 치면, 둘 다 잘 칠 때 내가 이겨요.');
   assert.equal(fill(T.solution.taps, { k: 8 }), '모두 8번 치면 끝나요.');
   assert.match(code, /const line = endLine\(board\.first, result\.value, result\.taps\[board\.first\]\);/);
-  const make = part('id="make-fingers"', '<script');
+  const make = part('id="make-fingers"', 'id="make-signs"');
   for (const id of ['fingers-make-limit-fewer', 'fingers-make-limit', 'fingers-make-limit-more', 'fingers-make-rule-basic', 'fingers-make-rule-wrap', 'fingers-make-first-kid', 'fingers-make-first-teacher', 'fingers-make-board', 'fingers-make-placing', 'fingers-make-solve', 'fingers-make-result', 'fingers-make-play']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -247,16 +247,16 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 끝난 �
   assert.match(part('id="fingers-title"', '</section>'), /<h2 id="fingers-title">손가락 더하기<\/h2>/);
   assert.ok(visibleText(part('id="fingers-title"', '</section>')).includes(T.home.ask.first));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-fingers-make" class="menu-item"/);
-  const pad = part('id="fingers-pad"', 'id="domino-pad"');
+  const pad = part('id="fingers-pad"', 'id="signs-pad"');
   assert.match(pad, /id="fingers-first"[^>]*>먼저 칠래요</);
   assert.match(pad, /id="fingers-second"[^>]*>나중에 칠래요</);
   // 카드는 도미노 깔기 모두 찾기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="tilings-title"') < html.indexOf('id="fingers-title"'));
   assert.ok(html.indexOf('id="fingers-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 도미노 깔기 모두 찾기 다음)
-  assert.match(read('src/main.js'), /tilings: createTilings\(frame\), fingers: createFingers\(frame\) \};/);
+  // 틀이 형식을 안다(도미노 깔기 모두 찾기 다음)
+  assert.match(read('src/main.js'), /tilings: createTilings\(frame\), fingers: createFingers\(frame\), /);
   assert.match(read('src/check-main.js'), /\['fingers', '손가락 더하기'\]/);
-  assert.match(read('src/core/smaller.js'), /tilings: smallerTilings, fingers: smallerFingers \};/);
+  assert.match(read('src/core/smaller.js'), /tilings: smallerTilings, fingers: smallerFingers, /);
   assert.match(code, /smaller: \(round, turn\) => smallerFingers\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 없다(선생님과 치는 게임). 규칙 글은 왼쪽 칸에 둔다

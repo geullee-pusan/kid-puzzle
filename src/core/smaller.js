@@ -74,6 +74,8 @@ import { smallBoards as smallTilingsBoards } from './tilings-ladder.js';
 import { checkBoard as checkTilings, keysOf as keysOfTilings, strip as tilingsStrip } from './tilings.js';
 import { smallBoards as smallFingersBoards } from './fingers-ladder.js';
 import { checkBoard as checkFingers } from './fingers.js';
+import { smallBoards as smallSignsBoards } from './signs-ladder.js';
+import { checkBoard as checkSigns, solve as solveSigns } from './signs.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1040,4 +1042,18 @@ export function smallerFingers(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers };
+// ---- 부호 넣어 수 만들기: 맨 앞의 수(뛰는 횟수)가 하나, 둘 적은 같은 종류의 판 ----
+
+/**
+ * 줄과 메뚜기는 목표 수(닿을 곳)를 원래 판과 가장 가깝게 고른 판이다. 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 안 되는 판과 번갈아 낸다.
+ * 모두 찾기와 가장 큰 수는 줄이 짧은 판을 차례로 낸다(src/core/signs-ladder.js의 smallBoards).
+ * 수 셋인 줄과 모두 찾기, 두 번 뛰는 메뚜기, 수 다섯인 가장 큰 수처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerSigns(origin, turn = 0) {
+  if (!origin.board || checkSigns(origin.board) !== null) return null;
+  const lists = smallSignsBoards(origin.board);
+  if (lists.list) return lists.list.length > 0 ? wrap(lists.list[turn % lists.list.length]) : null;
+  return wrap(pickByTurn(lists, solveSigns(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns };
