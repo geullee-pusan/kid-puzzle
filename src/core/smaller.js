@@ -80,6 +80,8 @@ import { smallBoards as smallViewsBoards } from './views-ladder.js';
 import { checkBoard as checkViews } from './views.js';
 import { smallBoards as smallSlideBoards, solveOnce as solveSlide } from './slide-ladder.js';
 import { checkBoard as checkSlide } from './slide.js';
+import { smallBoards as smallFourdigitsBoards } from './fourdigits-ladder.js';
+import { checkBoard as checkFourdigits } from './fourdigits.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1085,4 +1087,16 @@ export function smallerSlide(origin, turn = 0) {
   return wrap(pickByTurn(smallSlideBoards(origin), solveSlide(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide };
+// ---- 숫자 넷으로 수 만들기: 숫자 카드를 하나 뺀 판 ----
+
+/**
+ * 숫자 카드를 하나 뺀 같은 종류의 판을 차례로 낸다(src/core/fourdigits-ladder.js의 smallBoards). 사다리에는 안 되는 판이 없어서 되는 판과 안 되는 판을 번갈아 낼 것이 없다.
+ * 목표 수 판은 숫자 둘인 판까지, 1부터 차례로는 숫자 셋인 판까지 줄인다(숫자 셋으로 1부터 차례로 할 수 없으면 숫자 셋의 목표 수 판). 더 줄일 수 없으면 없다.
+ */
+export function smallerFourdigits(origin, turn = 0) {
+  if (!origin.board || checkFourdigits(origin.board) !== null) return null;
+  const list = smallFourdigitsBoards(origin.board);
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits };

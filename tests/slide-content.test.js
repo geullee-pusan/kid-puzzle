@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="slide-title"', 'id="make-title"'), part('id="slide-tool"', 'id="why"'), part('id="slide-board"', '<div class="board-foot">'), part('id="slide-count"', 'id="fold-count"'), part('id="slide-pad"', 'id="domino-pad"'), part('id="make-slide"', '<script')].map(visibleText).join(' ');
+const own = [part('id="slide-title"', 'id="fourdigits-title"'), part('id="slide-tool"', 'id="why"'), part('id="slide-board"', 'id="fourdigits-board"'), part('id="slide-count"', 'id="fourdigits-count"'), part('id="slide-pad"', 'id="fourdigits-pad"'), part('id="make-slide"', 'id="make-fourdigits"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -97,8 +97,8 @@ test('가장 적게 하는 판: 틀렸다고 하지 않고 "더 줄일 수 있�
   assert.match(code, /const fewest = !isRecord\(round\) \|\| k === solution\.fewest;/);
   assert.match(code, /round\.wrongCount \+= 1;\s*frame\.persist\(\);/);
   for (const [path, text] of strings) if (path.startsWith('play') || path.startsWith('status') || path.startsWith('hints')) assert.doesNotMatch(text, /가장 적게 \{k\}/, path);
-  assert.match(part('id="slide-pad"', 'id="domino-pad"'), /id="slide-again"[^>]*>처음 판으로 다시 해 볼래요</);
-  assert.match(part('id="slide-pad"', 'id="domino-pad"'), /id="slide-stop"[^>]*>여기까지 할래요</);
+  assert.match(part('id="slide-pad"', 'id="fourdigits-pad"'), /id="slide-again"[^>]*>처음 판으로 다시 해 볼래요</);
+  assert.match(part('id="slide-pad"', 'id="fourdigits-pad"'), /id="slide-stop"[^>]*>여기까지 할래요</);
   assert.equal(fill(T.notebook['best-swap'], { k: 3 }), '3번 맞바꿔 놓은 줄');
   assert.match(code, /bestOf: \(round\) => \(!isRecord\(round\) \|\| round\.best === null \? null :/);
 });
@@ -117,7 +117,7 @@ test('규칙 설명은 세 문장 안이다. 첫 단계는 "가장 적게"를 �
   for (const key of ['fewest', 'least', 'made-swap']) assert.match(T.rules[key], /가장 적게 .+ 보세요\.$/);
   for (const key of ['small', 'big', 'made-slide']) assert.match(T.rules[key], /오른쪽 아래 구석/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 48);
+  assert.equal(guides.length, 49);
   const mine = guides[47];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^두 말을 차례로 누르면 자리가 바뀌어요\./);
@@ -257,7 +257,7 @@ test('풀이와 직접 만들기: 되는 판은 가장 적게 하는 차례, 안
   assert.equal(fill(T.make.swap, { k: 3 }), '가장 적게 3번 맞바꾸면 모두 제자리에 가요.');
   // 그 크기에서 가장 많이 밀어야 하는 판이면 그것도 말한다(풀이 프로그램의 표)
   assert.match(code, /const farthest = result\.fewest === farthestOf\(board\.w, board\.h\);/);
-  const make = part('id="make-slide"', '<script');
+  const make = part('id="make-slide"', 'id="make-fourdigits"');
   for (const id of ['slide-make-kind', 'slide-make-size', 'slide-make-fewer', 'slide-make-n', 'slide-make-more', 'slide-make-clear', 'slide-make-board', 'slide-make-solve', 'slide-make-result', 'slide-make-play', 'slide-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="slide-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(make, /id="slide-make-play"[^>]*>내가 해 볼래요</);
@@ -275,17 +275,17 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="slide-title"', '</section>'), /<h2 id="slide-title">번호 말 제자리 찾기<\/h2>/);
   assert.ok(visibleText(part('id="slide-title"', '</section>')).includes(T.home.ask.swap));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-slide-make" class="menu-item"/);
-  assert.match(part('id="slide-pad"', 'id="domino-pad"'), /id="slide-impossible"[^>]*>불가능해요</);
+  assert.match(part('id="slide-pad"', 'id="fourdigits-pad"'), /id="slide-impossible"[^>]*>불가능해요</);
   // 판 아래의 띠와 짝의 수는 하는 일만 적는다
-  assert.match(part('id="slide-board"', '<div class="board-foot">'), />위 줄부터 한 줄로 읽은 수</);
-  assert.match(part('id="slide-count"', 'id="fold-count"'), />큰 수가 앞에 선 짝 <strong id="slide-pairs">/);
+  assert.match(part('id="slide-board"', 'id="fourdigits-board"'), />위 줄부터 한 줄로 읽은 수</);
+  assert.match(part('id="slide-count"', 'id="fourdigits-count"'), />큰 수가 앞에 선 짝 <strong id="slide-pairs">/);
   // 카드는 세 방향에서 본 그림 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="views-title"') < html.indexOf('id="slide-title"'));
   assert.ok(html.indexOf('id="slide-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 세 방향에서 본 그림 다음)
-  assert.match(read('src/main.js'), /views: createViews\(frame\), slide: createSlide\(frame\) \};/);
+  // 틀이 형식을 안다(세 방향에서 본 그림 다음)
+  assert.match(read('src/main.js'), /views: createViews\(frame\), slide: createSlide\(frame\), /);
   assert.match(read('src/check-main.js'), /\['slide', '번호 말 제자리 찾기'\]/);
-  assert.match(read('src/core/smaller.js'), /views: smallerViews, slide: smallerSlide \};/);
+  assert.match(read('src/core/smaller.js'), /views: smallerViews, slide: smallerSlide, /);
   assert.match(code, /smaller: \(round, turn\) => smallerSlide\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

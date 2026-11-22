@@ -107,7 +107,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 단
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(isTower\(round\.board\) \? 'fewest' : 'spread'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 48);
+  assert.equal(guides.length, 49);
   assert.ok(sentenceCount(guides[40]) <= 3, guides[40]);
   assert.match(guides[40], /^원판마다 꽂을 기둥을 골라요\./);
   assert.match(guides[40], /아주 다른 판을 만들 수 있을까요\?$/);

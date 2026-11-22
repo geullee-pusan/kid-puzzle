@@ -549,6 +549,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="fourdigits-title">
+            <h2 id="fourdigits-title">숫자 넷으로 수 만들기</h2>
+            <div class="door-picture"><div id="home-fourdigits-sample"></div></div>
+            <p id="home-fourdigits-ask" class="door-ask">숫자 카드로 목표 수를 만들 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-fourdigits-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-fourdigits-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -711,6 +721,9 @@
               </li>
               <li>
                 <button id="home-slide-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-slide-blank"></span></span><span class="menu-name">번호 말 제자리 찾기</span></button>
+              </li>
+              <li>
+                <button id="home-fourdigits-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-fourdigits-blank"></span></span><span class="menu-name">숫자 넷으로 수 만들기</span></button>
               </li>
             </ul>
           </div>
@@ -985,6 +998,8 @@
                 <div id="slide-line"></div>
               </div>
             </div>
+            <!-- 숫자 넷으로 수 만들기: 위에 목표 수 칸(또는 1부터의 띠), 가운데에 카드들, 아래에 셈 기호 단추 넷. 그림은 src/ui/fourdigits-board.js가 그린다 -->
+            <div id="fourdigits-board" class="nf-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1191,6 +1206,13 @@
                 <span id="slide-swaps-line">맞바꾼 횟수 <strong id="slide-swaps">0</strong>번</span>
                 <span id="slide-slides-line">민 횟수 <strong id="slide-slides">0</strong>번</span>
                 <span id="slide-pairs-line" hidden>큰 수가 앞에 선 짝 <strong id="slide-pairs">0</strong>개</span>
+              </span>
+            </span>
+            <!-- 숫자 넷으로 수 만들기: 윗줄에 할 일이나 사실 한 줄(고른 카드, 뺄 수 없는 셈, 남은 카드가 목표 수인지), 그 아래에 남은 카드의 수 -->
+            <span id="fourdigits-count" class="count tile-count block-count" hidden>
+              <span id="fourdigits-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>남은 카드 <strong id="fourdigits-left">4</strong>장</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1947,6 +1969,20 @@
             <div id="slide-maybe" class="choices">
               <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="slide-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+          </div>
+          <!-- 숫자 넷으로 수 만들기: 누르는 법. 목표 수 판은 목표 수, 1부터 차례로 하는 판은 1부터 몇까지 차례로 만들었는지와 만든 식의 목록, "여기까지 할래요" -->
+          <div id="fourdigits-pad" class="pad" hidden>
+            <p class="pad-note best-line">카드 하나, 셈 기호, 다른 카드를 차례로 눌러요. 고른 카드를 다시 누르면 내려놓아요.</p>
+            <div id="fourdigits-target-box" class="choices">
+              <p class="pad-note best-line">목표 수 <strong id="fourdigits-targets"></strong></p>
+            </div>
+            <div id="fourdigits-run-box" class="choices" hidden>
+              <p class="pad-note best-line"><span id="fourdigits-run-line">1부터 <strong id="fourdigits-run">0</strong>까지 차례로 만들었어요</span><span id="fourdigits-run-none">아직 1을 만들지 않았어요</span></p>
+              <p class="pad-note">점선 칸 둘이 지금 열린 수예요. 다른 수를 먼저 만들어도 띠에 적어요.</p>
+              <h2 id="fourdigits-list-title">만든 식</h2>
+              <ol id="fourdigits-list" class="nf-list"></ol>
+              <button id="fourdigits-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -4610,6 +4646,47 @@
             <button id="slide-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <!-- 선생님이 그린 그림: 맞바꾸기 줄은 제자리 화살표, 밀기 판은 한 줄로 읽은 띠와 큰 수가 앞에 선 짝의 수 -->
             <div id="slide-make-picture" class="sl-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-fourdigits" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>숫자 카드</h2>
+          <div class="stepper">
+            <button id="fourdigits-make-fewer-0" class="btn" type="button" aria-label="첫째 카드의 숫자 하나 줄이기">−</button>
+            <strong id="fourdigits-make-d0"></strong>
+            <button id="fourdigits-make-more-0" class="btn" type="button" aria-label="첫째 카드의 숫자 하나 늘리기">＋</button>
+          </div>
+          <div class="stepper">
+            <button id="fourdigits-make-fewer-1" class="btn" type="button" aria-label="둘째 카드의 숫자 하나 줄이기">−</button>
+            <strong id="fourdigits-make-d1"></strong>
+            <button id="fourdigits-make-more-1" class="btn" type="button" aria-label="둘째 카드의 숫자 하나 늘리기">＋</button>
+          </div>
+          <div class="stepper">
+            <button id="fourdigits-make-fewer-2" class="btn" type="button" aria-label="셋째 카드의 숫자 하나 줄이기">−</button>
+            <strong id="fourdigits-make-d2"></strong>
+            <button id="fourdigits-make-more-2" class="btn" type="button" aria-label="셋째 카드의 숫자 하나 늘리기">＋</button>
+          </div>
+          <div class="stepper">
+            <button id="fourdigits-make-fewer-3" class="btn" type="button" aria-label="넷째 카드의 숫자 하나 줄이기">−</button>
+            <strong id="fourdigits-make-d3"></strong>
+            <button id="fourdigits-make-more-3" class="btn" type="button" aria-label="넷째 카드의 숫자 하나 늘리기">＋</button>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">숫자 카드 넷을 골라요. 선생님이 1부터 어디까지 차례로 만들 수 있는지, 만들 수 없는 수가 무엇인지 따져 줘요. 1부터 가장 멀리 가는 숫자 넷을 찾을 수 있을까요?</p>
+          <div class="board-area"><div id="fourdigits-make-board" class="nf-board"></div></div>
+          <!-- 선생님이 그린 그림: 1부터의 띠(만들 수 없는 수는 굵은 테두리와 빗금) -->
+          <div id="fourdigits-make-picture" class="nf-make-picture"></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="fourdigits-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="fourdigits-make-result" class="make-result" aria-live="polite"></p>
+            <button id="fourdigits-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

@@ -17467,3 +17467,364 @@ button.sg-cell {
   align-self: stretch;
   height: auto;
 }
+
+/* ---- 숫자 넷으로 수 만들기: 목표 수 칸이나 1부터의 띠, 카드, 셈 기호, 만든 식의 목록, 작은 그림 ----
+   색만으로 알리지 않는다. 고른 카드는 굵은 금빛 점선 테두리와 들린 모습, 방금 생긴 카드는 굵은 실선 테두리, 고른 기호는 굵은 테두리와 빗금 바탕이다.
+   목표 수 칸은 아직이면 점선, 만들었으면 굵은 실선과 바탕이다. 띠의 만든 수는 가는 초록 테두리와 바탕, 아래의 점, 열린 수는 굵은 점선, 만들 수 없는 수는 굵은 검은 테두리와 빗금이다("굵은 테두리가 만들 수 없는 수"라는 말과 맞게 만든 수는 굵게 하지 않는다).
+   판 칸(가로 480픽셀쯤)에 카드 넷(한 장 96픽셀 이상)과 기호 넷(64픽셀), 한 줄에 열 칸인 띠(한 칸 가로 44픽셀, 세로 36픽셀. 누르는 칸이 아니다)가 들어간다.
+   띠가 여섯 줄(60까지)이어도 규칙 글을 왼쪽 칸에 두면 판 칸의 높이(420픽셀쯤)에 들어간다. 시계와 움직임은 없다. */
+.nf-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.board-area > .nf-board,
+#make-fourdigits .board-area > #fourdigits-make-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.nf-top-box,
+.nf-hand {
+  width: 100%;
+}
+
+.nf-cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+}
+
+.nf-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 96px;
+  min-height: 104px;
+  padding: 6px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff9db;
+  color: var(--ink);
+  font: inherit;
+}
+
+button.nf-card {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nf-card.joined {
+  background: #e7f5ff;
+}
+
+.nf-card.fresh {
+  border-width: 5px;
+}
+
+.nf-card.picked {
+  border: 5px dashed var(--gold);
+  box-shadow: 0 0 0 2px var(--ink);
+  transform: translateY(-10px);
+}
+
+button.nf-card:focus-visible,
+.nf-op:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.nf-num {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.nf-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.nf-bar {
+  align-self: stretch;
+  height: 3px;
+  margin: 2px 0;
+  background: var(--ink);
+}
+
+.nf-expr {
+  min-height: 24px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.nf-cards.small {
+  gap: 6px;
+}
+
+.nf-cards.small .nf-card {
+  min-width: 34px;
+  min-height: 0;
+  padding: 2px 6px;
+  border-width: 2px;
+  border-radius: 8px;
+}
+
+.nf-cards.small .nf-num {
+  font-size: 22px;
+}
+
+.nf-cards.small .nf-frac {
+  font-size: 18px;
+}
+
+.nf-cards.small .nf-bar {
+  height: 2px;
+  margin: 1px 0;
+}
+
+.nf-cards.small .nf-expr:empty,
+.nf-cards.mid .nf-expr:empty {
+  display: none;
+}
+
+.nf-cards.mid {
+  gap: 8px;
+}
+
+.nf-cards.mid .nf-card {
+  min-width: 52px;
+  min-height: 60px;
+  padding: 4px 8px;
+  border-width: 2px;
+  border-radius: 10px;
+}
+
+.nf-cards.mid .nf-num {
+  font-size: 30px;
+}
+
+.nf-cards.mid .nf-frac {
+  font-size: 22px;
+}
+
+.nf-ops {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.nf-op {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 36px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nf-op.picked {
+  border-width: 6px;
+  background: repeating-linear-gradient(135deg, #d0ebff 0 6px, #ffffff 6px 12px);
+}
+
+.nf-op:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.nf-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.nf-target {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 76px;
+  padding: 4px 12px;
+  border: 3px dashed var(--muted);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.nf-target.made {
+  border: 4px solid var(--good);
+  background: #ebfbee;
+}
+
+.nf-target-no {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.nf-target-expr {
+  min-height: 24px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.nf-targets.small {
+  gap: 6px;
+}
+
+.nf-targets.small .nf-target {
+  min-width: 40px;
+  min-height: 0;
+  padding: 0 8px;
+  border-width: 2px;
+}
+
+.nf-targets.small .nf-target.made {
+  border-width: 3px;
+}
+
+.nf-targets.small .nf-target-no {
+  font-size: 20px;
+}
+
+.nf-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 44px));
+  justify-content: center;
+  gap: 4px;
+}
+
+.nf-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.nf-cell.made {
+  border: 2px solid var(--good);
+  background: #ebfbee;
+}
+
+.nf-cell.open {
+  border: 4px dashed var(--accent);
+}
+
+.nf-cell.none {
+  border: 4px solid var(--ink);
+  background: repeating-linear-gradient(135deg, #ffe3e3 0 6px, #ffffff 6px 12px);
+}
+
+.nf-dot {
+  position: absolute;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--good);
+}
+
+.nf-strip.small {
+  gap: 2px;
+}
+
+.nf-strip.small .nf-cell {
+  min-height: 24px;
+  border-width: 1.5px;
+  border-radius: 5px;
+  font-size: 18px;
+}
+
+.nf-strip.small .nf-cell.none {
+  border-width: 3px;
+}
+
+.nf-strip.small .nf-dot {
+  bottom: 1px;
+  width: 5px;
+  height: 5px;
+}
+
+.nf-list {
+  margin: 0;
+  padding: 0;
+  max-height: 230px;
+  overflow: auto;
+  list-style: none;
+}
+
+.nf-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 19px;
+  white-space: nowrap;
+}
+
+.nf-item-no {
+  min-width: 28px;
+  text-align: right;
+}
+
+.nf-list-figure {
+  max-height: none;
+  columns: 2;
+  column-gap: 28px;
+}
+
+/* 풀이, "왜 그럴까?", 직접 만들기의 그림 카드. 카드 그림은 한 줄에 두세 장, 띠와 식 목록은 한 줄에 한 장 */
+.nf-card-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.nf-card-figure.wide {
+  width: 100%;
+}
+
+.nf-card-figure .strip-note {
+  margin-top: 2px;
+  text-align: center;
+}
+
+.nf-sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+}
+
+.nf-make-picture {
+  display: flex;
+  justify-content: center;
+}

@@ -82,6 +82,7 @@ function drawCounts() {
     ['signs', '부호 넣어 수 만들기'],
     ['views', '세 방향에서 본 그림'],
     ['slide', '번호 말 제자리 찾기'],
+    ['fourdigits', '숫자 넷으로 수 만들기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
