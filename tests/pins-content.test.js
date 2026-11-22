@@ -119,7 +119,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(fill(T.rules.wind, { k: 2 }), '실은 핀에서 시계 방향으로 2칸 앞의 핀으로 가요. 처음 핀으로 돌아오면 한 가닥이 끝나고, 실이 없는 핀에서 새 실을 매요.');
   assert.match(code, /return `\$\{free\(round\) \? T\.rules\.free : fill\(T\.rules\.wind, \{ k: round\.k \}\)\} \$\{ask\}`;/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 46);
+  assert.equal(guides.length, 47);
   assert.ok(sentenceCount(guides[36]) <= 3, guides[36]);
   assert.match(guides[36], /^핀 수와 칸 수를 정하면 선생님이 실을 끝까지 감아 줘요\./);
   // "실이 꼭 다섯 가닥 필요한 판"은 만들 수 있다(핀 10개 5칸씩, 핀 15개 5칸씩과 10칸씩)

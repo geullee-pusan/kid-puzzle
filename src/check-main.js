@@ -80,6 +80,7 @@ function drawCounts() {
     ['tilings', '도미노 깔기 모두 찾기'],
     ['fingers', '손가락 더하기'],
     ['signs', '부호 넣어 수 만들기'],
+    ['views', '세 방향에서 본 그림'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

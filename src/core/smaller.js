@@ -76,6 +76,8 @@ import { smallBoards as smallFingersBoards } from './fingers-ladder.js';
 import { checkBoard as checkFingers } from './fingers.js';
 import { smallBoards as smallSignsBoards } from './signs-ladder.js';
 import { checkBoard as checkSigns, solve as solveSigns } from './signs.js';
+import { smallBoards as smallViewsBoards } from './views-ladder.js';
+import { checkBoard as checkViews } from './views.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1056,4 +1058,17 @@ export function smallerSigns(origin, turn = 0) {
   return wrap(pickByTurn(lists, solveSigns(origin.board).possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns };
+// ---- 세 방향에서 본 그림: 가장자리의 세로줄이나 가로줄을 덜어 낸 같은 종류의 판 ----
+
+/**
+ * 판의 쌓기(보기 판은 보여 준 쌓기, 다른 판은 그림대로 가장 많이 쌓은 것)에서 가장자리의 세로줄이나 가로줄(오른쪽, 뒤, 왼쪽, 앞, 둘씩)을 덜어 낸 쌓기로
+ * 같은 종류의 판을 차례로 낸다(src/core/views-ladder.js의 smallBoards). 모든 판이 되는 판이라 되는 판과 안 되는 판을 번갈아 낼 것이 없다.
+ * 2×2 판처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerViews(origin, turn = 0) {
+  if (!origin.board || checkViews(origin.board) !== null) return null;
+  const list = smallViewsBoards(origin.board, { custom: origin.mode === 'made' });
+  return list.length > 0 ? wrap(list[turn % list.length]) : null;
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews };

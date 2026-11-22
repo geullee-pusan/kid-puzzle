@@ -16605,3 +16605,497 @@ button.sg-cell {
 .door-picture > div > .sg-line {
   height: 100cqh;
 }
+
+/* ---- 세 방향에서 본 그림: 쌓기나무(입체, 끌면 돌아간다), 쌓는 판, 앞·옆·위에서 본 그림, 보기, 작은 그림 ----
+   색만으로 알리지 않는다. 쌓기나무의 면은 방향마다 밝기가 다르고(위가 가장 밝고 옆이 가장 어둡다) 모든 면에 짙은 테두리가 있다.
+   바닥에는 칸마다 점선의 모눈 판을 깔고 앞쪽 가장자리를 굵게 그린 뒤, 그 앞에 "앞"을 적는다.
+   쌓는 판의 칸은 단추(56×56픽셀, 가로 네 칸 판은 48×48픽셀)이고 쌓은 칸은 굵은 실선 테두리와 수, 빈칸은 점선 테두리다. 빼기를 고르면 쌓은 칸에 빗금이 생긴다.
+   그림의 칸은 채운 칸이 굵은 테두리, 빈 자리는 옅은 점선이다. 짚은 줄은 굵은 점선 고리, 골라 본 보기는 빗금과 점선 테두리, 맞는 보기는 굵은 초록 테두리다.
+   돌아가는 움직임은 판 아래 단추를 눌렀을 때만 있고, 움직임을 줄이는 설정에서는 바로 그 모습이 된다. */
+.board-area > #views-board,
+#make-views .board-area > #views-make-board {
+  align-self: stretch;
+  height: auto;
+  display: flex;
+  min-height: 0;
+}
+
+.vw-main {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+}
+
+.vw-stage-box {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 220px;
+  display: flex;
+}
+
+.vw-stage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sd-scene.stack {
+  perspective: 2400px;
+}
+
+.sd-scene.stack .sd-world {
+  transition: transform 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-scene.stack .sd-world {
+    transition: none;
+  }
+}
+
+.sd-skin.sd-cube {
+  inset: auto;
+  left: calc(var(--u) / -2);
+  top: calc(var(--u) / -2);
+  width: var(--u);
+  height: var(--u);
+  border: 2px solid #5c3d14;
+  border-radius: 2px;
+  backface-visibility: hidden;
+}
+
+.sd-skin.sd-cube-top {
+  background: #f8dc9b;
+}
+
+.sd-skin.sd-cube-front {
+  background: #e3b465;
+}
+
+.sd-skin.sd-cube-back {
+  background: #d9a552;
+}
+
+.sd-skin.sd-cube-right,
+.sd-skin.sd-cube-left {
+  background: #b9812f;
+}
+
+.sd-skin.sd-cube-bottom {
+  background: #9c6a26;
+}
+
+.sd-stack-floor {
+  position: absolute;
+  left: calc(var(--w) * var(--u) / -2);
+  top: calc(var(--d) * var(--u) / -2);
+  width: calc(var(--w) * var(--u));
+  height: calc(var(--d) * var(--u));
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(var(--w), minmax(0, 1fr));
+  border: 2px solid #868e96;
+  border-bottom: 6px solid #343a40;
+  background: #f1f3f5;
+  transform: translateY(calc(var(--levels) * var(--u) / 2 + 1px)) rotateX(90deg);
+}
+
+.sd-floor-cell {
+  border: 1px dashed #adb5bd;
+}
+
+.sd-floor-plate {
+  position: absolute;
+  left: calc(var(--w) * var(--u) / -2);
+  top: calc(var(--u) * -0.35);
+  width: calc(var(--w) * var(--u));
+  height: calc(var(--u) * 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(calc(var(--levels) * var(--u) / 2 + 1px)) translateZ(calc(var(--d) * var(--u) / 2 + var(--u) * 0.4)) rotateX(90deg);
+}
+
+.vw-front-tag {
+  font-size: calc(var(--u) * 0.5);
+  font-weight: 700;
+  color: #343a40;
+}
+
+/* 쌓는 판: 위에서 본 판(아래쪽이 앞). 쌓기나무의 오른쪽에 둔다(무대가 정사각형에 가까워야 쌓기나무가 크게 보인다) */
+.vw-grid-holder {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vw-grid-holder[hidden] {
+  display: none;
+}
+
+.vw-grid-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.vw-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--w), var(--cell, 56px));
+  grid-auto-rows: var(--cell, 56px);
+  gap: 4px;
+}
+
+.vw-cell {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 2px dashed #adb5bd;
+  border-radius: 8px;
+  background: #fff;
+  color: #212529;
+  font: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vw-cell.on {
+  border: 4px solid #5c3d14;
+  background: #f8dc9b;
+}
+
+.vw-grid-box.removing .vw-cell.on {
+  background: repeating-linear-gradient(45deg, #f8dc9b 0 8px, #fff 8px 14px);
+}
+
+.vw-cell:disabled {
+  cursor: default;
+}
+
+.vw-cell:focus-visible {
+  outline: 4px solid #f08c00;
+  outline-offset: 2px;
+}
+
+.vw-grid-front {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* 왼쪽 칸: 돌려 놓는 단추 넷(한 줄에 둘) */
+.vw-turns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vw-turns[hidden] {
+  display: none;
+}
+
+/* 쌓기와 빼기: 고른 쪽은 채운 단추(모든 형식의 눌린 단추와 같다) */
+.vw-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.vw-tools[hidden] {
+  display: none;
+}
+
+/* 그림(앞, 옆, 위) */
+.vw-view {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: calc(var(--cols) * 34px);
+  max-height: calc(var(--tall) * 34px);
+}
+
+.vw-view .vw-on {
+  fill: #e3b465;
+  stroke: #5c3d14;
+  stroke-width: 7;
+}
+
+.vw-top .vw-on {
+  fill: #f8dc9b;
+}
+
+.vw-side .vw-on {
+  fill: #b9812f;
+}
+
+.vw-view .vw-off {
+  fill: none;
+  stroke: #ced4da;
+  stroke-width: 4;
+  stroke-dasharray: 10 10;
+}
+
+.vw-ground {
+  stroke: #343a40;
+  stroke-width: 8;
+}
+
+.vw-mark {
+  fill: none;
+  stroke: #e8590c;
+  stroke-width: 12;
+  stroke-dasharray: 22 12;
+}
+
+.vw-number {
+  font-size: 56px;
+  font-weight: 700;
+  fill: #212529;
+}
+
+/* 주어진 그림과 쌓은 것의 그림 */
+.vw-compare {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.vw-compare th {
+  padding: 2px;
+  font-size: 18px;
+  word-break: keep-all;
+}
+
+.vw-compare thead th:first-child {
+  width: 54px;
+}
+
+.vw-compare td {
+  height: 78px;
+  padding: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.vw-compare td > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vw-compare.no-top .vw-top-col {
+  display: none;
+}
+
+/* 보기: 보이는 그림 고르기는 한 줄에 셋, 위에서 본 그림 맞히기는 한 줄에 둘 */
+.vw-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.vw-options.four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vw-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  padding: 8px;
+  border: 3px solid #adb5bd;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.vw-option > svg {
+  height: 84px;
+}
+
+.vw-options.four .vw-option {
+  min-height: 88px;
+  padding: 6px;
+}
+
+.vw-options.four .vw-option > svg {
+  height: 72px;
+}
+
+.vw-option.tried {
+  border: 3px dashed #868e96;
+  background: repeating-linear-gradient(45deg, #e9ecef 0 8px, #fff 8px 16px);
+  cursor: default;
+}
+
+.vw-option.answer {
+  border: 6px solid #2b8a3e;
+}
+
+.vw-option:focus-visible {
+  outline: 4px solid #f08c00;
+  outline-offset: 2px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드, 직접 만들기의 세 그림 */
+.vw-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 210px);
+}
+
+.vw-card-picture {
+  display: flex;
+  width: 100%;
+  height: 170px;
+}
+
+.vw-card-picture > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vw-card.big {
+  width: min(100%, 480px);
+}
+
+.vw-card.big .vw-card-picture {
+  height: 280px;
+}
+
+.vw-card .strip-note {
+  text-align: center;
+}
+
+.vw-card.flat {
+  width: min(100%, 136px);
+}
+
+.vw-card.flat .vw-card-picture {
+  height: 120px;
+}
+
+.vw-card .vw-view {
+  max-width: calc(var(--cols) * 44px);
+  max-height: calc(var(--tall) * 44px);
+}
+
+.vw-made {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.vw-made:empty {
+  display: none;
+}
+
+.vw-made .vw-card {
+  width: 96px;
+}
+
+.vw-made .vw-card-picture {
+  height: 96px;
+}
+
+/* 작은 그림: 비스듬히 본 쌓기나무, 나란히 놓은 그림 */
+.vw-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vw-flat {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: calc(var(--fw) * 44px);
+  max-height: calc(var(--fh) * 44px);
+}
+
+.vw-flat-floor {
+  fill: #f1f3f5;
+  stroke: #ced4da;
+  stroke-width: 3;
+}
+
+.vw-flat-top,
+.vw-flat-front,
+.vw-flat-side {
+  stroke: #5c3d14;
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+.vw-flat-top {
+  fill: #f8dc9b;
+}
+
+.vw-flat-front {
+  fill: #e3b465;
+}
+
+.vw-flat-side {
+  fill: #b9812f;
+}
+
+.vw-flat-views {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+.vw-flat-views > svg {
+  flex: 0 1 auto;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+}
+
+.door-picture > .vw-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .vw-board.small {
+  width: 110px;
+  height: 60px;
+  justify-content: flex-start;
+}
+
+.resume.note-picture .vw-board.small {
+  width: 100%;
+  height: 110px;
+  justify-content: center;
+}
+
+.menu-picture > .vw-board {
+  height: 76px;
+}
+
+.level .vw-board.small {
+  width: 80px;
+  height: 64px;
+  justify-content: flex-start;
+}

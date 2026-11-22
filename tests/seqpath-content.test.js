@@ -103,7 +103,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'same' \? 'same' : 'paths'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 46);
+  assert.equal(guides.length, 47);
   assert.ok(sentenceCount(guides[28]) <= 3, guides[28]);
   assert.match(guides[28], /길을 잇는 방법이 한 가지뿐인 판도 만들 수 있을까요\?$/);
 });

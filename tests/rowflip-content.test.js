@@ -107,7 +107,7 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   // 2단계(모두 되는 판)에는 "불가능해요" 단추가 없다
   assert.match(code, /const hasImpossible = \(round\) => round\.mode !== 'grid';/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 46);
+  assert.equal(guides.length, 47);
   assert.ok(sentenceCount(guides[34]) <= 3, guides[34]);
   assert.match(guides[34], /^칸을 누르면 검은 칸이 되고, 다시 누르면 흰 칸이 돼요\./);
   assert.match(guides[34], /네 모서리가 모두 흰 칸인데도 안 되는 판을 만들 수 있을까요\?$/);

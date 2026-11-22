@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="signs-title"', 'id="make-title"'), part('id="signs-plus"', 'id="why"'), part('id="signs-count"', 'id="domino-count"'), part('id="signs-pad"', 'id="domino-pad"'), part('id="make-signs"', '<script')].map(visibleText).join(' ');
+const own = [part('id="signs-title"', 'id="views-title"'), part('id="signs-plus"', 'id="views-turns"'), part('id="signs-count"', 'id="views-count"'), part('id="signs-pad"', 'id="views-pad"'), part('id="make-signs"', 'id="make-views"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -105,7 +105,7 @@ test('규칙 설명은 세 문장 안이다. 맨 앞의 수에는 부호가 없�
   assert.equal(rules[0], '5부터 1까지 차례로 쓰고 사이에 +나 −를 넣어요. 맨 앞의 5에는 부호가 없어서 늘 +예요. 목표 수를 만들 수 있을까요?');
   assert.match(T.asks.largest, /^모두 \+일 때보다 작은 수 가운데/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 46);
+  assert.equal(guides.length, 47);
   const mine = guides[45];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^맨 앞의 수와 목표 수를 정해요\./);
@@ -207,7 +207,7 @@ test('풀이와 직접 만들기: 되면 방법의 수와 한 가지 방법, 안
   assert.match(code, /if \(!draft \|\| checkBoard\(draft\) !== null \|\| draft\.target === totalOf\(draft\.n\)\) return null;/);
   // 따져 준 뒤에 판을 고치면 앞의 판에 한 말을 덮는다
   assert.match(code, /if \(said\) frame\.talkers\.make\.say\(T\.make\.changed\);/);
-  const make = part('id="make-signs"', '<script');
+  const make = part('id="make-signs"', 'id="make-views"');
   for (const id of ['signs-make-n-fewer', 'signs-make-n', 'signs-make-n-more', 'signs-make-target-fewer', 'signs-make-target', 'signs-make-target-more', 'signs-make-board', 'signs-make-goal', 'signs-make-solve', 'signs-make-result', 'signs-make-play', 'signs-make-picture']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -225,26 +225,26 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(part('id="signs-title"', '</section>'), /<h2 id="signs-title">부호 넣어 수 만들기<\/h2>/);
   assert.ok(visibleText(part('id="signs-title"', '</section>')).includes(T.home.ask.five));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-signs-make" class="menu-item"/);
-  assert.match(part('id="signs-pad"', 'id="domino-pad"'), /id="signs-impossible"[^>]*>불가능해요</);
-  assert.match(part('id="signs-pad"', 'id="domino-pad"'), /id="signs-submit"[^>]*>다 골랐어요</);
-  assert.match(part('id="signs-plus"', 'id="why"'), /aria-pressed="false" hidden>모두 \+일 때 보기</);
+  assert.match(part('id="signs-pad"', 'id="views-pad"'), /id="signs-impossible"[^>]*>불가능해요</);
+  assert.match(part('id="signs-pad"', 'id="views-pad"'), /id="signs-submit"[^>]*>다 골랐어요</);
+  assert.match(part('id="signs-plus"', 'id="views-turns"'), /aria-pressed="false" hidden>모두 \+일 때 보기</);
   assert.equal(T.tool.off, '모두 +일 때 보기');
   // 메뚜기 판에서는 같은 도구를 다른 이름으로 부른다(부호가 아니라 뛰는 쪽이다)
   assert.equal(T.tool['off-hop'], '모두 오른쪽일 때 보기');
   // 카드는 손가락 더하기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="fingers-title"') < html.indexOf('id="signs-title"'));
   assert.ok(html.indexOf('id="signs-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 손가락 더하기 다음)
-  assert.match(read('src/main.js'), /fingers: createFingers\(frame\), signs: createSigns\(frame\) \};/);
+  // 틀이 형식을 안다(손가락 더하기 다음)
+  assert.match(read('src/main.js'), /fingers: createFingers\(frame\), signs: createSigns\(frame\), /);
   assert.match(read('src/check-main.js'), /\['signs', '부호 넣어 수 만들기'\]/);
-  assert.match(read('src/core/smaller.js'), /fingers: smallerFingers, signs: smallerSigns \};/);
+  assert.match(read('src/core/smaller.js'), /fingers: smallerFingers, signs: smallerSigns, /);
   assert.match(code, /smaller: \(round, turn\) => smallerSigns\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);
   // 타이머와 움직이는 그림이 없다
   assert.doesNotMatch(board + code, /setInterval|setTimeout|requestAnimationFrame/);
   const plain = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.doesNotMatch(plain.slice(plain.indexOf('.sg-board {')), /animation|transition/);
+  assert.doesNotMatch(plain.slice(plain.indexOf('.sg-board {'), plain.indexOf('.board-area > #views-board')), /animation|transition/);
   // 도구를 처음 켜면 힌트 하나로 센다
   assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.toolShown \? 1 : 0\),/);
 });

@@ -3,6 +3,9 @@
 //   경첩은 앞 칸의 안에 들어 있어서, 앞 칸이 접히면 뒤의 칸들도 함께 따라간다. 경첩을 90도씩 돌리면 칸이 화면 안쪽으로 접힌다.
 //   그래서 접은 뒤에도 칸의 그림이 있는 쪽이 바깥을 본다. 접은 정육면체의 한가운데가 돌리는 가운데다.
 // 주사위: 면 여섯을 상자 꼴로 붙인 것을 아래부터 쌓는다. 떼어 놓으면 사이가 벌어진다.
+// 쌓기나무: 모눈 위에 한 칸짜리 정육면체를 쌓은 것. 밖으로 드러난 면만 그린다(맞닿은 면은 겹쳐 깜박이지 않게 그리지 않는다).
+//   면은 방향마다 이름(위, 앞, 뒤, 옆)을 붙여 색의 밝기를 달리하고, 모든 면에 테두리를 둔다. 바닥에는 모눈 판을 깐다.
+//   부르는 쪽이 바라보는 각(turn)을 건네면 그 각으로 돌아간다(앞, 옆, 위에서 보기).
 // 판을 끌면(누른 채 움직이면) 돌아간다. 조금만 움직이고 떼면 누른 것이다(누른 면을 알려 준다).
 // 글자는 받지 않는다. 면 위의 그림과 주사위 눈은 부르는 쪽이 그린다(paint). 읽어 주는 이름(label)도 부르는 쪽이 준다.
 // 겹쳐 그린 판이 납작해지지 않게, 입체로 쌓는 것(세계, 면, 경첩)에는 overflow, opacity, filter를 쓰지 않는다.
@@ -83,7 +86,8 @@ function listen(scene) {
       scene.world.classList.add('dragging');
     }
     scene.ay = drag.ay + dx * TURN;
-    scene.ax = Math.max(-85, Math.min(85, drag.ax - dy * TURN));
+    const clamp = scene.view.kind === 'stack' ? 90 : 85;
+    scene.ax = Math.max(-clamp, Math.min(clamp, drag.ax - dy * TURN));
     scene.user = true;
     place(scene);
   });
@@ -282,4 +286,101 @@ export function drawSolidDice(root, view) {
   });
   place(scene);
   if (fresh) settle(scene);
+}
+
+// ---- 쌓기나무 ----
+
+/** 쌓기를 처음 그릴 때 보는 각(위아래, 옆): 위와 앞과 오른쪽 옆이 보인다 */
+export const STACK_TILT = [-28, -34];
+/** 면 자리(바닥, 위, 뒤, 앞, 오른쪽, 왼쪽)마다 이웃 칸의 방향 [가로, 앞뒤(뒤가 +), 높이]과 이름 */
+const CUBE_SIDES = [
+  [0, 0, -1],
+  [0, 0, 1],
+  [0, 1, 0],
+  [0, -1, 0],
+  [1, 0, 0],
+  [-1, 0, 0],
+];
+const CUBE_NAMES = ['sd-cube-bottom', 'sd-cube-top', 'sd-cube-back', 'sd-cube-front', 'sd-cube-right', 'sd-cube-left'];
+
+/**
+ * 쌓기나무를 그린다. 쌓은 것이 바뀌어도 무대와 돌린 각은 그대로 두고 쌓기나무만 다시 놓는다.
+ * @param {HTMLElement} root
+ * @param {object} view
+ *   w, d       가로 칸 수, 앞뒤 칸 수
+ *   heights    칸마다 쌓은 수(앞 줄부터, 줄마다 왼쪽부터)
+ *   levels     무대의 크기와 가운데를 정하는 높이(판에서 쌓을 수 있는 높이. 쌓는 동안 무대가 커졌다 작아졌다 하지 않게)
+ *   paintFloor (plate) 바닥 판 앞에 붙는 띠에 그린다(처음 만들 때 한 번)
+ *   turn       { id, angle: [위아래, 옆] } id가 바뀌면 그 각으로 돌아간다
+ *   tilt       처음 그릴 때 보는 각(정하지 않으면 STACK_TILT)
+ *   live, onSpin, label, small  펼친 모양과 같다
+ */
+export function drawSolidStack(root, view) {
+  const { scene, fresh } = sceneOf(root, 'stack');
+  scene.view = { kind: 'stack', ...view };
+  const { w, d, heights } = view;
+  const levels = Math.max(1, view.levels ?? Math.max(...heights));
+  const key = `${w}:${d}:${levels}:${heights.join('')}`;
+  if (fresh || scene.stackKey !== key) {
+    buildStack(scene, view, levels, fresh || scene.stackBase !== `${w}:${d}:${levels}`);
+    scene.stackKey = key;
+  }
+  if (fresh) {
+    [scene.ax, scene.ay] = view.tilt ?? STACK_TILT;
+    scene.turnId = view.turn?.id ?? null;
+  } else if (view.turn && view.turn.id !== scene.turnId) {
+    scene.turnId = view.turn.id;
+    [scene.ax, scene.ay] = view.turn.angle;
+  }
+  scene.el.classList.add('stack');
+  scene.el.classList.toggle('live', Boolean(view.live));
+  scene.el.classList.toggle('small', Boolean(view.small));
+  if (view.label) scene.el.setAttribute('aria-label', view.label);
+  place(scene);
+  if (fresh) settle(scene);
+}
+
+/** 바닥 판(모눈)과 드러난 면을 놓는다. base가 참이면(처음이거나 판의 크기가 바뀌었으면) 바닥 판도 새로 만든다 */
+function buildStack(scene, view, levels, base) {
+  const { w, d, heights } = view;
+  const { world } = scene;
+  // 끌어 돌려도 모두 들어가게: 대각선의 길이와 높이 가운데 긴 쪽에 여유를 둔다
+  const reach = Math.max(Math.hypot(w, d), levels) + 0.8;
+  world.style.setProperty('--cols', String(reach));
+  world.style.setProperty('--rows', String(reach));
+  if (base) {
+    const floor = div('sd-stack-floor');
+    floor.style.setProperty('--w', String(w));
+    floor.style.setProperty('--d', String(d));
+    floor.style.setProperty('--levels', String(levels));
+    for (let at = 0; at < w * d; at++) floor.append(div('sd-floor-cell'));
+    const plate = div('sd-floor-plate');
+    plate.style.setProperty('--w', String(w));
+    plate.style.setProperty('--d', String(d));
+    plate.style.setProperty('--levels', String(levels));
+    view.paintFloor?.(plate);
+    scene.floor = [floor, plate];
+    scene.stackBase = `${w}:${d}:${levels}`;
+  }
+  const height = (x, y) => (x < 0 || y < 0 || x >= w || y >= d ? 0 : heights[y * w + x]);
+  const faces = [];
+  for (let y = 0; y < d; y++) {
+    for (let x = 0; x < w; x++) {
+      for (let z = 0; z < heights[y * w + x]; z++) {
+        CUBE_SIDES.forEach(([dx, dy, dz], side) => {
+          // 바닥 판에 닿은 아랫면과 다른 쌓기나무에 맞닿은 면은 그리지 않는다
+          if (dz < 0 && z === 0) return;
+          const nz = z + dz;
+          if (nz >= 0 && nz < height(x + dx, y + dy)) return;
+          const face = div(`sd-skin sd-cube ${CUBE_NAMES[side]}`);
+          const cx = x - (w - 1) / 2;
+          const cy = levels / 2 - z - 0.5;
+          const cz = (d - 1) / 2 - y;
+          face.style.transform = `translate3d(calc(${cx} * var(--u)), calc(${cy} * var(--u)), calc(${cz} * var(--u))) ${DIE_FACES[side] === 'none' ? '' : DIE_FACES[side]} translateZ(calc(var(--u) / 2))`;
+          faces.push(face);
+        });
+      }
+    }
+  }
+  world.replaceChildren(...scene.floor, ...faces);
 }
