@@ -20,7 +20,7 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const code = read('src/formats/duel.js');
 
-const WHY_GAMES = ['choco', 'one', 'two', 'divisor'];
+const WHY_GAMES = ['choco', 'one', 'two', 'three', 'divisor'];
 const RULE_KEYS = ['choco-first', 'choco', 'one', 'one-1', 'two', 'three', 'divisor', 'half', 'both'];
 const RIGHT_KEYS = ['kid-choco', 'teacher-choco', 'kid-stones', 'teacher-stones', 'kid-rest', 'teacher-rest', 'first-board', 'swap-invite', 'why-invite'];
 const STATUS_KEYS = [
@@ -435,12 +435,15 @@ test('까닭과 생각의 이름은 "왜 그럴까?"에서만 말한다', () => 
   assert.ok(own.includes('누가 먼저 둘까요?') && own.includes('자리를 바꿔서 다시 두기') && own.includes('선생님, 누가 이길까요?'));
   assert.doesNotMatch(own, reason);
   // 이름은 까닭을 다 본 뒤에, 이야기의 맨 끝에서 처음 꺼낸다(뜻밖의 결과 → 그림 → 이름).
-  const names = { choco: /횟수 미리 세기/, one: /끝에서부터 따지기/, two: /따라 두기/, divisor: /홀짝 넘겨주기/ };
+  // 세 더미의 끝 장은 선생님이 지은 이름 대신 아이가 이미 아는 이진법으로 적어 본다(커리큘럼 14절 2026-11-22 "수학의 이름과 식")
+  const names = { choco: /횟수 미리 세기/, one: /끝에서부터 따지기/, two: /따라 두기/, three: /이진법/, divisor: /홀짝 넘겨주기/ };
   for (const game of WHY_GAMES) {
     const story = T.why[game];
     for (const slide of story.slice(0, -1)) assert.doesNotMatch(slide.say, name, slide.say);
+    for (const slide of story.slice(0, -1)) assert.doesNotMatch(slide.say, /이진/, slide.say);
     assert.match(story.at(-1).say, names[game], game);
-    assert.match(story.at(-1).say, /선생님은 이것을 .+(이)?라고 불러요\.$/, game);
+    if (game === 'three') assert.match(story.at(-1).say, /^차례가 오면 지는 판의 세 수를 이진법으로 적어 봤어요\./);
+    else assert.match(story.at(-1).say, /선생님은 이것을 .+(이)?라고 불러요\.$/, game);
   }
   // 풀이와 직접 만들기에서는 어느 쪽이 이기는지만 알려 주고 까닭은 말하지 않는다.
   for (const key of ['first', 'second']) {
@@ -460,8 +463,8 @@ test('"왜 그럴까?"는 게임마다 따로 있고, 그림 서너 장이고, �
       assert.ok(slide.say.length > 0);
       assert.ok(sentenceCount(slide.say) <= 3, slide.say);
       assert.ok(slide.figures.length <= 2, '그림은 두 개까지');
-      // 장마다 그림이 있다: 판 그림이거나 표다.
-      assert.ok(slide.figures.length > 0 || slide.table || slide.marks, slide.say);
+      // 장마다 그림이 있다: 판 그림이거나 표다(세 더미의 끝 장은 이진법으로 적은 표).
+      assert.ok(slide.figures.length > 0 || slide.table || slide.marks || slide.binary, slide.say);
       for (const item of slide.figures) assert.equal(gameOf(item.board) === 'one' ? 'one' : gameOf(item.board), game, item.note);
     }
     // 이야기 속 선생님이 먼저 해 보고 뜻밖의 일을 겪는다. 겪은 일로 말한다("~봤어요").
@@ -540,7 +543,7 @@ test('"왜 그럴까?" 그림 속의 판과 수는 풀이 프로그램이 따진
     }
     checked += 1;
   }
-  assert.equal(checked, 20);
+  assert.equal(checked, 22);
 });
 
 test('"왜 그럴까?"의 주장(약수 빼기): 차례가 오면 지는 돌의 수는 홀수뿐이고, 홀수에서는 짝수만, 짝수에서는 1개를 가져가 홀수를 넘길 수 있다', () => {
@@ -722,16 +725,30 @@ test('"왜 그럴까?"의 주장(두 더미): 같은 두 더미에서는 따라 
   assert.deepEqual(T.table.two, ['판', '이기는 쪽']);
 });
 
-test('세 더미에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판). 절반까지와 두 더미에서 같은 수도도 그렇다', () => {
-  assert.match(T._설명, /세 더미는 일부러 까닭을 남겨 둔 판이다\. 그래서 '왜 그럴까\?'를 붙이지 않았다\./);
-  assert.match(T._설명, /절반까지와 두 더미에서 같은 수도도 일부러 까닭을 남겨 두었다\./);
-  assert.equal(T.why.three, undefined);
+test('절반까지와 두 더미에서 같은 수도에는 "왜 그럴까?"를 붙이지 않는다(일부러 까닭을 남겨 둔 판). 이진법이라는 말은 세 더미의 마지막 장에만 있다', () => {
+  assert.match(T._설명, /절반까지와 두 더미에서 같은 수도는 일부러 까닭을 남겨 두었다\./);
+  assert.match(T._설명, /이진법이라는 말과 0, 1의 칸은 그 마지막 장에만 있다\./);
+  assert.deepEqual(NO_WHY, ['half', 'both']);
   for (const game of NO_WHY) assert.equal(T.why[game], undefined, game);
   assert.deepEqual(Object.keys(T.why).sort(), GAMES.filter((game) => !NO_WHY.includes(game)).sort());
-  for (const item of figures) assert.notEqual(gameOf(item.board), 'three');
-  for (const slide of slides) assert.doesNotMatch(slide.say, /세 더미|셋째/);
-  // 이진법이라는 말은 대본 어디에도 없다.
-  for (const [path, text] of strings) assert.doesNotMatch(text, /이진/, path);
+  // 세 더미의 판은 세 더미 이야기에만 있고, 다른 게임의 이야기는 세 더미를 말하지 않는다.
+  for (const game of WHY_GAMES.filter((item) => item !== 'three')) {
+    for (const slide of T.why[game]) {
+      for (const item of slide.figures) assert.notEqual(gameOf(item.board), 'three');
+      assert.doesNotMatch(slide.say, /세 더미|셋째/);
+    }
+  }
+  // 이진법이라는 말은 세 더미 "왜 그럴까?"의 마지막 장에만 있다(규칙 글, 힌트, 판, 앞의 장, 첫 화면에는 없다).
+  const last = `why.three[${T.why.three.length - 1}]`;
+  const binaryWord = strings.filter(([, text]) => /이진|2진|진법|진수/.test(text)).map(([path]) => path);
+  assert.ok(binaryWord.length > 0 && binaryWord.every((path) => path.startsWith(last)), binaryWord.join(', '));
+  assert.doesNotMatch(screenText, /이진/);
+  // 0과 1로 된 줄(이진법으로 적은 수)은 대본의 글에 없다. 화면 코드가 마지막 장의 표에서만 적는다.
+  // (10개, 11개 같은 보통의 수는 있다. 세 자리 넘게 0과 1만 이어진 수는 없다)
+  for (const [path, text] of strings) assert.doesNotMatch(text, /(?<!\d)[01]{3,}(?!\d)/, path);
+  assert.equal([...code.matchAll(/toString\(2\)/g)].length, 1);
+  assert.match(code, /if \(slide\.binary\) nodes\.push\(rowOf\(slide\.binary\.map\(binaryOf\)\)\);/);
+  for (const game of WHY_GAMES) T.why[game].forEach((slide, index) => assert.equal(Boolean(slide.binary), game === 'three' && index === T.why.three.length - 1, `${game} ${index}`));
   // 화면 코드: 대본에 이야기가 없는 게임에서는 "왜 그럴까?"를 열지 않고, 알리는 말도 하지 않는다.
   assert.match(code, /const slides = T\.why\[round\.mode\];\s*if \(!slides \|\| !whyOpen\(log\.allRecords\(\), round\.mode\)\) return null;/);
   assert.match(code, /else if \(T\.why\[round\.mode\] && finishedCount/);
@@ -991,4 +1008,95 @@ test('"왜 그럴까?"는 게임마다 세 판을 끝까지 둔 뒤에 열린다
   // 다른 형식은 그대로다.
   assert.equal(whyUnlocked([duel(), duel(), duel()], 'coins'), false);
   assert.equal(whyUnlocked([duel(), duel(), duel()], 'tile'), false);
+});
+
+/** 세 수를 이진법으로 적었을 때 자리(1의 자리부터)마다 1이 몇 개인가. 수를 2로 나눈 나머지를 차례로 읽는다(풀이 프로그램과 다른 방법) */
+function onesByPlace(piles) {
+  const counts = [];
+  for (const pile of piles) {
+    let rest = pile;
+    for (let place = 0; rest > 0; place++) {
+      counts[place] = (counts[place] ?? 0) + (rest % 2);
+      rest = Math.floor(rest / 2);
+    }
+  }
+  return counts;
+}
+const allEven = (piles) => onesByPlace(piles).every((count) => count % 2 === 0);
+
+test('"왜 그럴까?"의 주장(세 더미): 더미마다 7개까지에서 차례가 오면 지는 판은 일곱 가지 → 지는 판을 다시 넘겨줄 수 있다 → 이진법으로 적으면 자리마다 1이 짝수 개', () => {
+  const story = T.why.three;
+  assert.equal(story.length, 3);
+  // 첫 장의 표: 더미마다 1~7개(4단계의 판)에서 차례만 다른 판을 하나로 셀 때, 차례가 오면 지는 판을 모두 찾는다. 풀이 프로그램과 다른 탐색이 같다
+  const losing = [];
+  for (let a = 1; a <= 7; a++) {
+    for (let b = a; b <= 7; b++) {
+      for (let c = b; c <= 7; c++) {
+        const board = { kind: 'piles', piles: [a, b, c] };
+        const win = isWin(board, startState(board));
+        const { kind, max, state } = fromBoard(board);
+        assert.equal(win, bruteWin(kind, max, state), `${a}, ${b}, ${c}(다른 탐색)`);
+        if (!win) losing.push([a, b, c]);
+      }
+    }
+  }
+  assert.deepEqual(story[0].table.map((row) => row.piles), losing);
+  assert.equal(losing.length, 7);
+  assert.match(story[0].say, /차례가 오면 지는 판은 일곱 가지였어요\.$/);
+  assert.match(story[0].say, /더미마다 7개까지인 판을 모두 따져 봤어요\./);
+  // 4단계의 판은 더미마다 1~7개다(첫 장의 표가 그 단계의 판을 모두 따진 것이다)
+  for (let seed = 1; seed <= 200; seed++) for (const pile of generateBoard(4, seed).board.piles) assert.ok(pile >= 1 && pile <= 7, `${seed}`);
+  assert.deepEqual(T.table.three, ['세 더미', '차례가 오면']);
+  assert.match(code, /if \(game === 'three'\) return \{ marked: true, cells: \[nameOf\(\{ kind: 'piles', piles: row\.piles \}\), T\.marks\.lose\] \};/);
+  // 둘째 장: 1개, 2개, 3개에서 셋째 더미의 1개를 가져가면 상대가 첫째 더미를 다 가져가 2개와 2개(차례가 오면 지는 판)를 남긴다.
+  const [took, answered] = story[1].figures;
+  assert.deepEqual(took.board.piles, [1, 2, 3]);
+  assert.deepEqual(stateOf(took), [1, 2, 2]);
+  assert.deepEqual(stateOf(answered), [0, 2, 2]);
+  assert.equal(isWin(answered.board, stateOf(answered)), false);
+  const reply = answered.trail[1];
+  assert.ok(winningMoves(took.board, stateOf(took)).some((move) => moveKey(move) === moveKey(reply)));
+  // 어디서 몇 개를 가져가도 상대는 차례가 오면 지는 판을 넘겨줄 수 있다(1개, 2개, 3개의 모든 수를 따진다)
+  const start = startState(took.board);
+  const moves = movesOf(took.board, start);
+  assert.equal(moves.length, 1 + 2 + 3);
+  for (const move of moves) {
+    const after = applyMove(took.board, start, move);
+    assert.ok(movesOf(took.board, after).some((next) => !isWin(took.board, applyMove(took.board, after, next))), moveKey(move));
+  }
+  assert.match(story[1].say, /^1개, 2개, 3개에서 선생님이 셋째 더미의 1개를 가져가 봤어요\./);
+  assert.match(story[1].say, /2개와 2개가 남았어요\./);
+  // 셋째 장(마지막, 이진법): 그림의 두 판은 첫 장의 표에 있는 판이고, 자리마다 1이 짝수 개다
+  const binary = story[2].binary;
+  assert.equal(binary.length, 2);
+  for (const item of binary) {
+    assert.ok(losing.some((piles) => piles.join() === item.piles.join()), item.piles.join());
+    assert.ok(allEven(item.piles), item.piles.join());
+    assert.equal(item.note, `${item.piles.map((pile) => fill(T.table.count, { n: pile })).join(', ')}를 적었어요`);
+  }
+  // 1개, 2개, 3개는 4의 자리 0개, 2의 자리 2개, 1의 자리 2개. 3개, 5개, 6개는 자리마다 2개
+  assert.deepEqual(onesByPlace([1, 2, 3]), [2, 2]);
+  assert.deepEqual(onesByPlace([3, 5, 6]), [2, 2, 2]);
+  // 표의 자리는 4, 2, 1이라 7개까지 적을 수 있다
+  assert.deepEqual(T.table.binary, ['더미', '4의 자리', '2의 자리', '1의 자리']);
+  assert.equal(T.table.ones, '1의 수');
+  assert.equal((7).toString(2).length, T.table.binary.length - 1);
+  // 주장: 0~9개의 세 더미 1,000가지 모두에서, 자리마다 1이 짝수 개인 판과 차례가 오면 지는 판이 꼭 같다.
+  // 그래서 자리마다 1이 짝수 개가 되게 남겨 주면 상대는 지는 판을 받는다. 짝수가 아닌 판에서는 그렇게 남기는 수가 늘 있다
+  for (let a = 0; a <= 9; a++) {
+    for (let b = 0; b <= 9; b++) {
+      for (let c = 0; c <= 9; c++) {
+        const piles = [a, b, c];
+        const { kind, max, state } = fromBoard({ kind: 'piles', piles });
+        assert.equal(!bruteWin(kind, max, state), allEven(piles), piles.join());
+        if (a + b + c > 0 && !allEven(piles)) {
+          const board = { kind: 'piles', piles: piles.map((pile) => Math.max(pile, 1)) };
+          const next = movesOf(board, piles).map((move) => applyMove(board, piles, move));
+          assert.ok(next.some(allEven), piles.join());
+        }
+      }
+    }
+  }
+  assert.match(story[2].say, /어느 자리든 1이 짝수 개씩 있어요\./);
+  assert.match(story[2].say, /자리마다 1이 짝수 개가 되게 남겨 주면, 상대는 차례가 오면 지는 판을 받아요\.$/);
 });

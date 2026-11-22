@@ -254,7 +254,7 @@ export function createNet(frame) {
     return { board, cut, only: item.keep ?? null, loop: item.loop ? loopOf(board, cut) : null };
   }
 
-  /** "왜 그럴까?": 두 번 끊어도 같은 수 → 끝에는 고리가 없다 → 나무 모양 기르기(이름) → 줄 수에서 빼기 → 두 조각 그물은 하나 더 */
+  /** "왜 그럴까?": 두 번 끊어도 같은 수 → 끝에는 고리가 없다 → 나무 모양 기르기(이름) → 줄 수에서 빼기 → 두 조각 그물은 하나 더 → 짧게 적는 식(마지막 장에만) */
   function whyPages() {
     return T.why.map((slide) => ({
       say: slide.say,

@@ -263,7 +263,7 @@ export function createSeqpath(frame) {
     return [{ say, nodes: [rowOf([seqCard(answerView(board, paths), '', { big: true })])] }];
   }
 
-  /** "왜 그럴까?": 선생님이 수만 보고 잇다가 구석 빈칸이 남은 이야기 */
+  /** "왜 그럴까?": 선생님이 수만 보고 잇다가 구석 빈칸이 남은 이야기 → 수학의 이름(등차수열, 공차. 마지막 장에만) */
   function whyPages() {
     return T.why.map((slide) => ({
       say: slide.say,

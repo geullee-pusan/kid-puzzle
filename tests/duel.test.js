@@ -644,11 +644,13 @@ test('"왜 그럴까?"는 그 게임을 세 판 끝까지 둔 뒤에 열린다. 
   // 같은 판의 기록이 여러 번 남았으면 한 판으로 센다.
   const twice = duel();
   assert.equal(finishedCount([twice, { ...twice, rev: 2 }, { ...twice, rev: 3 }], 'choco'), 1);
-  // 세 더미는 일부러 까닭을 남겨 둔 판이다. 몇 판을 두어도 열리지 않는다. 절반까지와 두 더미에서 같은 수도도 그렇다.
-  const three = Array.from({ length: 10 }, () => duel({ mode: 'three', level: 4 }));
-  assert.equal(finishedCount(three, 'three'), 10);
-  assert.equal(whyOpen(three, 'three'), false);
-  assert.deepEqual(NO_WHY, ['three', 'half', 'both']);
+  // 세 더미도 세 판을 끝까지 둔 뒤에 열린다(2026-11-22부터. 마지막 장에서 이진법으로 적어 본다).
+  // 절반까지와 두 더미에서 같은 수도는 일부러 까닭을 남겨 둔 판이다. 몇 판을 두어도 열리지 않는다.
+  const three = Array.from({ length: 3 }, () => duel({ mode: 'three', level: 4 }));
+  assert.equal(finishedCount(three, 'three'), 3);
+  assert.equal(whyOpen(three.slice(0, 2), 'three'), false);
+  assert.equal(whyOpen(three, 'three'), true);
+  assert.deepEqual(NO_WHY, ['half', 'both']);
   for (const mode of ['half', 'both']) assert.equal(whyOpen(Array.from({ length: 5 }, () => duel({ mode })), mode), false, mode);
   // 약수 빼기는 세 판을 끝까지 둔 뒤에 열린다.
   assert.equal(whyOpen([duel({ mode: 'divisor' }), duel({ mode: 'divisor' })], 'divisor'), false);

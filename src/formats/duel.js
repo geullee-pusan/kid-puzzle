@@ -43,7 +43,7 @@ import {
 } from '../core/duel.js';
 import { smallerDuel } from '../core/smaller.js';
 import { fill, ordinal } from '../core/text.js';
-import { drawGame, gameCard, marksCard, tableCard } from '../ui/duel-board.js';
+import { binaryCard, drawGame, gameCard, marksCard, tableCard } from '../ui/duel-board.js';
 
 const FORMAT = 'duel';
 const SIDES = ['kid', 'teacher'];
@@ -375,6 +375,8 @@ export function createDuel(frame) {
       rows.map((row) => {
         const side = T.sides[row.winner];
         if (game === 'choco') return { marked: row.winner === 'second', cells: [nameOf({ kind: 'choco', w: row.w, h: row.h }), fill(T.table.cells, { n: row.cells }), fill(T.table.times, { n: row.moves }), side] };
+        // 세 더미: 차례가 오면 지는 세 더미만 적는다(표의 판은 테스트가 풀이 프로그램으로 다시 구한다)
+        if (game === 'three') return { marked: true, cells: [nameOf({ kind: 'piles', piles: row.piles }), T.marks.lose] };
         return { marked: row.winner === 'second', cells: [nameOf({ kind: 'piles', piles: row.piles }), side] };
       }),
     );
@@ -395,8 +397,20 @@ export function createDuel(frame) {
   }
 
   /**
-   * "왜 그럴까?"는 게임마다 따로 있다(초콜릿 쪼개기, 한 더미, 두 더미). 그 게임을 세 판 끝까지 둔 뒤에 열린다.
-   * 세 더미에는 없다. 일부러 까닭을 남겨 둔 판이다.
+   * 세 더미의 수를 이진법으로 적은 표 하나. 자리는 4, 2, 1(더미는 7개까지)이고, 맨 아래 줄에 자리마다 1의 수를 적는다.
+   * 0과 1의 칸은 이 표에만 있다(세 더미 "왜 그럴까?"의 마지막 장).
+   */
+  function binaryOf(item) {
+    const places = T.table.binary.length - 1;
+    const digitsOf = (count) => count.toString(2).padStart(places, '0').split('');
+    const rows = item.piles.map((count) => ({ name: fill(T.table.count, { n: count }), digits: digitsOf(count) }));
+    const ones = Array.from({ length: places }, (_, place) => rows.filter((row) => row.digits[place] === '1').length);
+    return binaryCard({ heads: T.table.binary, rows, sum: { name: T.table.ones, cells: ones.map((n) => fill(T.table.count, { n })) }, note: item.note });
+  }
+
+  /**
+   * "왜 그럴까?"는 게임마다 따로 있다(초콜릿 쪼개기, 한 더미, 두 더미, 세 더미, 약수 빼기). 그 게임을 세 판 끝까지 둔 뒤에 열린다.
+   * 세 더미는 마지막 장에서 세 수를 이진법으로 적어 본다(수학의 이름은 그 장에만). 절반까지와 두 더미에서 같은 수도에는 없다.
    */
   function whyPages(round) {
     const slides = T.why[round.mode];
@@ -409,6 +423,7 @@ export function createDuel(frame) {
         if (slide.figures.length > 0) nodes.push(rowOf(slide.figures.map((item) => gameCard({ ...viewOf(item.board, item.trail), counts: true }, item.note))));
         if (slide.marks) nodes.push(marksOf(slide.marks));
         if (slide.table) nodes.push(tableOf(round.mode, slide.table));
+        if (slide.binary) nodes.push(rowOf(slide.binary.map(binaryOf)));
         return nodes;
       },
     }));

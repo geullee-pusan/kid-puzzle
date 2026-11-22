@@ -497,10 +497,13 @@ export function createTower(frame) {
     return pages;
   }
 
-  /** 원판 수마다 가장 적게 옮기는 횟수의 표(풀이 프로그램이 그 자리에서 따진다) */
-  function fewestNode(sizes) {
-    const rows = fewestRows(sizes).map((row) => [fill(T.table.count, { n: row.n }), fill(T.table.times, { k: row.fewest })]);
-    return towerTable(T.table.head.slice(0, 1).concat(T.solution['table-head']), rows);
+  /**
+   * 원판 수마다 가장 적게 옮기는 횟수의 표(풀이 프로그램이 그 자리에서 따진다).
+   * ways가 있으면(마지막 장) 원판 수 다음 칸에 대본에 적어 둔 짧은 식을 넣는다. 식이 맞는지는 테스트가 따진다
+   */
+  function fewestNode(sizes, ways = null) {
+    const rows = fewestRows(sizes).map((row, index) => [fill(T.table.count, { n: row.n }), ...(ways ? [ways.cells[index]] : []), fill(T.table.times, { k: row.fewest })]);
+    return towerTable([...T.table.head.slice(0, 1), ...(ways ? [ways.head] : []), T.solution['table-head']], rows);
   }
 
   function solutionPages(round, solution) {
@@ -526,7 +529,10 @@ export function createTower(frame) {
     return box;
   }
 
-  /** "왜 그럴까?": 가장 큰 원판이 움직이는 순간 → 두 배 하고 1 더하기(이름) → 원판 수마다의 표 → 옮긴 원판의 차례 → 흩어진 탑에서는 그대로 나오지 않는다 */
+  /**
+   * "왜 그럴까?": 가장 큰 원판이 움직이는 순간 → 두 배 하고 1 더하기(이름) → 원판 수마다의 표 → 옮긴 원판의 차례 → 흩어진 탑에서는 그대로 나오지 않는다
+   * → 짧게 적기(2를 원판 수만큼 곱하고 1 빼기, 2의 n제곱. 수학의 이름은 이 마지막 장에만)
+   */
   function whyPages(round) {
     // 표 만들기에서 짐작을 적기 전에는 열지 않는다(셋째 장의 표에 짐작할 수가 적혀 있다)
     if (round?.mode === 'table' && !round.done) return null;
@@ -535,7 +541,7 @@ export function createTower(frame) {
       // 그림은 종이를 펼칠 때 그린다(단추를 보일지 따질 때마다 그리지 않는다).
       get nodes() {
         return slide.figures.map((item) => {
-          if (item.sizes) return withNote(fewestNode(item.sizes), item.note);
+          if (item.sizes) return withNote(fewestNode(item.sizes, item.ways ? { head: item.head, cells: item.ways } : null), item.note);
           if (item.record) {
             const { discs } = solve(standardBoard(item.record, 2));
             return withNote(recordGrid(discs, { width: item.width, mark: item.mark, label: (step, disc) => fill(T.labels.chip, { k: step, n: disc }) }), item.note);

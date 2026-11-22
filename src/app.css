@@ -2601,6 +2601,7 @@ button.duel-stone {
   width: min(100%, 460px);
 }
 
+
 .duel-card.big > .duel-choco {
   height: 280px;
 }
@@ -2683,6 +2684,56 @@ button.duel-stone {
 .duel-table tr.marked td {
   background: #e7f5ff;
   font-weight: 700;
+}
+
+/* 세 더미를 이진법으로 적은 표: 1이 든 칸은 굵은 글자와 테두리로 가린다(색만으로 가리지 않는다) */
+.duel-binary-card {
+  max-width: 216px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 표 둘이 "왜 그럴까?" 종이에 나란히 놓이게 좁게 그린다. 머리글("4의 자리")은 낱말 사이에서만 두 줄이 된다 */
+.duel-binary th,
+.duel-binary td {
+  padding: 4px 6px;
+}
+
+.duel-binary th {
+  border-bottom: 1px solid var(--line);
+}
+
+.duel-binary thead th {
+  min-width: 40px;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.duel-binary tbody th {
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.duel-binary td {
+  min-width: 40px;
+  font-size: 22px;
+  color: var(--muted);
+}
+
+.duel-binary td.one {
+  color: inherit;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px #1c7ed6;
+}
+
+.duel-binary tr.marked td,
+.duel-binary tr.marked th {
+  background: #e7f5ff;
+  font-size: 18px;
+  font-weight: 700;
+  color: inherit;
 }
 
 /* 직접 만들기: 게임 셋 가운데 첫째 단추는 한 줄을 다 쓰고, 더미마다의 돌의 수는 이름과 함께 한 줄에 놓는다 */
@@ -14675,6 +14726,8 @@ button.fr-chip {
   padding: 4px 12px;
   border: 1px solid var(--line);
   text-align: center;
+  /* 머리글이 좁아도 낱말 가운데서 끊지 않는다("횟수"가 "횟 / 수"로 갈리지 않게) */
+  word-break: keep-all;
 }
 
 .tw-table tr:first-child th {

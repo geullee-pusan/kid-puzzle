@@ -101,10 +101,18 @@ test('같은 그물을 다르게 끊어 보면 지난번과 견주어 사실만 
 });
 
 test('셈과 어려운 낱말을 쓰지 않는다. 생각의 이름(나무 모양)은 "왜 그럴까?"에서 처음 말한다', () => {
-  const banned = /공식|원리|법칙|그래프|변|꼭짓점|트리|사이클|신장|별|빼기 1|더하기 1|[-+=×÷]/;
-  for (const [path, text] of strings) assert.doesNotMatch(text, banned, `${path}: ${text}`);
-  assert.doesNotMatch(own, banned);
-  for (const [path, text] of strings) if (!['why[2]', 'why[3]', 'why[4]'].some((slide) => path.startsWith(slide))) assert.doesNotMatch(text, /나무 모양/, path);
+  const banned = /공식|원리|법칙|그래프|변|꼭짓점|트리|사이클|신장|별|빼기 1|더하기 1|[-+=×÷−]/;
+  // 마지막 장(짧게 적는 식)만 셈의 기호(+, =, −)를 쓸 수 있다. 다른 낱말은 그 장에서도 막는다
+  const last = `why[${T.why.length - 1}]`;
+  for (const [path, text] of strings) {
+    if (path.startsWith(last)) assert.doesNotMatch(text.replace(/[+=−]/g, ''), banned, `${path}: ${text}`);
+    else assert.doesNotMatch(text, banned, `${path}: ${text}`);
+  }
+  // 화면 틀(index.html)의 줄이기 단추에는 − 글자가 있어서, 틀에서는 원래의 낱말과 기호만 막는다
+  assert.doesNotMatch(own, /공식|원리|법칙|그래프|변|꼭짓점|트리|사이클|신장|별|빼기 1|더하기 1|[-+=×÷]/);
+  const signed = strings.filter(([, text]) => /[+=−]/.test(text)).map(([path]) => path);
+  assert.ok(signed.length > 0 && signed.every((path) => path.startsWith(last)), signed.join(', '));
+  for (const [path, text] of strings) if (!['why[2]', 'why[3]', 'why[4]', 'why[5]'].some((slide) => path.startsWith(slide))) assert.doesNotMatch(text, /나무 모양/, path);
   assert.match(T.why[2].say, /나무 모양이라고 불러요\.$/);
 });
 
@@ -206,13 +214,13 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
 });
 
 test('"왜 그럴까?": 두 번 끊어도 4줄 → 끝에는 고리가 없다 → 나무 모양 기르기(이름) → 12줄에서 8줄을 빼기 → 두 조각 그물은 하나 더(다른 방법으로 다시 센다)', () => {
-  assert.equal(T.why.length, 5);
+  assert.equal(T.why.length, 6);
   for (const slide of T.why) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
   const net = FIGURES.grid3x3();
   assert.deepEqual([net.knots.length, net.strings.length], [9, 12]);
   const cutSet = (item) => new Set(item.cut ?? []);
   const done = (item) => countPieces(FIGURES[item.board](), cutSet(item)) === countPieces(FIGURES[item.board]()) && !hasLoop(FIGURES[item.board](), cutSet(item));
-  const [first, second, third, fourth, fifth] = T.why;
+  const [first, second, third, fourth, fifth, sixth] = T.why;
   // 첫 장: 위쪽부터, 아래쪽부터 끊은 두 모습. 둘 다 4줄이고 더 끊을 줄이 없다. 어떤 차례로 끊어도 4줄이다
   assert.ok(first.figures.every(done));
   assert.deepEqual(first.figures.map((item) => item.cut.length), [4, 4]);
@@ -253,6 +261,27 @@ test('"왜 그럴까?": 두 번 끊어도 4줄 → 끝에는 고리가 없다 �
   assert.ok(done(fifth.figures[0]));
   assert.equal(fifth.figures[0].cut.length, 2);
   assert.match(fifth.say, /1줄이 아니라 2줄을 끊을 수 있었어요\./);
+  // 여섯째 장(마지막, 짧게 적는 식): 그림 아래의 셈 "줄 − 매듭 + 조각 = 끊는 줄"의 수는 그 그물에서 센 수이고,
+  // 끊을 줄의 모든 묶음을 끊어 본 가장 큰 수와 같다. 그림은 더 끊을 줄이 없는 모습이고 끊은 줄이 그 수만큼이다
+  assert.deepEqual(sixth.figures.map((item) => item.board), ['grid3x3', 'island44']);
+  for (const item of sixth.figures) {
+    const shown = FIGURES[item.board]();
+    const match = /^(\d+) − (\d+) \+ (\d+) = (\d+)줄이에요$/.exec(item.note);
+    assert.ok(match, item.note);
+    const [strands, knots, pieces, cuts] = match.slice(1).map(Number);
+    assert.deepEqual([strands, knots, pieces], [shown.strings.length, shown.knots.length, countPieces(shown)], item.note);
+    assert.equal(strands - knots + pieces, cuts, item.note);
+    assert.equal(bruteMaxCut(shown), cuts, item.note);
+    assert.ok(done(item), item.note);
+    assert.equal(item.cut.length, cuts, item.note);
+  }
+  assert.match(sixth.say, /^매듭 9개, 줄 12개인 그물은 12 − 9 \+ 1 = 4줄을 끊을 수 있어요\./);
+  assert.match(sixth.say, /두 조각인 그물은 조각마다 나무 모양이 하나씩 남아서 1 대신 2를 더해요\./);
+  assert.match(sixth.say, /짧게 적으면 끊는 줄 = 줄의 수 − 매듭의 수 \+ 조각의 수예요\.$/);
+  // 두 조각 그물은 조각마다 매듭이 남은 줄보다 하나 많다(조각마다 나무 모양)
+  const island = FIGURES.island44();
+  const kept = island.strings.filter((_, index) => !sixth.figures[1].cut.includes(index));
+  assert.equal(island.knots.length - kept.length, 2);
   assert.match(code, /const FIGURES = \{ grid3x3: \(\) => base\('grid3x3'\), island44: \(\) => island\(4, 4, 0\) \};/);
 });
 

@@ -26,8 +26,11 @@ import { createRng, randInt, seedFrom } from './rng.js';
 /** 게임의 이름표. 힌트와 "왜 그럴까?"는 게임마다 따로다 */
 export const GAMES = ['choco', 'one', 'two', 'three', 'divisor', 'half', 'both'];
 
-/** "왜 그럴까?"를 일부러 붙이지 않은 게임(까닭을 남겨 둔 판) */
-export const NO_WHY = ['three', 'half', 'both'];
+/**
+ * "왜 그럴까?"를 일부러 붙이지 않은 게임(까닭을 남겨 둔 판).
+ * 세 더미는 예전에 여기 있었고, 2026-11-22부터 "왜 그럴까?"가 있다(마지막 장에서 이진법으로 적어 본다)
+ */
+export const NO_WHY = ['half', 'both'];
 
 /** 돌 한 더미로 두는 판인가(남은 돌의 수 하나가 자리다) */
 export const isHeap = (board) => board.kind === 'one' || board.kind === 'divisor' || board.kind === 'half';
@@ -416,7 +419,7 @@ export function smallBoards(board, count = SMALL_COUNT) {
 
 /**
  * 그 게임의 "왜 그럴까?"를 열어도 되는가. 그 게임을 WHY_AFTER판 이상 끝까지 둔 뒤에 열린다(임시).
- * 세 더미, 절반까지, 두 더미에서 같은 수도에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판. NO_WHY).
+ * 절반까지, 두 더미에서 같은 수도에는 "왜 그럴까?"가 없다(일부러 까닭을 남겨 둔 판. NO_WHY).
  */
 export function whyOpen(records, game) {
   return !NO_WHY.includes(game) && finishedCount(records, game) >= WHY_AFTER;

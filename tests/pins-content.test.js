@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { LADDER, generateBoard } from '../src/core/pins-ladder.js';
-import { MAX_PINS, MIN_PINS, checkBoard } from '../src/core/pins.js';
+import { MAX_PINS, MIN_PINS, checkBoard, countOf } from '../src/core/pins.js';
 import { fill, sentenceCount } from '../src/core/text.js';
 import { gcd, groupsOf, onlyOneAndItself, returnAfter, walkTurns } from './helpers/brute-pins.js';
 
@@ -87,10 +87,19 @@ test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말이 없다.
   assert.match(visibleText(foot), /실이 지나간 핀\s+0\s+개 \/\s+6\s+개/);
 });
 
-test('식과 어려운 낱말을 쓰지 않는다. 가장 큰 공약수, 소수 같은 이름 대신 판에서 센 것을 말한다', () => {
+test('식과 어려운 낱말을 쓰지 않는다. 가장 큰 공약수, 소수 같은 이름 대신 판에서 센 것을 말한다. 수학의 이름은 "왜 그럴까?"의 마지막 장에만 있다', () => {
   const banned = /공약수|공배수|소수|약수|배수|최대|최소|공식|나머지|원리|법칙|별/;
-  for (const [path, text] of strings) assert.doesNotMatch(text, banned, `${path}: ${text}`);
+  // 마지막 장(이름을 붙이는 장)만 "공약수"와 "최대"(최대공약수)를 쓸 수 있다. 다른 낱말은 그 장에서도 막는다
+  const last = `why[${T.why.length - 1}]`;
+  for (const [path, text] of strings) {
+    if (path.startsWith(last)) assert.doesNotMatch(text.replace(/최대공약수|가장 큰 공약수/g, ''), banned, `${path}: ${text}`);
+    else assert.doesNotMatch(text, banned, `${path}: ${text}`);
+  }
   assert.doesNotMatch(own, banned);
+  assert.doesNotMatch(visibleText(html), /공약수/);
+  const named = strings.filter(([, text]) => /공약수/.test(text)).map(([path]) => path);
+  assert.ok(named.length > 0 && named.every((path) => path.startsWith(last)), named.join(', '));
+  assert.match(T.why.at(-1).say, /수학에서는 이 수를 가장 큰 공약수, 최대공약수라고 불러요\./);
   // 생각의 이름은 "왜 그럴까?"에서만 처음 말한다
   for (const [path, text] of strings) if (!path.startsWith('why[2]')) assert.doesNotMatch(text, /돌아오는 때 세기/, path);
   assert.match(T.why[2].say, /돌아오는 때 세기라고 불러요\.$/);
@@ -170,10 +179,10 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
   for (const [path, text] of strings) for (const sentence of sentences(fill(text, VALUES))) assert.ok([...sentence].length <= 60, `${path}: ${sentence}`);
 });
 
-test('"왜 그럴까?": 4칸씩은 핀 3개만 지나 4가닥 → 몇 번 가야 돌아오는지 → 핀 13개는 늘 한 가닥(이름) → 번갈아 감으면 이야기가 맞지 않는 판(다른 방법으로 다시 센다)', () => {
-  assert.equal(T.why.length, 4);
+test('"왜 그럴까?": 4칸씩은 핀 3개만 지나 4가닥 → 몇 번 가야 돌아오는지 → 핀 13개는 늘 한 가닥(이름) → 번갈아 감으면 이야기가 맞지 않는 판 → 수학의 이름(최대공약수)(다른 방법으로 다시 센다)', () => {
+  assert.equal(T.why.length, 5);
   for (const slide of T.why) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
-  const [first, second, third, fourth] = T.why;
+  const [first, second, third, fourth, fifth] = T.why;
   // 첫 장: 핀 12개 4칸씩. 한 가닥은 핀 3개, 모두 4가닥
   assert.deepEqual(first.figures.map((item) => [item.n, item.k, item.show]), [[12, 4, 1], [12, 4, 4]]);
   assert.equal(returnAfter(12, 4), 3);
@@ -197,6 +206,28 @@ test('"왜 그럴까?": 4칸씩은 핀 3개만 지나 4가닥 → 몇 번 가야
   assert.equal(fourth.figures[0].path.length, 5);
   assert.notEqual(12 % 5, 0);
   assert.match(fourth.say, /핀 5개를 지나 맨 위로 돌아왔어요\./);
+  // 다섯째 장(마지막, 수학의 이름): 같은 칸 수로 감으면 가닥 수는 핀 수와 칸 수를 함께 나누어떨어지게 하는 가장 큰 수다.
+  // 판의 규격 안의 모든 핀 수와 칸 수에서, 큰 수부터 하나씩 나누어 본 수가 풀이 프로그램의 가닥 수, 묶음 세기와 같다
+  const bothDivide = (n, k) => {
+    for (let d = Math.min(n, k); d >= 1; d--) if (n % d === 0 && k % d === 0) return d;
+    return 1;
+  };
+  for (let n = MIN_PINS; n <= MAX_PINS; n++) {
+    for (let k = 1; k < n; k++) {
+      assert.equal(countOf(n, k).count, bothDivide(n, k), `${n}개 ${k}칸`);
+      assert.equal(groupsOf(n, k).length, bothDivide(n, k), `${n}개 ${k}칸`);
+    }
+  }
+  assert.match(fifth.say, /^같은 칸 수로 감으면, 실의 가닥 수는 핀 수와 칸 수를 함께 나누어떨어지게 하는 가장 큰 수예요\./);
+  assert.match(fifth.say, /핀 12개와 4칸의 최대공약수는 4라서 실이 4가닥이에요\.$/);
+  assert.equal(bothDivide(12, 4), 4);
+  assert.deepEqual(fifth.figures.map((item) => [item.n, item.k, item.show]), [[12, 4, 4], [15, 6, 3]]);
+  for (const item of fifth.figures) {
+    // 그림은 가닥을 모두 그린다. 그 수가 그림 아래에 적은 최대공약수다
+    assert.equal(item.show, countOf(item.n, item.k).count, item.note);
+    assert.equal(item.show, bothDivide(item.n, item.k), item.note);
+    assert.match(item.note, new RegExp(`^${item.n}와 ${item.k}의 최대공약수는 ${item.show}(예요|이에요)$`), item.note);
+  }
   // 그림의 핀 수와 칸 수는 판의 규격 안이다
   for (const slide of T.why) for (const item of slide.figures) assert.equal(checkBoard({ n: item.n, k: item.k ?? null }), null);
   assert.match(code, /if \(item\.path\) return \{ n: item\.n, threads: \[\{ pins: item\.path, closed: true \}\] \};/);

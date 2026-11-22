@@ -67,9 +67,16 @@ test('대본을 읽을 수 있고, 글이 비어 있지 않다. 단계 목록이
 test('한 일과 사실만 말한다. 판정하는 말, 칭찬 낱말, 식과 용어가 없다', () => {
   assert.doesNotMatch(said, /틀렸|틀린|아니에요|땡|정답|아쉽|실수|실패|성공|잘했|훌륭|대단|최고|멋져|멋진|완벽|축하|천재|똑똑|굉장|맞아요|맞혔/);
   assert.doesNotMatch(own, /틀렸|틀린|아니에요|땡|아쉽|실패|잘했|훌륭|대단|최고|멋/);
-  // 등차수열의 용어와 식은 쓰지 않는다(형식의 이름에만 "수열"이 있다)
-  assert.doesNotMatch(said.replace(T.title, ''), /수열|등차|공차|항|n번째|공식/);
+  // 등차수열의 용어와 식은 쓰지 않는다(형식의 이름에만 "수열"이 있다).
+  // 수학의 이름(등차수열, 공차)은 "왜 그럴까?"의 마지막 장에서만 붙인다. 그 장에서도 n번째 항의 식이나 공식은 없다
+  const last = `why[${T.why.length - 1}]`;
+  const before = strings.filter(([path]) => !path.startsWith(last)).map(([, text]) => text).join(' ');
+  assert.doesNotMatch(before.replace(T.title, ''), /수열|등차|공차|항|n번째|공식/);
   assert.doesNotMatch(own.replaceAll(T.title, ''), /수열|등차|공차|공식/);
+  for (const [path, text] of strings) if (path.startsWith(last)) assert.doesNotMatch(text, /항|n번째|공식/, path);
+  const named = strings.filter(([, text]) => /등차|공차/.test(text)).map(([path]) => path);
+  assert.ok(named.length > 0 && named.every((path) => path.startsWith(last)), named.join(', '));
+  assert.doesNotMatch(visibleText(html), /등차|공차/);
   // 수의 차례가 어긋난 길에는 그 길이 지나는 수와 뛰는 크기만 말한다
   assert.equal(fill(T.play.jumps, { face: '3, 5, 8', n: 2, k: 3 }), '이 길은 3, 5, 8 차례로 지나요. 뛰는 크기가 2인 곳과 3인 곳이 있어요.');
   assert.equal(fill(T.play.turn, { face: '3, 5, 4' }), '이 길은 3, 5, 4 차례로 지나요. 커지는 곳과 작아지는 곳이 있어요.');
@@ -150,13 +157,13 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
 const corner = (item, cell) => neighbours(item, cell).length === 2;
 
 test('"왜 그럴까?": 수만 보고 이어 구석 빈칸이 남은 이야기 → 구석 칸의 옆 칸은 둘 → 구석 빈칸에서 길이 꺾인다(이름) → 수가 적힌 구석은 끝일 수도 꺾일 수도 있다', () => {
-  assert.equal(T.why.length, 4);
+  assert.equal(T.why.length, 5);
   for (const slide of T.why) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
   for (const slide of T.why) for (const item of slide.figures) {
     assert.equal(checkBoard(item.board), null, item.note);
     assert.ok(pathsOk(item.board, item.paths) || item.paths.length === 0, item.note);
   }
-  const [one, two, three, four] = T.why.map((slide) => slide.figures);
+  const [one, two, three, four, five] = T.why.map((slide) => slide.figures);
   const story = one[0].board;
   // 첫 장~셋째 장은 같은 판이고, 답은 하나다(다른 방법으로 센다)
   for (const item of [two[0], three[0]]) assert.deepEqual(item.board, story);
@@ -195,6 +202,25 @@ test('"왜 그럴까?": 수만 보고 이어 구석 빈칸이 남은 이야기 �
     return path[0] === cell || path.at(-1) === cell ? 'end' : 'bend';
   });
   assert.deepEqual(roles, ['end', 'bend']);
+  // 다섯째 장(마지막, 수학의 이름): 넷째 장의 첫 판을 다 이은 모습이고(답은 하나), 두 길은 2, 4, 6과 3, 5, 7로 둘 다 2씩 커진다
+  const [named] = five;
+  assert.deepEqual(named.board, four[0].board);
+  assert.equal(isDone(named.board, named.paths), true);
+  assert.equal(pathsKey(named.paths), pathsKey(bruteCount(named.board).solutions[0]));
+  assert.equal(bruteCount(named.board).count, 1);
+  const lines = named.paths.map((path) => judgePath(named.board, path));
+  assert.deepEqual(lines.map((line) => line.numbers), [[2, 4, 6], [3, 5, 7]]);
+  for (const line of lines) {
+    assert.equal(line.ok, true);
+    assert.equal(line.step, 2);
+    // 뛰는 크기를 따로 다시 잰다: 이웃한 두 수의 차가 모두 2다
+    for (let index = 1; index < line.numbers.length; index++) assert.equal(line.numbers[index] - line.numbers[index - 1], 2);
+  }
+  assert.deepEqual(named.rings, []);
+  assert.equal(named.note, '두 길 모두 2씩 커져요');
+  assert.match(T.why[4].say, /^한 길의 수처럼 같은 간격으로 커지거나 작아지는 수의 줄을 수학에서는 등차수열이라고 불러요\./);
+  assert.match(T.why[4].say, /커지는 줄에서 뛰는 크기는 공차라고 불러요\./);
+  assert.ok(T.why[4].say.endsWith(`${lines[0].numbers.join(', ')}과 ${lines[1].numbers.join(', ')}은 둘 다 공차가 ${lines[0].step}인 등차수열이에요.`));
   // 이름은 "왜 그럴까?"에서만 말한다
   for (const [path, text] of strings) if (!path.startsWith('why')) assert.doesNotMatch(text, /구석부터 보기/, path);
   assert.equal(countSolutions(story, { limit: 5 }).count, 1);

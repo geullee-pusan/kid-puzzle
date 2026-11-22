@@ -162,9 +162,9 @@ test('이진법은 가르치지 않는다: 그 낱말은 "왜 그럴까?" 넷째
 });
 
 test('"왜 그럴까?": 가장 큰 원판이 움직이는 순간 → 두 배 하고 1 더하기(이름) → 표 → 옮긴 원판의 차례 → 흩어진 탑에서는 그대로 나오지 않는다', () => {
-  assert.equal(T.why.length, 5);
+  assert.equal(T.why.length, 6);
   for (const slide of T.why) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
-  const [one, two, three, four, five] = T.why.map((slide) => slide.figures[0]);
+  const [one, two, three, four, five, six] = T.why.map((slide) => slide.figures[0]);
   const tower = standardBoard(4, 2);
   const other = bruteSolve(tower.start, 2);
   const after = (count) => bruteReplay(tower.start, other.path.slice(0, count));
@@ -201,6 +201,34 @@ test('"왜 그럴까?": 가장 큰 원판이 움직이는 순간 → 두 배 하
   assert.equal(five.board.start[3], five.board.target);
   assert.match(T.why[4].say, /원판이 4개인데 5번에 다 쌓여요\./);
   assert.match(T.why[4].say, /\?$/);
+  // 여섯째 장(마지막, 짧게 적기): 원판 수마다 대본에 적은 식(2를 원판 수만큼 곱하고 1 빼기)을 셈해 보면
+  // 풀이 프로그램의 표와 같고, 원판 6개까지는 다른 탐색으로 다시 구한 수와도 같다
+  assert.deepEqual(six.sizes, [1, 2, 3, 4, 5, 6, 7]);
+  assert.equal(six.ways.length, six.sizes.length);
+  const evaluate = (way) => {
+    const match = /^(2(?:×2)*)−1$/.exec(way);
+    assert.ok(match, way);
+    const twos = match[1].split('×');
+    return { twos: twos.length, value: twos.reduce((product, two) => product * Number(two), 1) - 1 };
+  };
+  const sixRows = fewestRows(six.sizes);
+  six.ways.forEach((way, index) => {
+    const { twos, value } = evaluate(way);
+    assert.equal(twos, six.sizes[index], way);
+    assert.equal(value, sixRows[index].fewest, way);
+    if (sixRows[index].n <= 6) assert.equal(value, bruteSolve(new Array(sixRows[index].n).fill(0), 2).fewest, way);
+  });
+  assert.equal(six.head, '짧게 적으면');
+  assert.equal(2 ** 7, 128);
+  assert.equal(six.note, `2를 7번 곱한 ${2 ** 7}에서 1을 빼면 ${sixRows.at(-1).fewest}이에요`);
+  assert.match(T.why[5].say, /^한 기둥에 쌓인 탑을 옮기는 가장 적은 횟수는 2를 원판 수만큼 곱하고 1을 뺀 수예요\./);
+  assert.ok(T.why[5].say.includes(`원판 4개는 ${six.ways[3]} = ${sixRows[3].fewest}번이에요.`));
+  assert.match(T.why[5].say, /2를 4번 곱한 것을 수학에서는 2의 4제곱이라고 불러요\.$/);
+  assert.match(code, /fewestNode\(item\.sizes, item\.ways \? \{ head: item\.head, cells: item\.ways \} : null\)/);
+  // 수학의 이름과 식(곱하기, 빼기 기호, 제곱)은 마지막 장에만 있다. 규칙 글, 힌트, 판, 앞의 장에는 없다
+  const named = strings.filter(([, text]) => /제곱|×|−/.test(text)).map(([path]) => path);
+  assert.ok(named.length > 0 && named.every((path) => path.startsWith('why[5]')), named.join(', '));
+  assert.doesNotMatch(visibleText(html), /제곱/);
 });
 
 test('풀이와 직접 만들기: 가장 적은 횟수와 길을 여덟 번씩 나눠 그린다. 직접 만들기는 선생님이 누를 때마다 한 번씩 옮긴다', () => {

@@ -223,3 +223,32 @@ export function tableCard(heads, rows) {
   table.append(top, body);
   return table;
 }
+
+/**
+ * 세 더미의 수를 자리마다 칸 하나씩 적은 표("왜 그럴까?" 세 더미의 마지막 장). 0과 1은 더미의 수에서 그 자리에서 적는다.
+ * 1이 든 칸은 글자를 굵게 하고 테두리를 두른다(색만으로 가리지 않는다). 맨 아래 줄은 자리마다 1의 수다.
+ * @param {{heads: string[], rows: {name: string, digits: string[]}[], sum: {name: string, cells: string[]}, note: string}} view
+ */
+export function binaryCard({ heads, rows, sum, note }) {
+  const card = el('div', 'duel-binary-card');
+  const table = el('table', 'duel-table duel-binary');
+  const head = el('tr');
+  for (const text of heads) head.append(el('th', '', text));
+  const top = el('thead');
+  top.append(head);
+  const body = el('tbody');
+  for (const row of rows) {
+    const line = el('tr');
+    line.append(el('th', '', row.name));
+    for (const digit of row.digits) line.append(el('td', digit === '1' ? 'one' : '', digit));
+    body.append(line);
+  }
+  const total = el('tr', 'marked');
+  total.append(el('th', '', sum.name));
+  for (const text of sum.cells) total.append(el('td', '', text));
+  body.append(total);
+  table.append(top, body);
+  card.append(table);
+  if (note) card.append(el('p', 'strip-note', note));
+  return card;
+}

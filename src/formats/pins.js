@@ -432,7 +432,7 @@ export function createPins(frame) {
     return { n: item.n, threads: fullView(item.n, item.k).slice(0, item.show) };
   }
 
-  /** "왜 그럴까?": 4칸씩은 핀 3개만 지나 4가닥 → 몇 번 가야 처음 핀에 오는지 → 핀 13개(이름) → 번갈아 감으면 이야기가 맞지 않는다 */
+  /** "왜 그럴까?": 4칸씩은 핀 3개만 지나 4가닥 → 몇 번 가야 처음 핀에 오는지 → 핀 13개(이름) → 번갈아 감으면 이야기가 맞지 않는다 → 수학의 이름(최대공약수, 마지막 장에만) */
   function whyPages() {
     return T.why.map((slide) => ({
       say: slide.say,
