@@ -3,9 +3,10 @@
 // 겹친 칸 판에서는 "두 번 세기로 정한 가운데 카드가 있고 남은 카드가 짝으로 나뉘면 된다"가 1~9에서 고른 모든 카드 묶음과 모든 합에서 맞는지 본다.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { createRng } from '../src/core/rng.js';
 
 import { HUB_POOL, SET_POOL } from '../src/core/magic-ladder.js';
-import { centerOf, checkBoard, copyBoard, hubSums, isDone, lineSums, linesOf, passCounts, placedOk, reasonOf, sameLines, sizeOf, smallLists, solve, trayOf } from '../src/core/magic.js';
+import { SQUARE_LINES, centerOf, checkBoard, copyBoard, hubSums, isDone, lineSums, linesOf, passCounts, placedOk, reasonOf, sameLines, sizeOf, smallLists, solve, trayOf, triplesOf } from '../src/core/magic.js';
 import { bruteHub, bruteRows, bruteSquare, choose } from './helpers/brute-magic.js';
 
 const ONE_TO_NINE = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -196,7 +197,7 @@ test('겹친 칸: 두 번 세기로 정한 가운데 카드가 있고 남은 카
 });
 
 test('안 되는 판의 까닭: 사다리의 안 되는 묶음마다 까닭이 맞고, 까닭이 말하는 수가 맞다', () => {
-  const expected = ['big', 'split', 'center-part', 'center-missing', 'pairs'];
+  const expected = ['big', 'split', 'center-part', 'center-missing', 'pairs', 'lines', 'lines'];
   assert.deepEqual(
     SET_POOL.no.map((cards) => solve(grid('all', cards)).why.reason),
     expected,
@@ -214,6 +215,13 @@ test('안 되는 판의 까닭: 사다리의 안 되는 묶음마다 까닭이 �
     if (why.reason === 'center-part') assert.notEqual((total / 3) % 3, 0);
     if (why.reason === 'center-missing') assert.ok(!cards.includes(total / 9));
     if (why.reason === 'pairs') assert.ok(!cards.includes(why.pair - why.card));
+    if (why.reason === 'lines') {
+      // 가운데와 짝은 다 맞는데, 합이 줄의 합인 세 장 묶음이 줄 수보다 적다(비트로 모든 세 장을 골라 다시 센다)
+      assert.ok(cards.includes(total / 9));
+      assert.equal(why.line, total / 3);
+      assert.equal(why.count, bruteTriples(cards, why.line).length);
+      assert.ok(why.count < 8);
+    }
     // 까닭이 무엇이든 정말 안 된다
     assert.deepEqual(bruteSquare(cards).all, []);
   }
@@ -259,8 +267,70 @@ test('더 작은 판의 목록: 되는 판과 안 되는 판으로 나뉘고, �
   assert.deepEqual(big.yes.map((item) => item.lines), ['center']);
   assert.deepEqual(big.no.map((item) => item.lines), ['rowscols', 'rows']);
   assert.deepEqual(smallLists({ shape: 'grid' }), { yes: [], no: [] });
-  // 모두 놓아 봐야 아는 안 되는 판은 작은 판으로 내지 않는다(그런 묶음의 가로와 세로 판도 마찬가지)
+  // 모두 놓아 봐야 아는 안 되는 판은 작은 판으로 내지 않는다(그런 묶음의 가로와 세로 판도 마찬가지).
+  // 예전에 모두 놓아 봐야 알았던 묶음은 이제 세 장 묶음이 모자란 까닭(lines)이 보인다
   const hard = [1, 2, 4, 5, 6, 7, 8, 10, 11];
-  assert.equal(solve(grid('all', hard)).why.reason, 'search');
+  assert.deepEqual(solve(grid('all', hard)).why, { reason: 'lines', total: 54, line: 18, center: 6, count: 6 });
   for (const cards of [hard, [1, 4, 5, 6, 7, 8, 9, 10, 13], ...SET_POOL.no]) for (const item of smallLists(grid('all', cards)).no) assert.notEqual(solve(item).why.reason, 'search', JSON.stringify(item));
+});
+
+/** 아홉 장 가운데 세 장을 비트로 모두 골라(2^9가지) 합이 line인 것(작은 카드부터) */
+function bruteTriples(cards, line) {
+  const out = [];
+  for (let bits = 0; bits < 1 << cards.length; bits++) {
+    const chosen = cards.filter((_, index) => (bits >> index) & 1);
+    if (chosen.length === 3 && chosen[0] + chosen[1] + chosen[2] === line) out.push(chosen.slice().sort((a, b) => a - b));
+  }
+  return out.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+}
+
+test('모든 경우 펼쳐 보기(세 장 묶음): 비트로 모두 고른 것과 같다. 1~9의 합 15는 꼭 8가지이고 마법 네모의 여덟 줄이 바로 그것이다', () => {
+  const rng = createRng(20261122);
+  for (let trial = 0; trial < 200; trial++) {
+    const pool = upTo(15);
+    const cards = [];
+    while (cards.length < 9) cards.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+    const line = 6 + Math.floor(rng() * 34);
+    assert.deepEqual(triplesOf(cards, line), bruteTriples(cards, line), JSON.stringify([cards, line]));
+  }
+  assert.equal(SQUARE_LINES, 8);
+  assert.deepEqual(triplesOf(ONE_TO_NINE, 15), [[1, 5, 9], [1, 6, 8], [2, 4, 9], [2, 5, 8], [2, 6, 7], [3, 4, 8], [3, 5, 7], [4, 5, 6]]);
+  // 마법 네모 하나의 여덟 줄이 그 여덟 묶음이다
+  const square = [2, 7, 6, 9, 5, 1, 4, 3, 8];
+  const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]].map((cells) => cells.map((cell) => square[cell]).sort((a, b) => a - b));
+  assert.deepEqual(lines.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]), triplesOf(ONE_TO_NINE, 15));
+});
+
+test('풀이 프로그램이 알려 준 것: 1~15에서 고른 아홉 장 가운데 가운데 카드와 짝이 다 맞는 묶음은, 세 장 묶음이 8가지면 늘 되고 아니면(4가지나 6가지) 안 된다', () => {
+  let ok = 0;
+  let no = 0;
+  const visit = (from, left, chosen) => {
+    if (left === 0) {
+      const cards = chosen.slice();
+      const total = cards.reduce((a, b) => a + b, 0);
+      if (total % 9 !== 0) return;
+      const center = total / 9;
+      const rest = cards.filter((card) => card !== center);
+      if (!cards.includes(center) || rest.some((card) => !rest.includes(2 * center - card))) return;
+      const count = bruteTriples(cards, total / 3).length;
+      const result = solve(grid('all', cards));
+      assert.equal(result.possible, count === 8, cards.join(','));
+      if (result.possible) ok += 1;
+      else {
+        no += 1;
+        assert.equal(result.why.reason, 'lines', cards.join(','));
+        assert.ok([4, 6].includes(count), cards.join(','));
+      }
+      return;
+    }
+    for (let card = from; card <= 15 - left + 1; card++) {
+      chosen.push(card);
+      visit(card + 1, left - 1, chosen);
+      chosen.pop();
+    }
+  };
+  visit(1, 9, []);
+  assert.deepEqual([ok, no], [23, 54]);
+  // 사다리의 두 묶음은 모든 차례를 놓아 보는 방법으로도 안 된다(위 테스트에서 본다)
+  for (const cards of [[1, 2, 4, 5, 6, 7, 8, 10, 11], [1, 2, 3, 4, 6, 8, 9, 10, 11]]) assert.ok(SET_POOL.no.some((item) => item.join() === cards.join()));
 });

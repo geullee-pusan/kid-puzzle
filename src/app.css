@@ -12120,6 +12120,46 @@ button.pd-clue {
 }
 
 /* "모든 경우 펼쳐 보기": 성냥 자리마다 그 성냥 하나만 뺐을 때 남는 정사각형 수. 아직 해 보지 않은 경우는 수 없는 점선 동그라미 */
+/* 마법 네모: "모든 경우 펼쳐 보기"의 세 장 묶음(풀이 종이에서도 쓴다) */
+.mg-cases-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+}
+
+.mg-cases-box h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.mg-triples {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mg-triples li {
+  padding: 4px 2px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mg-cases-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(100%, 300px);
+}
+
 .mt-case {
   pointer-events: none;
 }

@@ -257,6 +257,7 @@ function lonelyCard(cards, pair) {
  *   center-part    (마법 네모) 가운데 카드는 줄의 합을 셋으로 나눈 수인데, 그 수가 정수가 아니다
  *   center-missing (마법 네모, 겹친 칸) 가운데에 와야 할 카드가 없다
  *   pairs          (마법 네모, 겹친 칸) 가운데를 뺀 카드가 합이 pair인 짝으로 나뉘지 않는다(card는 짝이 없는 카드)
+ *   lines          (마법 네모) 합이 line인 세 장 묶음이 count가지뿐이라 줄 여덟 개를 채울 수 없다(줄마다 서로 다른 세 장이 든다)
  *   search         위의 것에 걸리지 않는데도 모든 방법을 놓아 보면 안 된다
  * 겹친 칸 판(합을 정한 판):
  *   big / small    가장 큰(작은) 카드 세 장을 한 줄에 놓아도 합이 정한 합보다 작다(크다)
@@ -281,6 +282,8 @@ export function reasonOf(board) {
       if (!cards.includes(center)) return { reason: 'center-missing', total, line, center };
       const card = lonelyCard(cards.filter((value) => value !== center), center * 2);
       if (card !== null) return { reason: 'pairs', total, line, center, pair: center * 2, card };
+      const count = triplesOf(cards, line).length;
+      if (count < SQUARE_LINES) return { reason: 'lines', total, line, center, count };
     }
     return { reason: 'search', total };
   }
@@ -307,6 +310,21 @@ export function reasonOf(board) {
 }
 
 const memo = new Map();
+
+/** 마법 네모(3×3)의 줄 수: 가로 셋, 세로 셋, 비스듬한 줄 둘 */
+export const SQUARE_LINES = 8;
+
+/**
+ * 합이 line인 세 장 묶음을 모두(모든 경우 펼쳐 보기). 카드는 서로 다른 장이고, 묶음마다 작은 카드부터, 묶음은 사전 차례.
+ * 마법 네모의 줄마다 이런 묶음이 하나씩 들고, 줄이 다르면 칸이 하나 이상 달라서 묶음도 다르다.
+ * @returns {number[][]}
+ */
+export function triplesOf(cards, line) {
+  const list = cards.slice().sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) for (let k = j + 1; k < list.length; k++) if (list[i] + list[j] + list[k] === line) out.push([list[i], list[j], list[k]]);
+  return out;
+}
 
 /**
  * 판을 푼다. 같은 판은 한 번만 따지고 적어 둔다.

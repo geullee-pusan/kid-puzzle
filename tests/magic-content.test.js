@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { recommend, tuningFor, whyUnlocked } from '../src/core/level.js';
 import { HUB_POOL, LADDER, SET_POOL, generateBoard } from '../src/core/magic-ladder.js';
-import { centerOf, hubSums, isDone, lineSums, linesOf, passCounts, solve } from '../src/core/magic.js';
+import { SQUARE_LINES, centerOf, hubSums, isDone, lineSums, linesOf, passCounts, solve, triplesOf } from '../src/core/magic.js';
 import { endsClosed, fill, sentenceCount } from '../src/core/text.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,7 +21,7 @@ const board = read('src/ui/magic-board.js');
 
 const VALUES = { k: 15, f: '두', n: 3, no: '세', face: '5 카드', total: 8 };
 /** 그림의 값은 글이 아니다 */
-const DATA_KEYS = ['picture', 'blank', 'seed', 'arms', 'target', 'cells', 'lines', 'dots', 'level', 'times'];
+const DATA_KEYS = ['picture', 'blank', 'seed', 'arms', 'target', 'cells', 'cards', 'lines', 'dots', 'level', 'times'];
 
 function allStrings(value, path = '') {
   if (typeof value === 'string') return [[path, value]];
@@ -165,6 +165,7 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
     ...Object.values(T.right),
     ...Object.values(T.solution),
     ...Object.values(T.reason),
+    ...Object.values(T.cases),
     ...Object.entries(T.make)
       .filter(([key]) => !key.startsWith('line-'))
       .map(([, text]) => text),
@@ -179,12 +180,12 @@ test('화면 글에 영어 낱말과 보상 낱말이 없고, "~요"로 끝나�
 });
 
 /** "왜 그럴까?" 그림의 판 */
-const figureBoard = (item) => (item.arms ? hub(item.arms, item.target ?? null) : square(item.lines));
+const figureBoard = (item) => (item.arms ? hub(item.arms, item.target ?? null) : { ...square(item.lines), cards: item.cards ?? ONE_TO_NINE });
 const sumsOf = (item) => lineSums(figureBoard(item), item.cells).map((line) => line.sum);
 
 test('"왜 그럴까?"(네모): 가운데 1에서 막힘 → 가운데를 지나는 네 줄 → 네 번 세니 가운데는 5 → 가로 줄만이면 아무 수나', () => {
   const story = T.why.grid;
-  assert.equal(story.length, 4);
+  assert.equal(story.length, 6);
   for (const slide of story) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
   const [one, two, three, four] = story.map((slide) => slide.figures);
   // 첫 장: 가운데가 1인 네모는 여덟 줄이 같지 않다. 1~9의 마법 네모는 가운데가 5뿐이다
@@ -212,6 +213,67 @@ test('"왜 그럴까?"(네모): 가운데 1에서 막힘 → 가운데를 지나
   assert.deepEqual(sumsOf(four[0]), [15, 15, 15]);
   assert.match(four[0].note, /15예요$/);
   assert.equal(solve(square('rows')).sums[0].centers.length, 9);
+});
+
+/** 아홉 장에서 세 장을 고르는 모든 방법(되부름) 가운데 합이 line인 것의 수 */
+function tripleCount(cards, line, from = 0, left = 3, sum = 0) {
+  if (left === 0) return sum === line ? 1 : 0;
+  let count = 0;
+  for (let index = from; index < cards.length; index++) count += tripleCount(cards, line, index + 1, left - 1, sum + cards[index]);
+  return count;
+}
+
+test('"왜 그럴까?"(네모)의 끝 두 장: 1~9의 합 15인 세 장은 꼭 8가지이고 여덟 줄이 그것이다 → 합 18인 세 장이 6가지뿐인 카드, 모든 경우 따지기(이름)', () => {
+  const [, , , , five, six] = T.why.grid;
+  for (const slide of [five, six]) assert.ok(sentenceCount(slide.say) <= 3, slide.say);
+  assert.equal(tripleCount(ONE_TO_NINE, 15), 8);
+  assert.equal(SQUARE_LINES, 8);
+  const magic = five.figures[0];
+  assert.ok(isDone(figureBoard(magic), magic.cells));
+  assert.deepEqual(sumsOf(magic), Array(8).fill(15));
+  // 그림 네모의 여덟 줄이 저마다 다른 세 장이고, 그 여덟이 합 15인 세 장 모두다
+  const groups = linesOf(figureBoard(magic)).map((line) => line.cells.map((cell) => magic.cells[cell]).sort((a, b) => a - b).join('+'));
+  assert.equal(new Set(groups).size, 8);
+  assert.deepEqual(groups.sort(), triplesOf(ONE_TO_NINE, 15).map((item) => item.join('+')).sort());
+  assert.match(five.say, /합이 15인 세 장을 빠짐없이 찾으면 꼭 8가지예요./);
+  const cards = [1, 2, 4, 5, 6, 7, 8, 10, 11];
+  const tried = six.figures[0];
+  assert.deepEqual(tried.cards, cards);
+  assert.deepEqual(tried.cells.slice().sort((a, b) => a - b), cards);
+  assert.equal(tripleCount(cards, 18), 6);
+  assert.equal(solve({ shape: 'grid', w: 3, h: 3, lines: 'all', cards, target: null }).why.reason, 'lines');
+  assert.match(six.say, /^1, 2, 4, 5, 6, 7, 8, 10, 11로는 합이 18인 세 장이 6가지뿐이에요./);
+  const sums = sumsOf(tried);
+  assert.equal(sums.filter((value) => value === 18).length, 6);
+  assert.deepEqual(sums.filter((value) => value !== 18).sort((a, b) => a - b), [17, 19]);
+  assert.match(tried.note, /여섯 줄은 18이고, 두 줄은 19와 17이에요/);
+  assert.match(six.say, /모든 경우 따지기라고 불러요.$/);
+  for (const [path, text] of strings) if (path !== 'why.grid[5].say') assert.doesNotMatch(text, /모든 경우 따지기/, path);
+});
+
+test('모든 경우 펼쳐 보기: 다른 수 카드로 만드는 마법 네모에만 있고, 카드의 합과 줄마다의 합, 세 장 묶음을 늘어놓는다. 무엇을 뜻하는지는 말하지 않는다', () => {
+  assert.match(code, /const hasCases = \(round\) => hasImpossible\(round\) && kindOf\(round\.board\) === 'sets';/);
+  assert.match(code, /const triples = triplesOf\(board\.cards, line\);/);
+  assert.equal(fill(T.labels.triple, { n: 1, k: 6, f: 11 }), '1+6+11');
+  assert.equal(fill(T.cases.count, { k: 18, n: 6 }), '합이 18인 세 장 묶음은 모두 6가지예요.');
+  assert.equal(fill(T.cases['line-open'], { k: 15 }), '가로 세 줄의 합이 같다면 줄마다 15예요.');
+  assert.equal(fill(T.cases['line-closed'], { k: 21 }), '가로 세 줄의 합이 같다면 줄마다 21이에요.');
+  // 도구의 글에는 되는지, 줄이 몇 개인지, 모자라는지를 말하지 않는다
+  for (const text of Object.values(T.cases)) assert.doesNotMatch(text, /안 돼|불가능|모자|뿐|8개|여덟/, text);
+  // 끝난 판의 까닭: 판 아래, 선생님의 말, 풀이
+  assert.equal(fill(T.status['reason-lines'], { k: 18, n: 6 }), '합이 18인 세 장 묶음은 6가지뿐이에요');
+  assert.equal(fill(T.right['reason-lines'], { k: 18, n: 6 }), '합이 18인 세 장 묶음은 모두 6가지뿐인데, 마법 네모의 줄은 8개예요.');
+  assert.match(code, /if \(linesReason\(solution\)\) parts\.push\(fill\(T\.right\['reason-lines'\], \{ k: solution\.why\.line, n: solution\.why\.count \}\)\);/);
+  assert.match(code, /box\.append\(head, triplesList\(triplesOf\(board\.cards, solution\.why\.line\)\)\);/);
+  // 4단계의 세 장 묶음이 모자란 판: 줄의 합과 묶음의 수가 다시 센 것과 같다
+  for (const cards of SET_POOL.no) {
+    const why = solve({ shape: 'grid', w: 3, h: 3, lines: 'all', cards, target: null }).why;
+    if (why.reason !== 'lines') continue;
+    const total = cards.reduce((a, b) => a + b, 0);
+    assert.equal(why.line, total / 3);
+    assert.equal(why.count, tripleCount(cards, total / 3));
+    assert.ok(why.count < 8);
+  }
 });
 
 test('"왜 그럴까?"(겹친 칸): 11을 만들려다 막힘 → 가운데는 세 번 → 28과 33, 두 번 더한 5 → 10, 12, 14는 된다', () => {
@@ -251,7 +313,7 @@ test('"왜 그럴까?"(겹친 칸): 11을 만들려다 막힘 → 가운데는 �
 
 test('안 되는 판의 까닭마다 말이 있다(사다리의 안 되는 판, 직접 만들기의 판)', () => {
   const reasons = new Set([...SET_POOL.no.map((cards) => solve({ shape: 'grid', w: 3, h: 3, lines: 'all', cards, target: null }).why.reason), ...HUB_POOL.no.map((item) => solve(item).why.reason), 'big', 'small', 'pairs-all', 'search']);
-  const used = { big: ['big-closed', 'big-rest', 'hub-big-closed'], split: ['total-closed', 'split'], 'center-part': ['line-closed', 'center-part', 'hub-count', 'hub-extra-closed', 'hub-part'], 'center-missing': ['center-need-closed', 'center-missing'], pairs: ['pairs-closed', 'lonely'], search: ['search'], small: ['hub-small-closed'], 'pairs-all': ['pairs-all'] };
+  const used = { big: ['big-closed', 'big-rest', 'hub-big-closed'], split: ['total-closed', 'split'], 'center-part': ['line-closed', 'center-part', 'hub-count', 'hub-extra-closed', 'hub-part'], 'center-missing': ['center-need-closed', 'center-missing'], pairs: ['pairs-closed', 'lonely'], lines: ['line-closed', 'lines-count', 'lines-short'], search: ['search'], small: ['hub-small-closed'], 'pairs-all': ['pairs-all'] };
   for (const reason of reasons) for (const key of used[reason]) assert.ok(T.reason[key], `${reason}: ${key}`);
   for (const reason of reasons) assert.match(code, new RegExp(`why\\.reason === '${reason}'`), reason);
 });
@@ -299,7 +361,9 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(code, /ruleAside: true,/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);
   // 도구를 켜 본 판은 힌트 하나를 연 것으로 센다
-  assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.dotsShown \? 1 : 0\),/);
+  assert.match(code, /hintsOpened: round\.hintsOpened \+ \(round\.dotsShown \? 1 : 0\) \+ \(round\.casesShown \? 1 : 0\),/);
+  assert.match(part('id="magic-dots"', 'id="why"'), /id="magic-cases" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</);
+  assert.match(part('id="magic-pad"', 'id="domino-pad"'), /<div id="magic-cases-box" class="mg-cases-box" hidden>/);
   // 판을 그리는 조각은 글을 받아 그릴 뿐 적지 않는다. 타이머가 없다. 끄는 것과 누르는 것을 모두 받는다
   assert.doesNotMatch(board, /setInterval|setTimeout/);
   for (const name of ['pointerdown', 'pointermove', 'pointerup', 'keydown', "'mg-ring'", "'mg-dot'", "'mg-ghost'", "'mg-over'"]) assert.ok(board.includes(name), name);

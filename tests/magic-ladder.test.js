@@ -81,6 +81,8 @@ test('4, 5단계: 첫 판은 되는 판, 둘째는 아주 쉬운 안 되는 판(
     const { solution } = generateBoard(level, seed);
     if (!solution.possible) assert.notEqual(solution.why.reason, 'search', `${level}단계 ${seed}번`);
   }
+  // 예전에 모두 놓아 봐야 알았던 묶음은 세 장 묶음이 모자란 까닭(lines)으로 4단계에 나온다
+  assert.ok(SEEDS.some((seed) => generateBoard(4, seed).solution.why?.reason === 'lines'));
 });
 
 test('판 묶음의 되는 판과 안 되는 판이 모든 차례를 다 놓아 본 것과 같다', () => {

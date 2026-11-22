@@ -10,11 +10,14 @@
 // 카드를 다 놓았는데 합이 다른 줄이 있으면 그 사실(합이 같은 줄의 수)만 말한다. 같은 모습을 다시 놓으면 그렇다고 말한다.
 // 되는 판에 "불가능해요"를 누르면 틀렸다고 하지 않는다. 되는 방법이 있다는 사실만 말하고 판은 그대로 이어진다.
 // 왼쪽 칸의 "몇 번 세어지는지 보기"는 칸마다 그 칸을 지나는 줄의 수만큼 점을 찍는 도구다(처음 켤 때 힌트 하나로 센다).
+// 다른 수 카드로 만드는 마법 네모(4단계와 직접 만든 마법 네모)에는 "모든 경우 펼쳐 보기"도 있다. 켜면 오른쪽에 카드의 합, 줄마다의 합(카드의 합 ÷ 3),
+//   합이 그 수인 세 장 묶음을 모두 늘어놓는다(합이 셋으로 나뉘지 않으면 그 사실만). 몇 가지인지가 무엇을 뜻하는지는 말하지 않는다. 처음 켤 때 힌트 하나로 센다.
+// 세 장 묶음이 8가지보다 적은 안 되는 판(까닭 lines)을 "불가능해요"로 끝내면 판 아래와 선생님의 말에 그 까닭을 말하고, 풀이에 묶음을 모두 늘어놓는다.
 import T from '../content/magic.json';
 import { smallerMagic } from '../core/smaller.js';
 import { endsClosed, fill, ordinal } from '../core/text.js';
 import { LADDER, MAKE_LEVEL, TOP_LEVEL, generateBoard, nextSeed, rungOf } from '../core/magic-ladder.js';
-import { centerOf, checkBoard, copyBoard, isDone, lineSums, linesOf, placedOk, sizeOf, solve, trayOf } from '../core/magic.js';
+import { centerOf, checkBoard, copyBoard, isDone, lineSums, linesOf, placedOk, sizeOf, solve, trayOf, triplesOf } from '../core/magic.js';
 import { boardCard, drawBoard, drawMini, drawPicker } from '../ui/magic-board.js';
 
 const FORMAT = 'magic';
@@ -52,6 +55,23 @@ export function createMagic(frame) {
 
   const count = (value) => Number.isInteger(value) && value >= 0;
   const hasImpossible = (round) => round.mode === 'mixed';
+  /** "모든 경우 펼쳐 보기"가 있는 판: 안 되는 판이 섞이는 판 가운데 다른 수 카드로 만드는 마법 네모 */
+  const hasCases = (round) => hasImpossible(round) && kindOf(round.board) === 'sets';
+  /** 세 장 묶음 하나를 "1+6+11"처럼 */
+  const tripleText = ([n, k, f]) => fill(T.labels.triple, { n, k, f });
+  /** 세 장 묶음의 목록(풀이 종이와 오른쪽 칸에서 쓴다) */
+  function triplesList(triples) {
+    const list = document.createElement('ul');
+    list.className = 'mg-triples';
+    for (const triple of triples) {
+      const item = document.createElement('li');
+      item.textContent = tripleText(triple);
+      list.append(item);
+    }
+    return list;
+  }
+  /** 안 되는 판의 까닭이 세 장 묶음이 모자란 것(lines)인가 */
+  const linesReason = (solution) => solution?.possible === false && solution.why?.reason === 'lines';
   const placedKey = (placed) => placed.join(',');
 
   // ---- 읽어 주는 이름 ----
@@ -92,13 +112,24 @@ export function createMagic(frame) {
     $('magic-maybe').hidden = !hasImpossible(round);
     $('magic-impossible').disabled = !playing;
     $('magic-dots').setAttribute('aria-pressed', String(round.dotsOn));
+    const looking = playing && round.casesOn && hasCases(round);
+    $('magic-cases').hidden = !hasCases(round);
+    $('magic-cases').disabled = !playing;
+    $('magic-cases').setAttribute('aria-pressed', String(looking));
+    $('magic-cases-box').hidden = !looking;
+    if (looking) drawCases(board);
     $('undo').disabled = !playing || round.moves.length === 0;
     $('reset').disabled = !playing || round.placed.every((card) => card === null);
     frame.showWhy();
   }
 
   function statusOf(round, playing) {
-    if (!playing) return isDone(round.board, round.placed) ? T.status.done : '';
+    if (!playing) {
+      if (isDone(round.board, round.placed)) return T.status.done;
+      // 세 장 묶음이 모자란 안 되는 판은 그 까닭을 판 아래에 적는다
+      const { solution } = frame;
+      return linesReason(solution) ? fill(T.status['reason-lines'], { k: solution.why.line, n: solution.why.count }) : '';
+    }
     if (choice?.card !== undefined) return T.status.picked;
     if (choice?.cell !== undefined) return T.status['picked-cell'];
     const left = round.placed.filter((card) => card === null).length;
@@ -298,6 +329,43 @@ export function createMagic(frame) {
     frame.persist();
   }
 
+  /** "모든 경우 펼쳐 보기"의 오른쪽 글: 카드의 합, 줄마다의 합, 합이 그 수인 세 장 묶음 모두 */
+  function drawCases(board) {
+    const C = T.cases;
+    const total = board.cards.reduce((a, b) => a + b, 0);
+    const lines = [paragraph(fill(pick(C, 'total', total), { total }))];
+    if (total % 3 !== 0) lines.push(paragraph(C.split));
+    else {
+      const line = total / 3;
+      const triples = triplesOf(board.cards, line);
+      lines.push(paragraph(fill(pick(C, 'line', line), { k: line })));
+      lines.push(paragraph(fill(C[triples.length === 0 ? 'none' : 'count'], { k: line, n: triples.length })));
+      if (triples.length > 0) lines.push(triplesList(triples));
+    }
+    $('magic-cases-list').replaceChildren(...lines);
+  }
+
+  function paragraph(text) {
+    const node = document.createElement('p');
+    node.className = 'pad-note';
+    node.textContent = text;
+    return node;
+  }
+
+  /** 왼쪽 칸의 "모든 경우 펼쳐 보기". 처음 켤 때 힌트 하나로 센다 */
+  function toggleCases() {
+    const { round } = frame;
+    if (!round || round.done || !hasCases(round)) return;
+    round.casesOn = !round.casesOn;
+    if (round.casesOn) {
+      round.casesShown = true;
+      round.casesCount += 1;
+    }
+    frame.note('cases', { on: round.casesOn });
+    draw();
+    frame.keep();
+  }
+
   /** 왼쪽 칸의 도구: 칸마다 지나는 줄의 수만큼 점을 찍는다. 처음 켤 때 힌트 하나로 센다 */
   function toggleDots() {
     const { round } = frame;
@@ -318,6 +386,8 @@ export function createMagic(frame) {
     const last = round.answers.at(-1);
     if (last?.answer === 'impossible') {
       parts.push(round.tries.length > 0 ? fill(T.right['impossible-tried'], { n: round.tries.length }) : T.right['impossible-untried']);
+      // 세 장 묶음이 모자란 판은 그 까닭을 함께 말한다
+      if (linesReason(solution)) parts.push(fill(T.right['reason-lines'], { k: solution.why.line, n: solution.why.count }));
       return parts;
     }
     const { board, placed } = round;
@@ -339,10 +409,10 @@ export function createMagic(frame) {
     return row;
   }
 
-  /** "왜 그럴까?" 그림의 판 */
+  /** "왜 그럴까?" 그림의 판(네모 판의 카드는 따로 적지 않으면 1~9) */
   function figureBoard(item) {
     if (item.arms) return { shape: 'hub', arms: item.arms, cards: Array.from({ length: 1 + 2 * item.arms }, (_, index) => index + 1), target: item.target ?? null };
-    return { shape: 'grid', w: 3, h: 3, lines: item.lines, cards: [1, 2, 3, 4, 5, 6, 7, 8, 9], target: null };
+    return { shape: 'grid', w: 3, h: 3, lines: item.lines, cards: item.cards ?? [1, 2, 3, 4, 5, 6, 7, 8, 9], target: null };
   }
 
   /** "왜 그럴까?": 네모 판은 가운데가 왜 그 수인지, 겹친 칸 판은 가운데 카드가 여러 번 세어지는 이야기 */
@@ -365,7 +435,8 @@ export function createMagic(frame) {
     const need = () => lines.push(fill(pick(R, 'center-need', why.center), { k: why.center }), R['center-missing']);
     const pairs = () => lines.push(fill(pick(R, 'pairs', why.pair), { k: why.pair }), fill(R.lonely, { k: why.card }));
     if (board.shape === 'grid') {
-      if (why.reason === 'big') lines.push(fill(pick(R, 'big', why.low), { k: why.card, n: why.low }), R['big-rest']);
+      if (why.reason === 'lines') lines.push(fill(pick(R, 'line', why.line), { k: why.line }), fill(R['lines-count'], { k: why.line, n: why.count }), R['lines-short']);
+      else if (why.reason === 'big') lines.push(fill(pick(R, 'big', why.low), { k: why.card, n: why.low }), R['big-rest']);
       else if (why.reason === 'split') lines.push(fill(pick(R, 'total', why.total), { total: why.total }), fill(R.split, { n: why.rows }));
       else if (why.reason === 'center-part') lines.push(fill(pick(R, 'line', why.line), { k: why.line }), R['center-part']);
       else if (why.reason === 'center-missing') {
@@ -401,8 +472,17 @@ export function createMagic(frame) {
       return [{ say, nodes: [rowOf([boardCard({ board, placed: solution.example }, '', { big: true })])] }];
     }
     const say = [T.solution.impossible, ...reasonLines(board, solution.why)].join(' ');
-    const dots = !['big', 'small', 'split', 'search'].includes(solution.why.reason);
-    return [{ say, nodes: [rowOf([boardCard({ board, placed: Array(sizeOf(board)).fill(null), dots }, '', { big: true })])] }];
+    const dots = !['big', 'small', 'split', 'search', 'lines'].includes(solution.why.reason);
+    const card = boardCard({ board, placed: Array(sizeOf(board)).fill(null), dots }, '', { big: true });
+    if (solution.why.reason !== 'lines') return [{ say, nodes: [rowOf([card])] }];
+    // 세 장 묶음이 모자란 판: 판 옆에 합이 줄의 합인 세 장 묶음을 모두 늘어놓는다
+    const box = document.createElement('div');
+    box.className = 'mg-cases-card';
+    const head = document.createElement('p');
+    head.className = 'strip-note';
+    head.textContent = fill(T.cases.count, { k: solution.why.line, n: solution.why.count });
+    box.append(head, triplesList(triplesOf(board.cards, solution.why.line)));
+    return [{ say, nodes: [rowOf([card, box])] }];
   }
 
   // ---- 직접 만들기: 판 모양과 카드를 고른다 ----
@@ -528,6 +608,7 @@ export function createMagic(frame) {
   // ---- 단추 잇기 ----
   $('magic-impossible').addEventListener('click', pressImpossible);
   $('magic-dots').addEventListener('click', toggleDots);
+  $('magic-cases').addEventListener('click', toggleCases);
   $('magic-make-shapes').addEventListener('click', (event) => {
     const figure = event.target.closest('button')?.dataset.figure;
     if (FIGURES.includes(figure)) changeDraft({ ...draft, figure });
@@ -554,6 +635,9 @@ export function createMagic(frame) {
       dotsOn: false, // 지금 칸마다 점을 찍고 있는가
       dotsShown: false, // 점을 한 번이라도 켰는가
       dotsCount: 0, // 점을 켠 수
+      casesOn: false, // 지금 "모든 경우 펼쳐 보기"를 켜 두었는가
+      casesShown: false, // 한 번이라도 켰는가
+      casesCount: 0, // 켠 수
       moveCount: 0, // 카드를 놓거나 옮기거나 돌려놓은 수
       dragCount: 0, // 그 가운데 끌어서 한 것
       tapCount: 0, // 그 가운데 눌러서 한 것
@@ -583,13 +667,16 @@ export function createMagic(frame) {
       if (!placedOk(saved.board, saved.placed) || !Array.isArray(saved.moves) || !saved.moves.every((item) => placedOk(saved.board, item))) return false;
       if (!Array.isArray(saved.tries) || !saved.tries.every((item) => typeof item === 'string')) return false;
       if (typeof saved.dotsOn !== 'boolean' || typeof saved.dotsShown !== 'boolean') return false;
-      return [saved.dotsCount, saved.moveCount, saved.dragCount, saved.tapCount, saved.fullCount, saved.undoCount, saved.resetCount, saved.impossibleCount, saved.wrongCount].every(count);
+      if (typeof saved.casesOn !== 'boolean' || typeof saved.casesShown !== 'boolean') return false;
+      return [saved.casesCount, saved.dotsCount, saved.moveCount, saved.dragCount, saved.tapCount, saved.fullCount, saved.undoCount, saved.resetCount, saved.impossibleCount, saved.wrongCount].every(count);
     },
     /** 판 화면에서 이 형식의 것(판, 판 아래의 글, 왼쪽 칸의 도구)을 보이거나 감춘다 */
     showParts(on) {
       $('magic-board').hidden = !on;
       $('magic-count').hidden = !on;
       $('magic-dots').hidden = !on;
+      // "모든 경우 펼쳐 보기"는 그 도구가 있는 판에서만 draw가 보인다
+      if (!on) $('magic-cases').hidden = true;
       if (on) {
         // 앞의 형식이 감춰 둔 무르기와 되돌리기를 여기서 다시 보이게 한다.
         $('undo').hidden = false;
@@ -615,7 +702,7 @@ export function createMagic(frame) {
     hints: (round) => T.hints[kindOf(round.board)],
     touched: (round) => round.moveCount > 0,
     /** 지금 판의 모습("막혔어요"를 골랐을 때 기록에 남긴다) */
-    view: (round) => ({ placed: round.placed.slice(), left: trayOf(round.board, round.placed).length, tries: round.tries.length, dots: round.dotsOn }),
+    view: (round) => ({ placed: round.placed.slice(), left: trayOf(round.board, round.placed).length, tries: round.tries.length, dots: round.dotsOn, cases: round.casesOn }),
     /** 이 판보다 작은 판: 줄이나 카드가 적은 판 */
     smaller: (round, turn) => smallerMagic({ mode: round.mode, board: round.board }, turn),
     record(round, solution) {
@@ -624,9 +711,11 @@ export function createMagic(frame) {
         board: copyBoard(round.board),
         solution: { possible: solution.possible, count: solution.count, sums: solution.sums.map((item) => ({ sum: item.sum, count: item.count, centers: item.centers })), why: solution.why },
         // 질문 힌트와 "몇 번 세어지는지 보기"를 함께 센다.
-        hintsOpened: round.hintsOpened + (round.dotsShown ? 1 : 0),
+        hintsOpened: round.hintsOpened + (round.dotsShown ? 1 : 0) + (round.casesShown ? 1 : 0),
         dotsShown: round.dotsShown,
         dotsCount: round.dotsCount,
+        casesShown: round.casesShown,
+        casesCount: round.casesCount,
         // 판을 떠날 때 놓인 카드, 카드를 모두 놓아 본 모습들
         placed: round.placed,
         tries: round.tries,

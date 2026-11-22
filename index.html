@@ -818,6 +818,9 @@
           <button id="pieces-sort" class="btn wide" type="button" aria-pressed="false" hidden>가장 긴 줄로 묶어 보기</button>
           <!-- 마법 네모와 겹친 칸: 칸마다 그 칸을 지나는 줄의 수만큼 점을 찍는 도구. 무엇을 알려 주는지는 말하지 않는다 -->
           <button id="magic-dots" class="btn wide" type="button" aria-pressed="false" hidden>몇 번 세어지는지 보기</button>
+          <!-- 마법 네모와 겹친 칸: 다른 수 카드로 만드는 마법 네모(4단계)에서 카드의 합과 줄마다의 합, 합이 그 수인 세 장 묶음을 모두 오른쪽에 늘어놓는 도구.
+               몇 가지인지가 무엇을 뜻하는지는 말하지 않는다. 처음 켜면 힌트 하나로 센다 -->
+          <button id="magic-cases" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</button>
           <!-- 닿지 않게 놓기와 구역 긋기: 놓인 구슬과 닿는 빈칸에 빗금을 긋고, 더 놓을 수 있는 칸의 수를 판 아래에 적는 도구 -->
           <button id="apart-near" class="btn wide" type="button" aria-pressed="false" hidden>닿는 칸 보기</button>
           <!-- 열쇠 미로: 나가는 문에서 거꾸로 따라가 나갈 수 있는 방에 빗금을 긋는 도구(잠긴 문은 열 수 있다고 친다). 무엇을 알려 주는지는 말하지 않는다 -->
@@ -1402,13 +1405,18 @@
               <div id="pieces-shelf" class="pc-shelf"></div>
             </div>
           </div>
-          <!-- 마법 네모와 겹친 칸: 맞출 합(정한 판만), 놓는 법, 안 되는 판이 섞이는 판에는 "불가능해요" 단추 -->
+          <!-- 마법 네모와 겹친 칸: 맞출 합(정한 판만), 놓는 법, 안 되는 판이 섞이는 판에는 "불가능해요" 단추.
+               "모든 경우 펼쳐 보기"를 켜면 그 아래에 카드의 합, 줄마다의 합, 합이 그 수인 세 장 묶음이 모두 보인다 -->
           <div id="magic-pad" class="pad" hidden>
             <p id="magic-target" class="pad-note best-line" hidden></p>
             <p class="pad-note">카드를 끌어다 칸에 놓아요. 카드를 누른 뒤 칸을 눌러도 돼요. 놓인 카드끼리 자리를 바꿀 수도 있어요.</p>
             <div id="magic-maybe" class="choices" hidden>
               <p class="pad-note">아무리 해도 안 될 것 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="magic-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+            <div id="magic-cases-box" class="mg-cases-box" hidden>
+              <h2>세 장 묶음</h2>
+              <div id="magic-cases-list" aria-live="polite"></div>
             </div>
           </div>
           <!-- 닿지 않게 놓기와 구역 긋기: 닿는 칸의 그림과 놓는 법. 구역을 긋는 판에는 "구슬 놓기"와 "구역 긋기". 한 번이 끝난 뒤에는 다시 해 볼지 여기까지 할지 고른다 -->
