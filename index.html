@@ -489,6 +489,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="discpair-title">
+            <h2 id="discpair-title">원판 둘씩 옮기기</h2>
+            <div class="door-picture"><div id="home-discpair-sample"></div></div>
+            <p id="home-discpair-ask" class="door-ask">원판을 모두 한 칸에 모을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-discpair-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-discpair-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -634,6 +644,9 @@
               <li>
                 <button id="home-racetrack-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-racetrack-blank"></span></span><span class="menu-name">모눈 자동차 경주</span></button>
               </li>
+              <li>
+                <button id="home-discpair-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-discpair-blank"></span></span><span class="menu-name">원판 둘씩 옮기기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -749,6 +762,8 @@
           <button id="net-loop" class="btn wide" type="button" aria-pressed="false" hidden>고리 찾기</button>
           <!-- 구역 지도 맞히기: 지금까지의 대답과 맞는 지도가 몇 가지인지 판 아래에 적는 도구(칸이 16개 이하인 판에서만 보인다). 처음 켜면 힌트 하나로 센다 -->
           <button id="regionmap-left" class="btn wide" type="button" aria-pressed="false" hidden>맞는 지도 세어 보기</button>
+          <!-- 원판 둘씩 옮기기: 칸에 번갈아 두 색(동그라미 칸과 네모 칸)을 칠하고, 모양마다 원판의 수를 판 아래에 적는 도구. 무엇이 그대로인지는 말하지 않는다. 처음 켜면 힌트 하나로 센다 -->
+          <button id="discpair-color" class="btn wide" type="button" aria-pressed="false" hidden>색 켜기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -854,6 +869,9 @@
             <!-- 모눈 자동차 경주: 길 칸과 벽(빗금), 칸마다의 점, 결승선(체크 무늬 선)과 결승선 너머, 깃발 칸, 지나온 길, 차.
                  다음에 갈 수 있는 아홉 점이 동그라미로 그려지고, 하나를 누르면 차가 그 점으로 간다 -->
             <div id="racetrack-board" hidden></div>
+            <!-- 원판 둘씩 옮기기: 둥글게 놓인 칸과 칸을 잇는 고리, 칸마다 쌓인 원판과 그 수. 원판이 있는 칸을 누르면 원판 하나를 들고,
+                 금빛 점선 테두리의 옆 칸을 누르면 그리로 옮긴다 -->
+            <div id="discpair-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1004,6 +1022,15 @@
               <span id="racetrack-status" class="tile-status" aria-live="polite"></span>
               <span class="block-numbers">
                 <span>움직인 횟수 <strong id="racetrack-moves">0</strong>번</span>
+              </span>
+            </span>
+            <!-- 원판 둘씩 옮기기: 윗줄에 할 일이나 사실 한 줄(원판을 들었는지, 둘째 원판을 옮길 차례인지, 다 모였는지), 그 아래에 옮긴 횟수.
+                 "색 켜기"를 켜면 동그라미 칸과 네모 칸의 원판 수를 함께 적는다. 시계는 없다 -->
+            <span id="discpair-count" class="count tile-count block-count" hidden>
+              <span id="discpair-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>옮긴 횟수 <strong id="discpair-moves">0</strong>번</span>
+                <span id="discpair-shapes-line" class="dp-off">동그라미 칸의 원판 <strong id="discpair-circle">0</strong>개, 네모 칸의 원판 <strong id="discpair-square">0</strong>개</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -1583,6 +1610,17 @@
             <p id="racetrack-flag-note" class="pad-note" hidden>선이 깃발 칸에 한 번 닿아야 결승선을 넘을 수 있어요.</p>
             <button id="racetrack-again" class="btn huge" type="button" hidden>출발 칸에서 다시 해 볼래요</button>
             <button id="racetrack-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+          </div>
+          <!-- 원판 둘씩 옮기기: 옮기는 법. 안 되는 판이 섞이는 판에는 안 된다고 답하는 단추가 있다 -->
+          <div id="discpair-pad" class="pad" hidden>
+            <h2>옮기는 법</h2>
+            <p class="pad-note">원판이 있는 칸을 누르면 맨 위 원판 하나를 들어요. 점선 테두리가 생긴 옆 칸을 누르면 그리로 가요.</p>
+            <p class="pad-note">든 칸을 한 번 더 누르면 내려놓아요.</p>
+            <p class="pad-note">원판 두 개를 옮기면 한 번이에요. 방금 옮긴 원판에는 점선이 둘려 있어서 이번에는 다시 옮길 수 없어요.</p>
+            <div id="discpair-maybe" class="choices">
+              <p class="pad-note">안 되는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="discpair-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
@@ -4031,6 +4069,38 @@
             <button id="racetrack-make-solve" class="btn primary huge" type="button">선생님, 가장 적게 몇 번이에요?</button>
             <p id="racetrack-make-result" class="make-result" aria-live="polite"></p>
             <button id="racetrack-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-discpair" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>칸 수</h2>
+          <div class="stepper">
+            <button id="discpair-make-fewer" class="btn" type="button" aria-label="칸 하나 줄이기">−</button>
+            <strong id="discpair-make-n"></strong>
+            <button id="discpair-make-more" class="btn" type="button" aria-label="칸 하나 늘리기">＋</button>
+          </div>
+          <h2>칸을 누르면</h2>
+          <div id="discpair-make-tool" class="segment column">
+            <button class="btn" type="button" data-tool="add" aria-pressed="true">원판 하나 놓기</button>
+            <button class="btn" type="button" data-tool="remove" aria-pressed="false">원판 하나 빼기</button>
+          </div>
+          <button id="discpair-make-clear" class="btn wide" type="button">원판 모두 치우기</button>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸을 눌러 원판을 놓거나 빼요. 원판은 모두 열 개까지 놓을 수 있어요. 가장 많이 옮겨야 모이는 판을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="discpair-make-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="discpair-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="discpair-make-result" class="make-result" aria-live="polite"></p>
+            <button id="discpair-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 그린 그림: 되는 판은 모을 수 있는 칸에 굵은 테두리, 안 되는 판은 색을 켠 판 -->
+            <div id="discpair-make-picture" class="dp-make-picture"></div>
           </div>
         </section>
       </main>

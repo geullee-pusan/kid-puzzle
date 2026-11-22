@@ -15245,3 +15245,238 @@ button.fr-chip {
   min-width: 56px;
   min-height: 56px;
 }
+
+/* ---- 원판 둘씩 옮기기: 둥글게 놓인 칸, 칸을 잇는 고리, 칸마다 쌓인 원판과 그 수 ----
+   색만으로 알리지 않는다. "색 켜기"를 켜면 짝수 번째 칸은 노란 칸에 동그라미, 홀수 번째 칸은 파란 칸에 네모를 구석에 그린다(방 한 번씩 돌기의 두 색).
+   든 원판은 쌓인 원판 위로 떠 있고 점선 테두리, 그 칸은 굵은 금빛 테두리, 갈 수 있는 옆 칸은 금빛 점선 테두리다.
+   첫째 걸음으로 막 옮긴 원판은 점선 테두리, 모인 칸(그림)은 두 겹 굵은 테두리, 그림의 옮기기는 화살표다. 움직이는 그림은 없다. */
+.dp-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .dp-board,
+.door-picture > .dp-board,
+#make-discpair .board-area > .dp-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.dp-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 560px;
+  max-height: 560px;
+}
+
+.dp-board.small .dp-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.dp-board.live .dp-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.dp-track {
+  fill: none;
+  stroke: #ced4da;
+  stroke-width: 30;
+}
+
+.dp-cell {
+  fill: #f8f9fa;
+  stroke: #868e96;
+  stroke-width: 5;
+}
+
+.dp-cell.dp-circle {
+  fill: #fff3bf;
+}
+
+.dp-cell.dp-square {
+  fill: #a5d8ff;
+}
+
+.dp-mark {
+  fill: none;
+  stroke: #343a40;
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+
+.dp-disc-side {
+  fill: #9c4f1c;
+  stroke: #5c2d0e;
+  stroke-width: 3;
+}
+
+.dp-disc-top {
+  fill: #e8833a;
+  stroke: #5c2d0e;
+  stroke-width: 3;
+}
+
+.dp-disc.fresh .dp-disc-top,
+.dp-disc.fresh .dp-disc-side,
+.dp-disc.lifted .dp-disc-top,
+.dp-disc.lifted .dp-disc-side {
+  stroke: var(--ink);
+  stroke-width: 6;
+  stroke-dasharray: 10 6;
+}
+
+.dp-count {
+  fill: var(--ink);
+  font-size: 48px;
+  font-weight: 700;
+}
+
+.dp-from {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 12;
+}
+
+.dp-target {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 10;
+  stroke-dasharray: 18 10;
+}
+
+.dp-ring {
+  fill: none;
+  stroke: #1971c2;
+  stroke-width: 14;
+  stroke-dasharray: 26 8;
+}
+
+.dp-arrow {
+  fill: none;
+  stroke: #1971c2;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dp-board.live [data-cell][role='button'] {
+  cursor: pointer;
+}
+
+.dp-cell-group:focus {
+  outline: none;
+}
+
+.dp-cell-group:focus-visible .dp-cell {
+  stroke: var(--gold);
+  stroke-width: 12;
+}
+
+/* 자국과 표시는 누르는 것을 가로막지 않는다 */
+.dp-track,
+.dp-mark,
+.dp-disc,
+.dp-count,
+.dp-from,
+.dp-target,
+.dp-ring,
+.dp-arrow {
+  pointer-events: none;
+}
+
+.board-foot:has(> #discpair-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .dp-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .dp-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .dp-board {
+  height: 76px;
+}
+
+.resume.note-picture .dp-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 작은 그림에서는 원판의 수와 화살표를 크고 굵게 그린다(작게 줄여도 읽히게) */
+.dp-board.small .dp-count {
+  font-size: 84px;
+}
+
+.dp-board.small .dp-arrow {
+  stroke-width: 18;
+}
+
+/* "색 켜기"를 끄면 모양마다의 원판 수는 자리만 두고 감춘다 */
+.dp-off {
+  visibility: hidden;
+}
+
+/* 풀이, "왜 그럴까?", 직접 만들기의 그림 카드. 판 위의 종이에 한 줄에 석 장, mid는 두 장, big은 한 장 */
+.dp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 134px);
+}
+
+.dp-card > .dp-board {
+  height: 134px;
+}
+
+.dp-card.mid {
+  width: min(100%, 210px);
+}
+
+.dp-card.mid > .dp-board {
+  height: 200px;
+}
+
+.dp-card.big {
+  width: min(100%, 360px);
+}
+
+.dp-card.big > .dp-board {
+  height: 320px;
+}
+
+.dp-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.dp-make-picture .dp-card {
+  width: min(100%, 200px);
+}
+
+.dp-make-picture .dp-card > .dp-board {
+  height: 190px;
+}
+
+#make-discpair .side,
+#make-discpair .choices {
+  gap: 10px;
+}
+
+#make-discpair .stepper .btn {
+  min-width: 56px;
+  min-height: 56px;
+}

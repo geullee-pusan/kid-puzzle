@@ -49,7 +49,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="racetrack-title"', 'id="make-title"'), part('id="racetrack-count"', 'id="domino-count"'), part('id="racetrack-pad"', 'id="domino-pad"'), part('id="make-racetrack"', '<script')].map(visibleText).join(' ');
+const own = [part('id="racetrack-title"', 'id="discpair-title"'), part('id="racetrack-count"', 'id="discpair-count"'), part('id="racetrack-pad"', 'id="discpair-pad"'), part('id="make-racetrack"', 'id="make-discpair"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const MODES = ['straight', 'corner', 'fewest', 'flag', 'big'];
@@ -111,12 +111,12 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 두
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(round\.board\.flags\.length > 0 \? 'flag' : 'fewest'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 42);
+  assert.equal(guides.length, 43);
   assert.ok(sentenceCount(guides[41]) <= 3, guides[41]);
   assert.match(guides[41], /^칸을 눌러 길을 그리고 출발 칸과 결승선을 정해요\./);
   assert.match(guides[41], /여러 번 걸리는 길을 만들 수 있을까요\?$/);
   // 닿기만 해도 부딪힌 것이라는 약속은 오른쪽 칸에 적혀 있다
-  assert.match(visibleText(part('id="racetrack-pad"', 'id="domino-pad"')), /벽에 닿기만 해도 그 점으로는 갈 수 없어요\./);
+  assert.match(visibleText(part('id="racetrack-pad"', 'id="discpair-pad"')), /벽에 닿기만 해도 그 점으로는 갈 수 없어요\./);
 });
 
 test('힌트는 판의 종류마다 두 개이고, 하나하나가 질문 한 문장이다. 힌트 1은 함께 쓰는 목록에서 고른다', () => {
@@ -214,7 +214,7 @@ test('풀이와 직접 만들기: 가장 적은 수와 한 가지 길을 그려 
   assert.equal(fill(T.solution.path, { k: 5 }), '가장 적게 움직이면 5번이에요. 한 가지 길을 보여 줄게요.');
   assert.match(T.make.none, /^선생님이 갈 수 있는 길을 모두 따져 봤어요\./);
   assert.match(code, /if \(!result\.possible\) line = T\.make\.none;/);
-  const make = part('id="make-racetrack"', '<script');
+  const make = part('id="make-racetrack"', 'id="make-discpair"');
   for (const id of ['racetrack-make-w-fewer', 'racetrack-make-w', 'racetrack-make-w-more', 'racetrack-make-h-fewer', 'racetrack-make-h', 'racetrack-make-h-more', 'racetrack-make-tool', 'racetrack-make-clear', 'racetrack-make-board', 'racetrack-make-solve', 'racetrack-make-result', 'racetrack-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="racetrack-make-solve"[^>]*>선생님, 가장 적게 몇 번이에요\?</);
   assert.match(make, /id="racetrack-make-play"[^>]*>내가 해 볼래요</);
@@ -234,7 +234,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 직접 �
   assert.match(part('id="racetrack-title"', '</section>'), /<h2 id="racetrack-title">모눈 자동차 경주<\/h2>/);
   assert.ok(visibleText(part('id="racetrack-title"', '</section>')).includes(T.home.ask.straight));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-racetrack-make" class="menu-item"/);
-  const pad = part('id="racetrack-pad"', 'id="domino-pad"');
+  const pad = part('id="racetrack-pad"', 'id="discpair-pad"');
   assert.match(pad, /id="racetrack-again"[^>]*>출발 칸에서 다시 해 볼래요</);
   assert.match(pad, /id="racetrack-stop"[^>]*>여기까지 할래요</);
   assert.doesNotMatch(pad, /불가능해요/);
@@ -242,9 +242,9 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 직접 �
   assert.ok(html.indexOf('id="tower-title"') < html.indexOf('id="racetrack-title"'));
   assert.ok(html.indexOf('id="racetrack-title"') < html.indexOf('id="make-title"'));
   // 틀이 형식을 안다(형식 목록의 맨 뒤, 탑 옮기기 다음)
-  assert.match(read('src/main.js'), /tower: createTower\(frame\), racetrack: createRacetrack\(frame\) \};/);
+  assert.match(read('src/main.js'), /tower: createTower\(frame\), racetrack: createRacetrack\(frame\), /);
   assert.match(read('src/check-main.js'), /\['racetrack', '모눈 자동차 경주'\]/);
-  assert.match(read('src/core/smaller.js'), /tower: smallerTower, racetrack: smallerRacetrack \};/);
+  assert.match(read('src/core/smaller.js'), /tower: smallerTower, racetrack: smallerRacetrack, /);
   assert.match(code, /smaller: \(round, turn\) => smallerRacetrack\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 판이 위아래로도 커서 규칙 글은 왼쪽 칸에 둔다

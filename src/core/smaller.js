@@ -68,6 +68,8 @@ import { smallBoards as smallTowerBoards } from './tower-ladder.js';
 import { checkBoard as checkTower } from './tower.js';
 import { smallBoards as smallRacetrackBoards } from './racetrack-ladder.js';
 import { checkBoard as checkRacetrack } from './racetrack.js';
+import { smallBoards as smallDiscpairBoards, solveOnce as solveDiscpair } from './discpair-ladder.js';
+import { checkBoard as checkDiscpair } from './discpair.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -997,5 +999,15 @@ export function smallerRacetrack(origin, turn = 0) {
   const list = smallRacetrackBoards(origin);
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
+// ---- 원판 둘씩 옮기기: 칸이 적거나 원판이 적은 같은 종류의 고리 ----
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack };
+/**
+ * 칸 수의 홀짝과 원판 수의 홀짝이 같고 칸이 적거나 원판이 적은 판을 낸다(src/core/discpair-ladder.js의 smallBoards).
+ * 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 안 되는 판과 번갈아 낸다. 네 칸에 원판 둘인 판처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerDiscpair(origin, turn = 0) {
+  if (!origin.board || checkDiscpair(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallDiscpairBoards(origin), solveDiscpair(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair };
