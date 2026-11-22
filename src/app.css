@@ -17099,3 +17099,371 @@ button.sg-cell {
   height: 64px;
   justify-content: flex-start;
 }
+
+/* ---- 번호 말 제자리 찾기: 한 줄로 놓인 말(맞바꾸기)과 빈칸이 하나 있는 판(밀기), 제자리 화살표, 한 줄로 읽은 띠 ----
+   색만으로 알리지 않는다. 말은 흰 바탕에 굵은 테두리와 큰 수, 빈칸은 회색 바탕의 점선 네모다. 고른 말은 위로 들리고 굵은 금빛 점선 테두리가 생긴다.
+   제자리 화살표는 고리마다 선의 모양(실선, 긴 점선, 짧은 점선, 점과 선)과 색이 다르다. 제자리에 있는 말 위에는 작은 동그라미를 그린다.
+   한 줄로 읽은 띠에서 방금 건너뛴 수는 굵은 파란 테두리, 건너뛰어진 수는 점선 테두리다. 그림에서 짚은 말은 판 바깥쪽의 굵은 파란 테두리다.
+   방금 민 말은 0.15초 동안 미끄러져 오고, 맞바꾼 두 말은 0.2초 동안 작아졌다 돌아온다. 움직임을 줄이는 설정에서는 없다.
+   3×3 판의 말은 1180×820 화면에서 한 변이 120픽셀쯤, 여덟 말의 줄은 한 말이 55픽셀쯤이라 누르기에 넉넉하다. */
+.board-area > #slide-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.sl-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+}
+
+#slide-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sl-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sl-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 말 하나가 너무 커지지 않게 한다 */
+  max-width: calc(var(--w) * 130px);
+  max-height: calc(var(--h) * 130px);
+}
+
+.sl-board.small .sl-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.sl-board.live .sl-svg {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.sl-board.live [role='button'] {
+  cursor: pointer;
+}
+
+.sl-frame {
+  fill: #dee2e6;
+  stroke: var(--ink);
+  stroke-width: 6;
+}
+
+.sl-piece {
+  fill: #ffffff;
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.sl-num {
+  fill: var(--ink);
+  font-size: 54px;
+  font-weight: 700;
+}
+
+.sl-hole {
+  fill: #ced4da;
+  stroke: #495057;
+  stroke-width: 4;
+  stroke-dasharray: 12 8;
+}
+
+.sl-pick {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 9;
+  stroke-dasharray: 14 7;
+}
+
+.sl-tile.picked,
+.sl-hole-group.picked {
+  transform: translateY(-10px);
+}
+
+.sl-tile.picked .sl-piece {
+  fill: #fff9db;
+}
+
+.sl-mark {
+  fill: none;
+  stroke: #1971c2;
+  stroke-width: 9;
+}
+
+.sl-tile:focus,
+.sl-hole-group:focus {
+  outline: none;
+}
+
+.sl-tile:focus-visible .sl-piece,
+.sl-hole-group:focus-visible .sl-hole {
+  stroke: var(--gold);
+  stroke-width: 10;
+}
+
+.sl-arc {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.sl-stay {
+  fill: none;
+  stroke-width: 5;
+}
+
+.sl-ring-0 .sl-arc,
+.sl-stay.sl-ring-0 {
+  stroke: #1971c2;
+}
+
+.sl-ring-0 .sl-head {
+  fill: #1971c2;
+}
+
+.sl-ring-1 .sl-arc,
+.sl-stay.sl-ring-1 {
+  stroke: #d9480f;
+  stroke-dasharray: 22 10;
+}
+
+.sl-ring-1 .sl-head {
+  fill: #d9480f;
+}
+
+.sl-ring-2 .sl-arc,
+.sl-stay.sl-ring-2 {
+  stroke: #2b8a3e;
+  stroke-dasharray: 5 9;
+}
+
+.sl-ring-2 .sl-head {
+  fill: #2b8a3e;
+}
+
+.sl-ring-3 .sl-arc,
+.sl-stay.sl-ring-3 {
+  stroke: #862e9c;
+  stroke-dasharray: 18 7 4 7;
+}
+
+.sl-ring-3 .sl-head {
+  fill: #862e9c;
+}
+
+/* 자국과 표시는 누르는 것을 가로막지 않는다 */
+.sl-ring,
+.sl-stay,
+.sl-pick,
+.sl-mark,
+.sl-num {
+  pointer-events: none;
+}
+
+.sl-moved {
+  animation: sl-slide 0.15s ease-out;
+}
+
+@keyframes sl-slide {
+  from {
+    transform: translate(var(--dx), var(--dy));
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+.sl-swing {
+  animation: sl-swing 0.2s ease-out;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes sl-swing {
+  from {
+    transform: scale(0.85);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-moved,
+  .sl-swing {
+    animation: none;
+  }
+}
+
+/* 한 줄로 읽은 띠 */
+.sl-line-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sl-line-name {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.sl-line {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.sl-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.sl-chip.jumper {
+  border: 5px solid #1971c2;
+}
+
+.sl-chip.over {
+  border: 3px dashed var(--ink);
+  background: #f1f3f5;
+}
+
+.sl-line.small {
+  gap: 3px;
+}
+
+.sl-line.small .sl-chip {
+  min-width: 26px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 18px;
+}
+
+.sl-line.small .sl-chip.jumper {
+  border-width: 4px;
+}
+
+.board-foot:has(> #slide-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 오른쪽 칸의 제자리 그림 */
+.sl-goal-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#slide-goal {
+  width: 120px;
+  height: 84px;
+}
+
+/* 처음 화면, 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.door-picture > .sl-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .sl-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .sl-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .sl-board {
+  height: 76px;
+}
+
+.resume.note-picture .sl-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+/* 풀이, "왜 그럴까?", 직접 만들기의 그림 카드. 판 위의 종이(가로 490픽셀쯤)에 한 줄에 석 장(밀기 판)이나 두 장(맞바꾸기 줄)이 들어간다.
+   mid는 두 장, big은 한 장 */
+.sl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(100%, 130px);
+}
+
+.sl-card > .sl-board {
+  height: 104px;
+}
+
+/* 맞바꾸기 줄은 가로가 길어서 높이를 그림에 맞춘다(화살표가 없는 줄은 낮다). 한 줄에 두 장 */
+.sl-card.row {
+  width: min(100%, 210px);
+}
+
+.sl-card.row > .sl-board {
+  height: auto;
+}
+
+.sl-card.row .sl-svg {
+  height: auto;
+}
+
+.sl-card.mid {
+  width: min(100%, 210px);
+}
+
+.sl-card.mid > .sl-board {
+  height: 150px;
+}
+
+.sl-card.big {
+  width: min(100%, 360px);
+}
+
+.sl-card.big > .sl-board {
+  height: 240px;
+}
+
+.sl-card .strip-note {
+  margin-top: 2px;
+  text-align: center;
+}
+
+.sl-make-picture .sl-card {
+  width: min(100%, 300px);
+}
+
+.sl-make-picture .sl-card:not(.row) > .sl-board {
+  height: 150px;
+}
+
+#make-slide .board-area > #slide-make-board {
+  align-self: stretch;
+  height: auto;
+}

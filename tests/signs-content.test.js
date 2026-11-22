@@ -105,7 +105,7 @@ test('규칙 설명은 세 문장 안이다. 맨 앞의 수에는 부호가 없�
   assert.equal(rules[0], '5부터 1까지 차례로 쓰고 사이에 +나 −를 넣어요. 맨 앞의 5에는 부호가 없어서 늘 +예요. 목표 수를 만들 수 있을까요?');
   assert.match(T.asks.largest, /^모두 \+일 때보다 작은 수 가운데/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 47);
+  assert.equal(guides.length, 48);
   const mine = guides[45];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^맨 앞의 수와 목표 수를 정해요\./);

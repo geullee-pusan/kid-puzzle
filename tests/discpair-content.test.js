@@ -101,7 +101,7 @@ test('규칙 설명은 세 문장 안이다. 두 원판을 같은 칸에서 골�
   // 1단계(모두 되는 판)에는 "불가능해요" 단추가 없다
   assert.match(code, /const hasImpossible = \(round\) => round\.mode !== 'gather';/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 47);
+  assert.equal(guides.length, 48);
   const mine = guides[42];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^칸을 눌러 원판을 놓거나 빼요\./);

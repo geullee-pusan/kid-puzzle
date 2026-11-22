@@ -116,7 +116,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(fill(T.rules, { n: 2 }), '숨은 지도는 이어진 구역 2개로 나뉘어 있어요. 네모를 골라 물으면 그 안에 구역마다 몇 칸이 있는지 알려 줘요.');
   assert.match(code, /ruleLine: \(round\) => `\$\{fill\(T\.rules, \{ n: round\.board\.regions\.length \}\)\} \$\{T\.asks\[round\.mode\]\}`,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 47);
+  assert.equal(guides.length, 48);
   assert.ok(sentenceCount(guides[38]) <= 3, guides[38]);
   assert.match(guides[38], /^칸을 모두 칠해 숨길 지도를 만들어요\./);
   assert.match(guides[38], /선생님이 네모를 많이 물어야 하는 지도도 만들 수 있을까요\?$/);

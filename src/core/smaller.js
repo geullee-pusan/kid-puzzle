@@ -78,6 +78,8 @@ import { smallBoards as smallSignsBoards } from './signs-ladder.js';
 import { checkBoard as checkSigns, solve as solveSigns } from './signs.js';
 import { smallBoards as smallViewsBoards } from './views-ladder.js';
 import { checkBoard as checkViews } from './views.js';
+import { smallBoards as smallSlideBoards, solveOnce as solveSlide } from './slide-ladder.js';
+import { checkBoard as checkSlide } from './slide.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1071,4 +1073,16 @@ export function smallerViews(origin, turn = 0) {
   return list.length > 0 ? wrap(list[turn % list.length]) : null;
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews };
+// ---- 번호 말 제자리 찾기: 말이 적은 줄, 2×3 판, 제자리에 더 가까운 같은 판 ----
+
+/**
+ * 맞바꾸기 줄은 가장 큰 말을 하나(둘) 뺀 줄을, 밀기 3×3 판은 2×3 판을, 밀기 2×3 판은 가장 적게 미는 방법을 따라 몇 번 민 판(제자리에 더 가까운 판)을 낸다
+ * (src/core/slide-ladder.js의 smallBoards). 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 말 둘만 바뀐 안 되는 2×3 판과 번갈아 낸다.
+ * 말이 셋인 줄, 가장 적게 2번 안쪽인 되는 2×3 판에는 더 작은 판이 없다.
+ */
+export function smallerSlide(origin, turn = 0) {
+  if (!origin.board || checkSlide(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallSlideBoards(origin), solveSlide(origin.board).possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide };

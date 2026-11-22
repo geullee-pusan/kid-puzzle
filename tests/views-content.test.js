@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="views-title"', 'id="make-title"'), part('id="views-turns"', 'id="why"'), part('id="views-board"', '<div class="board-foot">'), part('id="views-count"', 'id="fold-count"'), part('id="views-pad"', 'id="domino-pad"'), part('id="make-views"', '<script')].map(visibleText).join(' ');
+const own = [part('id="views-title"', 'id="slide-title"'), part('id="views-turns"', 'id="slide-tool"'), part('id="views-board"', 'id="slide-board"'), part('id="views-count"', 'id="slide-count"'), part('id="views-pad"', 'id="slide-pad"'), part('id="make-views"', 'id="make-slide"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -94,7 +94,7 @@ test('가장 적게, 가장 많이: 틀렸다고 하지 않고 "더 줄일 수 �
   assert.match(code, /if \(fewer && cubes === solution\.fewest\) \{\s*parts\.push\(T\.play\['best-few'\]\);/);
   assert.match(code, /\} else if \(more && cubes === solution\.most\) \{\s*parts\.push\(T\.play\['best-many'\]\);/);
   // 두 기록은 오른쪽 칸에 보인다. "여기까지 할래요"로 끝내도 된다
-  assert.match(part('id="views-pad"', 'id="domino-pad"'), /id="views-stop"[^>]*>여기까지 할래요</);
+  assert.match(part('id="views-pad"', 'id="slide-pad"'), /id="views-stop"[^>]*>여기까지 할래요</);
   assert.equal(fill(T.notebook.best, { k: 3, n: 5 }), '가장 적게 3개, 가장 많이 5개');
   assert.match(code, /bestOf: \(round\) => \(round\.mode !== 'range' \|\| round\.few === null \|\| round\.many === null \? null :/);
 });
@@ -112,12 +112,12 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   for (const [key, rule] of Object.entries(T.rules)) assert.ok(sentenceCount(fill(rule, VALUES)) <= 3, key);
   assert.equal(fill(T.rules.see, { face: '앞' }), '쌓기나무를 쌓았어요. 끌거나 아래 단추를 누르면 돌아가요. 앞에서 본 그림은 어느 것일까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 47);
+  assert.equal(guides.length, 48);
   const mine = guides[46];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^칸을 눌러 쌓기나무를 쌓아요\./);
   // 오른쪽 옆에서 본 그림과 위에서 본 그림의 방향(어느 쪽이 앞인지)을 오른쪽 칸에 적어 둔다
-  assert.match(part('id="views-pad"', 'id="domino-pad"'), /옆 그림은 왼쪽이 앞 줄, 위 그림은 아래쪽이 앞 줄이에요\./);
+  assert.match(part('id="views-pad"', 'id="slide-pad"'), /옆 그림은 왼쪽이 앞 줄, 위 그림은 아래쪽이 앞 줄이에요\./);
 });
 
 test('힌트는 판의 종류마다 두 개이고, 하나하나가 질문 한 문장이다. 힌트 1은 함께 쓰는 목록에서 고른다. 까닭은 힌트에 없다', () => {
@@ -216,7 +216,7 @@ test('끝났을 때와 직접 만들기의 말: 같은 그림이 되는 쌓기�
   assert.equal(fill(T.right['range-truth'], { f: 3, total: 5 }), '이 두 그림은 가장 적게 3개, 가장 많이 5개로 쌓을 수 있어요.');
   assert.equal(fill(T.make.many, { k: 2 }), '세 방향에서 본 그림이에요. 이 세 그림이 되는 쌓기가 이것 말고도 2가지 더 있어요.');
   assert.match(code, /const line = counted\.count === 1 \? T\.make\.one : fill\(T\.make\.many, \{ k: counted\.count - 1 \}\);/);
-  const make = part('id="make-views"', '<script');
+  const make = part('id="make-views"', 'id="make-slide"');
   for (const id of ['views-make-w-fewer', 'views-make-w', 'views-make-w-more', 'views-make-d-fewer', 'views-make-d', 'views-make-d-more', 'views-make-add', 'views-make-remove', 'views-make-stage', 'views-make-grid', 'views-make-solve', 'views-make-result', 'views-make-picture', 'views-make-play']) {
     assert.ok(make.includes(`id="${id}"`), id);
   }
@@ -236,10 +236,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 돌리�
   // 카드는 부호 넣어 수 만들기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="signs-title"') < html.indexOf('id="views-title"'));
   assert.ok(html.indexOf('id="views-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 부호 넣어 수 만들기 다음)
-  assert.match(read('src/main.js'), /signs: createSigns\(frame\), views: createViews\(frame\) \};/);
+  // 틀이 형식을 안다(부호 넣어 수 만들기 다음)
+  assert.match(read('src/main.js'), /signs: createSigns\(frame\), views: createViews\(frame\), /);
   assert.match(read('src/check-main.js'), /\['views', '세 방향에서 본 그림'\]/);
-  assert.match(read('src/core/smaller.js'), /signs: smallerSigns, views: smallerViews \};/);
+  assert.match(read('src/core/smaller.js'), /signs: smallerSigns, views: smallerViews, /);
   assert.match(code, /smaller: \(round, turn\) => smallerViews\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);
