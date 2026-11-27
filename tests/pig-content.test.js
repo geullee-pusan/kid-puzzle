@@ -102,7 +102,7 @@ test('규칙 설명은 세 문장 안이고, 1이 나오면 돼지가 바구니�
   assert.match(T.rules.match, /먼저 하는 쪽은 판마다 바꿔요\./);
   assert.match(code, /if \(board\.kind === 'play'\) return fill\(T\.rules\.play, \{ total: board\.goal \}\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 55);
+  assert.equal(guides.length, 56);
   const mine = guides[52];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^선생님이 바구니가 몇 개 이상이면 멈출지와 먼저 몇 개를 모을지 정해요\./);

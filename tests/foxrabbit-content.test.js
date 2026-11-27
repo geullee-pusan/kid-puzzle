@@ -81,7 +81,7 @@ test('규칙은 세 문장 안이고, 반드시 한 칸 움직이고 제자리�
   assert.equal(T.status.stay, '제자리에 있을 수 없어요. 꼭 한 칸 움직여요');
   // 직접 만들기의 안내 글도 세 문장 안이다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 55);
+  assert.equal(guides.length, 56);
   assert.ok(sentenceCount(guides[35]) <= 3, guides[35]);
   assert.match(guides[35], /^칸을 누르면 고른 동물이 그 칸으로 가요\./);
 });

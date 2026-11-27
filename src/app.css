@@ -20236,3 +20236,430 @@ button.er-chip {
   width: 100%;
   height: 100%;
 }
+
+/* ---- 눈금이 가장 적은 자: 이어지는 자의 이름표, 자(자리마다 단추), 길이 칸 ----
+   색만으로 알리지 않는다. 찍은 눈금은 굵은 세로줄과 위의 세모, 처음부터 있는 눈금은 검은 세모와 빗금 칸, 짚은 두 눈금은 점선 고리다.
+   길이 칸은 잴 수 있으면 채운 칸에 굵은 테두리, 아직 못 재면 점선 테두리, 두 번 이상 재면 겹 테두리와 빗금이다.
+   자는 한 줄에 자리 아홉까지 놓는다(1180×820 화면의 판 칸 가로 476픽셀에서 한 자리가 50픽셀). 길이 칸은 한 줄에 열 칸까지다. 움직이는 그림은 없다. */
+.rl-board.live {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+}
+
+.rl-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rl-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 56px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 3px solid #868e96;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.15;
+}
+
+button.rl-tab {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rl-tab-title {
+  font-size: 18px;
+}
+
+.rl-tab-note {
+  font-size: 18px;
+}
+
+/* 다 만든 자: 채운 이름표에 굵은 테두리 */
+.rl-tab.done {
+  border-color: #2b8a3e;
+  background: #d3f9d8;
+}
+
+/* 열린 자: 점선 테두리 */
+.rl-tab.open {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+/* 닫힌 자: 흐린 점 테두리 */
+.rl-tab.locked {
+  border-style: dotted;
+  color: #868e96;
+  background: #f1f3f5;
+}
+
+/* 지금 만드는 자: 아주 굵은 테두리와 위로 들린 모양 */
+.rl-tab.current {
+  border: 6px solid var(--gold);
+  background: #fff3bf;
+  transform: translateY(-3px);
+}
+
+.rl-ruler {
+  --w: min(68px, calc((100cqw - 24px) / var(--per)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.rl-row {
+  display: flex;
+  border: 4px solid #a9772e;
+  border-radius: 10px;
+  background: #ffe8a3;
+}
+
+.rl-pos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: var(--w);
+  min-width: 44px;
+  height: 84px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.rl-ruler[data-rows='3'] .rl-pos {
+  height: 70px;
+}
+
+button.rl-pos {
+  cursor: pointer;
+}
+
+.rl-tick {
+  display: block;
+  width: 3px;
+  height: 22px;
+  background: #8a5a1f;
+}
+
+.rl-num {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 찍은 눈금: 굵은 세로줄과 위의 세모 */
+.rl-pos.marked .rl-tick {
+  width: 8px;
+  height: 48px;
+  background: #d9480f;
+}
+
+.rl-pos.marked::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-style: solid;
+  border-width: 14px 12px 0;
+  border-color: #d9480f transparent transparent;
+}
+
+.rl-pos.marked .rl-num {
+  font-weight: 900;
+}
+
+/* 처음부터 있는 눈금: 검은 세모와 빗금 칸(빠지지 않는다) */
+.rl-pos.fixed {
+  background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.08) 0 6px, transparent 6px 12px);
+}
+
+.rl-pos.fixed .rl-tick {
+  background: #212529;
+}
+
+.rl-pos.fixed::before {
+  border-color: #212529 transparent transparent;
+}
+
+/* 짚은 두 눈금: 점선 고리 */
+.rl-pos.ringed {
+  outline: 5px dashed #f08c00;
+  outline-offset: -5px;
+}
+
+.rl-pos:focus-visible,
+.rl-len:focus-visible,
+.rl-tab:focus-visible {
+  outline: 4px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.rl-lengths {
+  --lw: min(56px, calc((100cqw - 16px - (var(--per) - 1) * 4px) / var(--per)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.rl-len-row {
+  display: flex;
+  gap: 4px;
+}
+
+.rl-len {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--lw);
+  min-width: 44px;
+  height: 54px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 3px dashed #adb5bd;
+  border-radius: 10px;
+  background: #fff;
+  color: #868e96;
+  font: inherit;
+  line-height: 1.05;
+  touch-action: manipulation;
+}
+
+button.rl-len {
+  cursor: pointer;
+}
+
+.rl-len-num {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.rl-len-extra {
+  min-height: 18px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 잴 수 있는 길이: 채운 칸에 굵은 테두리 */
+.rl-len.lit {
+  border: 3px solid #1971c2;
+  background: #d0ebff;
+  color: var(--ink);
+}
+
+/* 두 번 이상 재는 길이: 겹 테두리와 빗금 */
+.rl-len.twice {
+  border: 6px double #c92a2a;
+  background: repeating-linear-gradient(135deg, #ffe3e3 0 6px, #fff 6px 12px);
+}
+
+/* 짚은 길이: 점선 고리 */
+.rl-len.picked {
+  outline: 4px dashed #f08c00;
+  outline-offset: 2px;
+}
+
+/* 판 아래: 재는 횟수 보기를 끄면 짝의 수의 줄은 자리만 두고 감춘다 */
+.rl-off {
+  visibility: hidden;
+}
+
+.board-foot:has(> #ruler-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 내 기록 */
+.rl-best {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.rl-best h2,
+.rl-best p {
+  margin: 0;
+}
+
+#ruler-best-picture {
+  height: 70px;
+}
+
+/* 작은 그림(SVG): 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책, 내 기록, 풀이와 "왜 그럴까?" */
+.rl-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .rl-board.small,
+.door-picture > .rl-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.rl-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rl-art-body {
+  fill: #ffe8a3;
+  stroke: #a9772e;
+  stroke-width: 4;
+}
+
+.rl-art-tick {
+  stroke: #8a5a1f;
+  stroke-width: 3;
+}
+
+.rl-art-mark {
+  stroke: #d9480f;
+  stroke-width: 7;
+}
+
+.rl-art-notch {
+  fill: #d9480f;
+}
+
+.rl-art-number {
+  fill: #495057;
+  font-weight: 600;
+}
+
+.rl-art-number.on {
+  fill: var(--ink);
+  font-weight: 900;
+}
+
+.rl-art-ring {
+  fill: none;
+  stroke: #f08c00;
+  stroke-width: 5;
+  stroke-dasharray: 8 5;
+}
+
+.rl-art-span {
+  fill: none;
+  stroke: #f08c00;
+  stroke-width: 5;
+}
+
+.resume .rl-board.small,
+.level .rl-board.small {
+  width: 130px;
+  height: 80px;
+}
+
+.menu-picture > .rl-board {
+  height: 76px;
+}
+
+.resume.note-picture .rl-board.small {
+  width: 100%;
+  height: 140px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드 */
+.rl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 220px);
+}
+
+.rl-card > .rl-svg {
+  width: 100%;
+  max-height: 110px;
+}
+
+.rl-card.big {
+  width: min(100%, 460px);
+}
+
+.rl-card.big > .rl-svg {
+  max-height: 150px;
+}
+
+.rl-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.rl-lengths.still .rl-len-row {
+  gap: 4px;
+}
+
+.rl-lengths.still .rl-len {
+  width: 38px;
+  min-width: 0;
+}
+
+.rl-table {
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.rl-table th,
+.rl-table td {
+  min-width: 90px;
+  padding: 6px 14px;
+  border: 2px solid var(--line);
+  text-align: center;
+}
+
+.rl-table th {
+  background: #f1f3f5;
+}
+
+.rl-make-picture {
+  display: flex;
+  justify-content: center;
+}
+
+#ruler-make-board {
+  width: 100%;
+  height: 100%;
+}
+
+/* 직접 만들기: 길이 글이 두 줄로 꺾이지 않게 */
+#ruler-make-n {
+  font-size: 22px;
+  white-space: nowrap;
+}

@@ -119,7 +119,7 @@ test('규칙 설명은 세 문장 안이다. 검은 칸이 있는 판은 검은 
   assert.match(code, /const hintKey = \(round\) => \(round\.board\.black\.length > 0 \? 'black' : 'plain'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[hintKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 55);
+  assert.equal(guides.length, 56);
   const mine = guides[53];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /1부터 99까지의 수로 채우는 방법을 세어 봐요\./);

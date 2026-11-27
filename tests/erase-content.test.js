@@ -49,8 +49,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="erase-pad"', '접히는 모양 가리기: 판의 종류마다');
-const own = [part('id="erase-title"', 'id="make-title"'), part('id="erase-sum"', 'id="why"'), part('id="erase-count"', '접히는 모양 가리기: 할 일 한 줄'), pad, part('id="make-erase"', '<script')].map(visibleText).join(' ');
+const pad = part('id="erase-pad"', '눈금이 가장 적은 자: 찍는 법');
+const own = [part('id="erase-title"', 'id="ruler-title"'), part('id="erase-sum"', 'id="ruler-counts"'), part('id="erase-count"', 'id="ruler-count"'), pad, part('id="make-erase"', 'id="make-ruler"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const end = (number) => (endsClosed(number) ? 'c' : 'o');
@@ -124,7 +124,7 @@ test('규칙 설명은 묻는 것까지 세 문장 안이다. 규칙마다, 묻�
   // 규칙 글에는 까닭(합, 홀짝이 그대로)을 적지 않는다
   for (const rule of Object.values(T.rules)) assert.doesNotMatch(rule, /그대로|바뀌지|늘 |홀수|짝수/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 55);
+  assert.equal(guides.length, 56);
   const mine = guides[54];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^숫자를 누르고 올리기를 누르면 칠판에 수가 적히고, 칠판의 수를 누르면 빠져요\./);
@@ -235,7 +235,7 @@ test('풀이와 직접 만들기: 끝에 남는 수(또는 남길 수 있는 수
   // 차를 쓰는 칠판은 수가 여덟 개까지만 만든다(남길 수 있는 수를 모두 따진다)
   assert.match(code, /if \(board\.rule === 'diff' && board\.nums\.length > SEARCH_CHIPS\) return fill\(T\.make\['diff-many'\], \{ n: SEARCH_CHIPS \}\);/);
   assert.match(code, /export const MAKE_MAX = 12;/);
-  const make = part('id="make-erase"', '<script');
+  const make = part('id="make-erase"', 'id="make-ruler"');
   for (const id of ['erase-make-rule', 'erase-make-shown', 'erase-make-keys', 'erase-make-clear', 'erase-make-board', 'erase-make-solve', 'erase-make-result', 'erase-make-play', 'erase-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="erase-make-solve"[^>]*>선생님, 맞혀 보세요</);
   assert.match(make, /id="erase-make-play"[^>]*>내가 해 볼래요</);
@@ -266,14 +266,14 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 도구, 답하는 칸, 
   assert.match(pad, /<button id="erase-odd" class="btn huge" type="button"><\/button>/);
   assert.doesNotMatch(visibleText(html), /홀수|짝수/);
   assert.match(code, /\$\('erase-odd'\)\.textContent = T\.parity\.odd;/);
-  assert.match(part('id="erase-sum"', 'id="why"'), /id="erase-sum" class="btn wide" type="button" aria-pressed="false" hidden>합 보기</);
+  assert.match(part('id="erase-sum"', 'id="ruler-counts"'), /id="erase-sum" class="btn wide" type="button" aria-pressed="false" hidden>합 보기</);
   // 카드는 가로세로 수열 퍼즐 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="seqgrid-title"') < html.indexOf('id="erase-title"'));
   assert.ok(html.indexOf('id="erase-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 가로세로 수열 퍼즐 다음)
-  assert.match(read('src/main.js'), /seqgrid: createSeqgrid\(frame\), erase: createErase\(frame\) \};/);
+  // 틀이 형식을 안다(가로세로 수열 퍼즐 다음)
+  assert.match(read('src/main.js'), /seqgrid: createSeqgrid\(frame\), erase: createErase\(frame\), /);
   assert.match(read('src/check-main.js'), /\['erase', '지우고 쓰기 예언'\]/);
-  assert.match(read('src/core/smaller.js'), /seqgrid: smallerSeqgrid, erase: smallerErase \};/);
+  assert.match(read('src/core/smaller.js'), /seqgrid: smallerSeqgrid, erase: smallerErase, /);
   assert.match(code, /smaller: \(round, turn\) => smallerErase\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

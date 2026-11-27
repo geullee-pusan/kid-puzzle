@@ -94,6 +94,8 @@ import { smallBoards as smallSeqgridBoards } from './seqgrid-ladder.js';
 import { checkBoard as checkSeqgrid } from './seqgrid.js';
 import { smallBoards as smallEraseBoards, solveOnce as solveErase } from './erase-ladder.js';
 import { checkBoard as checkErase } from './erase.js';
+import { smallBoards as smallRulerBoards } from './ruler-ladder.js';
+import { checkBoard as checkRuler } from './ruler.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1178,4 +1180,15 @@ export function smallerErase(origin, turn = 0) {
   return wrap(pickByTurn(smallEraseBoards(origin), possible, turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree, nopay: smallerNopay, pig: smallerPig, seqgrid: smallerSeqgrid, erase: smallerErase };
+// ---- 눈금이 가장 적은 자: 같은 종류의 더 짧은 자 ----
+
+/**
+ * 짧은 자(길이가 하나에서 셋 짧은 자, 길이 11 이상이면 9, 8, 7), 첫 자가 짧은 이어지는 자 셋, 눈금이 하나 적은 같은 길이를 두 번 재지 않는 자(src/core/ruler-ladder.js의 smallBoards).
+ * 모든 판에 답이 있어서 늘 되는 판만 낸다. 길이 3인 자, 눈금 3개인 자에는 더 작은 판이 없다.
+ */
+export function smallerRuler(origin, turn = 0) {
+  if (!origin.board || checkRuler(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallRulerBoards(origin), true, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree, nopay: smallerNopay, pig: smallerPig, seqgrid: smallerSeqgrid, erase: smallerErase, ruler: smallerRuler };

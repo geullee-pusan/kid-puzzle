@@ -89,6 +89,7 @@ function drawCounts() {
     ['pig', '돼지 주사위'],
     ['seqgrid', '가로세로 수열 퍼즐'],
     ['erase', '지우고 쓰기 예언'],
+    ['ruler', '눈금이 가장 적은 자'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
