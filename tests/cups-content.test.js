@@ -101,7 +101,7 @@ test('규칙 설명은 판의 종류마다 있고, 묻는 말까지 세 문장�
   assert.match(T.howto.colors, /방울이 둘을 차례로 누르면 만나요\./);
   // 직접 만들기 화면의 안내 글도 세 문장 안이다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 53);
+  assert.equal(guides.length, 54);
   assert.ok(sentenceCount(guides[10]) <= 3, guides[10]);
   assert.match(guides[10], /아무리 해도 안 되는 판도 만들 수 있을까요\?$/);
   assert.equal(T.make.intro, '컵이나 방울이로 판을 만들어요. 다 만들면 선생님에게 풀어 보라고 할 수도 있어요.');

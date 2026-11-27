@@ -599,6 +599,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="seqgrid-title">
+            <h2 id="seqgrid-title">가로세로 수열 퍼즐</h2>
+            <div class="door-picture"><div id="home-seqgrid-sample"></div></div>
+            <p id="home-seqgrid-ask" class="door-ask">빈칸에 들어갈 수를 찾을 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-seqgrid-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-seqgrid-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -776,6 +786,9 @@
               </li>
               <li>
                 <button id="home-pig-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-pig-blank"></span></span><span class="menu-name">돼지 주사위</span></button>
+              </li>
+              <li>
+                <button id="home-seqgrid-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-seqgrid-blank"></span></span><span class="menu-name">가로세로 수열 퍼즐</span></button>
               </li>
             </ul>
           </div>
@@ -1093,6 +1106,8 @@
             <!-- 돼지 주사위: 겨루기는 두 항아리(모은 도토리), 큰 주사위와 바구니, 굴린 눈의 두 줄. 실험은 막대들, 한 번만 더 굴릴까는 바구니와 막대(또는 눈 펼쳐 보기).
                  그림은 src/ui/pig-board.js가 그린다 -->
             <div id="pig-board" class="pg-board" hidden></div>
+            <!-- 가로세로 수열 퍼즐: n×n 칸(적힌 수, 빈칸, 검은 칸). 그림은 src/ui/seqgrid-board.js가 그린다 -->
+            <div id="seqgrid-board" class="sg-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1333,6 +1348,14 @@
             <!-- 돼지 주사위: 할 일이나 사실 한 줄(바구니의 도토리, 돼지가 먹었는지). 모은 수는 판에 있다 -->
             <span id="pig-count" class="count tile-count block-count" hidden>
               <span id="pig-status" class="tile-status" aria-live="polite"></span>
+            </span>
+            <!-- 가로세로 수열 퍼즐: 윗줄에 할 일이나 사실 한 줄(고른 칸, 넣으려는 수, 빈칸을 모두 채웠는지), 그 아래에 채운 칸과 남은 빈칸의 개수 -->
+            <span id="seqgrid-count" class="count tile-count block-count" hidden>
+              <span id="seqgrid-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>채운 칸 <strong id="seqgrid-filled">0</strong>개</span>
+                <span>남은 빈칸 <strong id="seqgrid-left">0</strong>개</span>
+              </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
             <!-- 도미노 가로세로: 윗줄에 누구 차례인지(선생님이 방금 놓았는지, 누가 놓을 곳이 없는지), 그 아래에 놓은 도미노와 남은 빈칸의 수 -->
@@ -2223,6 +2246,26 @@
                 <button class="btn big" type="button" data-choice="less">줄어들어요</button>
                 <button class="btn big" type="button" data-choice="same">똑같아요</button>
               </div>
+            </div>
+          </div>
+          <!-- 가로세로 수열 퍼즐: 넣으려는 수를 보이는 칸과 숫자판(0~9, 지우기, 넣기). 답이 없는 판이 없어서 안 된다고 답하는 단추가 없다 -->
+          <div id="seqgrid-pad" class="pad" hidden>
+            <h2>수 넣기</h2>
+            <p class="pad-note">빈칸을 누르고 숫자를 누른 뒤 넣기를 눌러요. 두 자리 수는 숫자 둘을 차례로 눌러요.</p>
+            <output id="seqgrid-shown" class="sg-shown"></output>
+            <div id="seqgrid-keys" class="keys sg-keys">
+              <button class="btn key" type="button" data-key="1">1</button>
+              <button class="btn key" type="button" data-key="2">2</button>
+              <button class="btn key" type="button" data-key="3">3</button>
+              <button class="btn key" type="button" data-key="4">4</button>
+              <button class="btn key" type="button" data-key="5">5</button>
+              <button class="btn key" type="button" data-key="6">6</button>
+              <button class="btn key" type="button" data-key="7">7</button>
+              <button class="btn key" type="button" data-key="8">8</button>
+              <button class="btn key" type="button" data-key="9">9</button>
+              <button class="btn key word" type="button" data-key="erase">지우기</button>
+              <button class="btn key" type="button" data-key="0">0</button>
+              <button class="btn key word good" type="button" data-key="enter">넣기</button>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -5071,6 +5114,51 @@
             <button id="pig-make-solve" class="btn primary huge" type="button">선생님, 해 보세요</button>
             <p id="pig-make-result" class="make-result" aria-live="polite"></p>
             <button id="pig-make-play" class="btn huge" type="button">내가 겨뤄 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-seqgrid" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>판 크기</h2>
+          <div class="stepper">
+            <button id="seqgrid-make-fewer" class="btn" type="button" aria-label="판을 한 줄 줄이기">−</button>
+            <strong id="seqgrid-make-n"></strong>
+            <button id="seqgrid-make-more" class="btn" type="button" aria-label="판을 한 줄 늘리기">＋</button>
+          </div>
+          <button id="seqgrid-make-clear" class="btn wide" type="button">모두 지우기</button>
+          <button id="seqgrid-make-black" class="btn wide" type="button" aria-pressed="false">검은 칸으로 바꾸기</button>
+          <h2>수 적기</h2>
+          <!-- 숫자판: 숫자를 누른 뒤 넣기를 누르면 고른 칸에 적힌다. 지우기는 누르던 숫자를, 없으면 고른 칸을 비운다 -->
+          <output id="seqgrid-make-shown" class="sg-shown"></output>
+            <div id="seqgrid-make-keys" class="keys sg-keys">
+              <button class="btn key" type="button" data-key="1">1</button>
+              <button class="btn key" type="button" data-key="2">2</button>
+              <button class="btn key" type="button" data-key="3">3</button>
+              <button class="btn key" type="button" data-key="4">4</button>
+              <button class="btn key" type="button" data-key="5">5</button>
+              <button class="btn key" type="button" data-key="6">6</button>
+              <button class="btn key" type="button" data-key="7">7</button>
+              <button class="btn key" type="button" data-key="8">8</button>
+              <button class="btn key" type="button" data-key="9">9</button>
+              <button class="btn key word" type="button" data-key="erase">지우기</button>
+              <button class="btn key" type="button" data-key="0">0</button>
+              <button class="btn key word good" type="button" data-key="enter">넣기</button>
+            </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">칸에 수를 적거나 검은 칸으로 바꿔요. 선생님은 1부터 99까지의 수로 채우는 방법을 세어 봐요. 적힌 수를 몇 개까지 줄여도 답이 한 가지뿐일까요?</p>
+          <div class="board-area"><div id="seqgrid-make-board" class="sg-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="seqgrid-make-solve" class="btn primary huge" type="button">선생님, 답이 몇 가지예요?</button>
+            <p id="seqgrid-make-result" class="make-result" aria-live="polite"></p>
+            <button id="seqgrid-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <!-- 선생님이 그린 그림: 채우는 방법이 여럿이면 그 가운데 둘 -->
+            <div id="seqgrid-make-picture" class="sg-make-picture"></div>
           </div>
         </section>
       </main>

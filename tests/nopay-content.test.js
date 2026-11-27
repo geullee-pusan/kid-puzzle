@@ -118,7 +118,7 @@ test('규칙 설명은 세 문장 안이고, 동전을 몇 개든 쓸 수 있다
   assert.match(T.rules.from, /어느 금액부터는 모두 낼 수 있을까요\?$/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[isAll\(round\) \? 'all' : 'from'\], \{ face: faceOf\(round\.board\.coins\) \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 53);
+  assert.equal(guides.length, 54);
   const mine = guides[51];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^동전 두세 가지의 값을 정해요\./);

@@ -19599,3 +19599,322 @@ button.np-cell {
 #pig-make-board {
   max-width: 520px;
 }
+
+/* ---- 가로세로 수열 퍼즐: n×n 칸(적힌 수, 빈칸, 검은 칸) ----
+   색만으로 알리지 않는다. 적힌 수는 회색 바탕에 아주 굵은 글자와 왼쪽 위의 작은 점, 검은 칸은 빗금, 고른 칸은 아주 굵은 테두리와 안쪽 점선 고리,
+   그 칸의 가로줄과 세로줄은 옅은 칠이다. 숫자판으로 누르고 있는 수는 고른 칸 아래쪽에 점선 밑줄과 함께 작게 보인다.
+   칸 하나는 판 칸의 가로와 세로 가운데 작은 쪽에 맞추고 96픽셀을 넘지 않는다(5×5여도 44픽셀보다 크다). */
+.sg-board.live {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  --s: min(96px, calc((100cqh - 24px) / (var(--n) + 0.2)), calc((100cqw - 24px) / (var(--n) + 0.2)));
+}
+
+.sg-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--s));
+  grid-template-rows: repeat(var(--n), var(--s));
+  gap: 0;
+}
+
+.sg-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  margin-right: -2px;
+  margin-bottom: -2px;
+  padding: 0;
+  border: 2px solid #868e96;
+  border-radius: 0;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.sg-cell {
+  cursor: pointer;
+}
+
+.sg-number {
+  font-size: calc(var(--s) * 0.42);
+  font-weight: 700;
+  line-height: 1;
+  color: #1864ab;
+}
+
+.sg-cell.given {
+  background: #e9ecef;
+}
+
+.sg-cell.given .sg-number {
+  font-weight: 900;
+  color: var(--ink);
+}
+
+/* 적힌 수: 왼쪽 위의 작은 점(색만으로 알리지 않는다) */
+.sg-cell.given::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #495057;
+}
+
+.sg-cell.black {
+  background: repeating-linear-gradient(45deg, #343a40 0 7px, #495057 7px 12px);
+}
+
+.sg-cell.cross {
+  background: #e7f5ff;
+}
+
+.sg-cell.given.cross {
+  background: #dbe4ea;
+}
+
+.sg-cell.picked {
+  z-index: 2;
+  border: 5px solid var(--accent);
+  background: #d0ebff;
+}
+
+/* 직접 만들기에서 고른 검은 칸: 빗금은 그대로 두고 테두리와 고리만 더한다 */
+.sg-cell.black.picked {
+  background: repeating-linear-gradient(45deg, #343a40 0 7px, #495057 7px 12px);
+}
+
+.sg-cell.picked::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 3px dashed var(--accent);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.sg-cell:focus-visible {
+  outline: 4px solid var(--gold);
+  outline-offset: -6px;
+}
+
+/* 누르고 있는 수(넣기 전): 칸 아래쪽에 점선 밑줄과 함께 */
+.sg-typing {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  padding: 0 3px;
+  border-bottom: 3px dashed var(--accent);
+  background: #fff;
+  font-size: calc(var(--s) * 0.26);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+/* 숫자판: 넣으려는 수를 보이는 칸, 1~9, 지우기, 0, 넣기 */
+.sg-shown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  margin: 6px 0 8px;
+  border: 3px dashed var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.sg-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sg-keys .key {
+  min-height: 56px;
+}
+
+.sg-keys .key.word {
+  grid-column: span 1;
+}
+
+/* 작은 그림(SVG): 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책, 풀이와 "왜 그럴까?" */
+.sg-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .sg-board.small,
+.door-picture > .sg-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.sg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sg-art-ground {
+  fill: #fff;
+}
+
+.sg-art-cell {
+  fill: none;
+  stroke: #868e96;
+  stroke-width: 2;
+}
+
+.sg-art-given {
+  fill: #e9ecef;
+}
+
+.sg-art-black {
+  fill: #343a40;
+}
+
+.sg-art-hatch {
+  stroke: #868e96;
+  stroke-width: 2;
+}
+
+.sg-art-mark {
+  fill: #74c0fc;
+  fill-opacity: 0.45;
+}
+
+.sg-art-number {
+  fill: #1864ab;
+  font-weight: 700;
+}
+
+.sg-art-number.given {
+  fill: var(--ink);
+  font-weight: 900;
+}
+
+.sg-art-order {
+  fill: #c2255c;
+  font-weight: 800;
+}
+
+.sg-art-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+.resume .sg-board.small,
+.level .sg-board.small {
+  width: 80px;
+  height: 80px;
+}
+
+.menu-picture > .sg-board {
+  height: 76px;
+}
+
+.resume.note-picture .sg-board.small {
+  width: 100%;
+  height: 140px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드와 표 */
+.sg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 230px);
+}
+
+.sg-card > .sg-svg {
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+}
+
+.sg-card.big,
+.sg-card.big > .sg-svg {
+  width: min(100%, 360px);
+  max-width: 360px;
+}
+
+.sg-card.with-table,
+.sg-card.with-table > .sg-svg {
+  width: min(100%, 180px);
+  max-width: 180px;
+}
+
+.sg-make-picture {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sg-make-picture .sg-card {
+  width: min(100%, 150px);
+}
+
+.sg-why-table {
+  display: flex;
+  align-items: center;
+}
+
+.sg-table {
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.sg-table th,
+.sg-table td {
+  padding: 3px 10px;
+  border: 2px solid var(--line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 판 아래의 단추는 글 아래 줄의 오른쪽에 놓는다 */
+.board-foot:has(> #seqgrid-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 직접 만들기의 왼쪽 칸: 숫자판까지 굴리지 않고 들어가게 조금 촘촘히 놓는다 */
+#make-seqgrid .sg-shown {
+  min-height: 44px;
+  margin: 4px 0 6px;
+  font-size: 28px;
+}
+
+#make-seqgrid .sg-keys {
+  gap: 6px;
+}
+
+#make-seqgrid .sg-keys .key {
+  min-height: 48px;
+}
+
+/* 직접 만들기의 판: 모든 칸을 누를 수 있다 */
+#seqgrid-make-board {
+  width: 100%;
+  height: 100%;
+}

@@ -128,7 +128,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.equal(T.rules.one, '줄을 누르면 끊어지고, 끊은 줄을 다시 누르면 이어져요. 그물이 두 조각으로 갈라지지 않게 끊어요.');
   assert.match(code, /ruleLine: \(round\) => `\$\{T\.rules\[startPieces\(round\.board\) > 1 \? 'many' : 'one'\]\} \$\{T\.asks\[round\.mode\]\}`,/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 53);
+  assert.equal(guides.length, 54);
   assert.ok(sentenceCount(guides[37]) <= 3, guides[37]);
   assert.match(guides[37], /^매듭을 놓고 이웃한 두 매듭을 차례로 누르면 줄이 이어져요\./);
   assert.match(guides[37], /매듭 6개로는 몇 줄까지 끊을 수 있는 그물을 만들 수 있을까요\?$/);

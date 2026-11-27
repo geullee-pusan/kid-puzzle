@@ -50,8 +50,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="pig-pad"', 'id="domino-pad"');
-const own = [part('id="pig-title"', 'id="make-title"'), part('id="pig-faces"', 'id="why"'), part('id="pig-count"', 'id="fold-count"'), pad, part('id="pig-more"', '</section>'), part('id="make-pig"', '<script')].map(visibleText).join(' ');
+const pad = part('id="pig-pad"', 'id="seqgrid-pad"');
+const own = [part('id="pig-title"', 'id="seqgrid-title"'), part('id="pig-faces"', 'id="why"'), part('id="pig-count"', 'id="seqgrid-count"'), pad, part('id="pig-more"', '</section>'), part('id="make-pig"', 'id="make-seqgrid"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const lastWhy = `why[${T.why.length - 1}]`;
@@ -102,7 +102,7 @@ test('규칙 설명은 세 문장 안이고, 1이 나오면 돼지가 바구니�
   assert.match(T.rules.match, /먼저 하는 쪽은 판마다 바꿔요\./);
   assert.match(code, /if \(board\.kind === 'play'\) return fill\(T\.rules\.play, \{ total: board\.goal \}\);/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 53);
+  assert.equal(guides.length, 54);
   const mine = guides[52];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^선생님이 바구니가 몇 개 이상이면 멈출지와 먼저 몇 개를 모을지 정해요\./);
@@ -219,7 +219,7 @@ test('끝났을 때와 풀이, 직접 만들기의 말은 셈으로 구한 사�
   assert.match(code, /const best = compareFrac\(turnValue\(draft\.teacher\), turnValue\(20\)\) === 0;/);
   assert.equal(T.make.best, '따져 보면 이보다 더 많이 모으는 멈추는 수는 없어요.');
   assert.equal(T.make['not-best'], '따져 보면 20개에서 멈추는 쪽이 더 많이 모아요.');
-  const make = part('id="make-pig"', '<script');
+  const make = part('id="make-pig"', 'id="make-seqgrid"');
   for (const id of ['pig-make-teacher-less', 'pig-make-teacher', 'pig-make-teacher-more', 'pig-make-goal-less', 'pig-make-goal', 'pig-make-goal-more', 'pig-make-board', 'pig-make-solve', 'pig-make-result', 'pig-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="pig-make-solve"[^>]*>선생님, 해 보세요</);
   assert.match(make, /id="pig-make-play"[^>]*>내가 겨뤄 볼래요</);
@@ -246,10 +246,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   // 카드는 낼 수 없는 금액 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="nopay-title"') < html.indexOf('id="pig-title"'));
   assert.ok(html.indexOf('id="pig-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 낼 수 없는 금액 다음)
-  assert.match(read('src/main.js'), /nopay: createNopay\(frame\), pig: createPig\(frame\) \};/);
+  // 틀이 형식을 안다(낼 수 없는 금액 다음)
+  assert.match(read('src/main.js'), /nopay: createNopay\(frame\), pig: createPig\(frame\), /);
   assert.match(read('src/check-main.js'), /\['pig', '돼지 주사위'\]/);
-  assert.match(read('src/core/smaller.js'), /nopay: smallerNopay, pig: smallerPig \};/);
+  assert.match(read('src/core/smaller.js'), /nopay: smallerNopay, pig: smallerPig, /);
   assert.match(code, /smaller: \(round, turn\) => smallerPig\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 처음으로는 쓰지 않는다(굴린 눈은 무를 수 없다)

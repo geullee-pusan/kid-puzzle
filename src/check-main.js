@@ -87,6 +87,7 @@ function drawCounts() {
     ['degree', '조건 맞춰 잇기'],
     ['nopay', '낼 수 없는 금액'],
     ['pig', '돼지 주사위'],
+    ['seqgrid', '가로세로 수열 퍼즐'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(
