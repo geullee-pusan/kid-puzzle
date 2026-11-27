@@ -94,7 +94,7 @@ test('규칙 설명은 세 문장 안이고, 색과 선의 모양·지는 때를
   // 선이 가운데에서 엇갈린 곳은 세모가 아니라고 판 옆에 적어 둔다.
   assert.match(visibleText(part('id="sim-pad"', 'id="matches-pad"')), /선이 가운데에서 엇갈린 곳은 점이 아니라서 세모가 되지 않아요\./);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 50);
+  assert.equal(guides.length, 51);
   assert.ok(sentenceCount(guides[31]) <= 3, guides[31]);
   assert.match(guides[31], /^두 점을 차례로 누를 때마다 그 선이 빨강, 파랑, 없음으로 바뀌어요\./);
   // 이 물음의 답(그런 판이 있다)은 tests/sim.test.js가 다른 방법으로 찾는다.

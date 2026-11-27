@@ -50,8 +50,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="yesno-pad"', 'id="domino-pad"');
-const own = [part('id="yesno-title"', 'id="make-title"'), part('id="yesno-board"', '<div class="board-foot">'), part('id="yesno-count"', 'id="fold-count"'), pad, part('id="make-yesno"', '<script')].map(visibleText).join(' ');
+const pad = part('id="yesno-pad"', 'id="degree-pad"');
+const own = [part('id="yesno-title"', 'id="degree-title"'), part('id="yesno-board"', 'id="degree-board"'), part('id="yesno-count"', 'id="degree-count"'), pad, part('id="make-yesno"', 'id="make-degree"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -125,7 +125,7 @@ test('규칙 설명은 세 문장 안이고, 컴퓨터가 후보가 많이 남�
   assert.match(T.rules.ahead, /질문 \{k\}개를 미리 정해 두면/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\)\], \{ n: round\.board\.n, k: round\.board\.q \?\? 0 \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 50);
+  assert.equal(guides.length, 51);
   const mine = guides[49];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^숨길 수의 끝과 질문 수를 정해요\./);
@@ -239,7 +239,7 @@ test('끝났을 때와 풀이, 직접 만들기의 말', () => {
   assert.equal(T.right.fewer, '더 적은 질문으로도 될까요?');
   assert.equal(fill(T.solution.step, { f: '1~4', face: T.words.no, n: 4 }), '1~4에 아니요, 후보 4개예요');
   assert.equal(fill(T.make.can, { n: 16, k: 4 }), '1부터 16까지는 질문 4번이면 언제나 맞힐 수 있어요.');
-  const make = part('id="make-yesno"', '<script');
+  const make = part('id="make-yesno"', 'id="make-degree"');
   for (const id of ['yesno-make-fewer', 'yesno-make-n', 'yesno-make-more', 'yesno-make-fewer-q', 'yesno-make-q', 'yesno-make-more-q', 'yesno-make-board', 'yesno-make-picture', 'yesno-make-solve', 'yesno-make-result', 'yesno-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="yesno-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(make, /id="yesno-make-play"[^>]*>내가 해 볼래요</);
@@ -257,7 +257,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.match(pad, /id="yesno-ask"[^>]*>숨은 수가 이 안에 있나요\?</);
   assert.match(pad, /id="yesno-impossible"[^>]*>불가능해요</);
   assert.match(pad, /<h2>질문 몇 번이면 될까요\?<\/h2>/);
-  assert.match(part('id="yesno-count"', 'id="fold-count"'), />남은 후보 <strong id="yesno-left">/);
+  assert.match(part('id="yesno-count"', 'id="degree-count"'), />남은 후보 <strong id="yesno-left">/);
   // 도구는 왼쪽 칸의 "왜 그럴까?" 바로 위에 있다
   const side = part('<section class="side" aria-label="힌트">', '</section>');
   assert.ok(side.indexOf('id="yesno-halves"') < side.indexOf('id="why"'));
@@ -265,10 +265,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   // 카드는 숫자 넷으로 수 만들기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="fourdigits-title"') < html.indexOf('id="yesno-title"'));
   assert.ok(html.indexOf('id="yesno-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 숫자 넷으로 수 만들기 다음)
-  assert.match(read('src/main.js'), /fourdigits: createFourdigits\(frame\), yesno: createYesno\(frame\) \};/);
+  // 틀이 형식을 안다(숫자 넷으로 수 만들기 다음)
+  assert.match(read('src/main.js'), /fourdigits: createFourdigits\(frame\), yesno: createYesno\(frame\), /);
   assert.match(read('src/check-main.js'), /\['yesno', '질문으로 맞히기'\]/);
-  assert.match(read('src/core/smaller.js'), /fourdigits: smallerFourdigits, yesno: smallerYesno \};/);
+  assert.match(read('src/core/smaller.js'), /fourdigits: smallerFourdigits, yesno: smallerYesno, /);
   assert.match(code, /smaller: \(round, turn\) => smallerYesno\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

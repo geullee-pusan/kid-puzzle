@@ -18357,3 +18357,258 @@ button.yn-tile:focus-visible,
   display: flex;
   justify-content: center;
 }
+
+/* ---- 조건 맞춰 잇기: 동그라미 위의 점과 선, 점 둘레의 작은 동그라미, 모든 경우 펼쳐 보기의 작은 판, 종이의 그림 ----
+   색만으로 알리지 않는다. 점 둘레의 작은 동그라미는 점의 수만큼 있고 선이 이어질 때마다 하나씩 채워진다. 수보다 많은 선은 빈 네모로 붙는다.
+   수만큼 이어진 점은 바깥에 굵은 고리를 한 겹 더 두르고, 수보다 많은 점은 테두리가 굵은 점선이다. 고른 점은 굵은 금빛 점선 고리,
+   막힌 점은 굵은 붉은 점선 고리, 홀수인 점은 짧은 점선의 네모 테두리다. 새로 그을 선(모든 경우 펼쳐 보기)은 굵은 금빛 점선이다.
+   그림은 가로세로 580(그림 안의 길이)이고, 판 칸(가로 480픽셀쯤)에 그리면 점(지름 64)이 53픽셀쯤이고 누르는 자리(지름 92)는 76픽셀쯤이다. */
+.dg-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .dg-board,
+.door-picture > .dg-board,
+#make-degree .board-area > .dg-board {
+  align-self: stretch;
+  height: auto;
+}
+
+.dg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 판이 너무 커지지 않게 한다 */
+  max-width: 600px;
+  max-height: 600px;
+}
+
+.dg-board.small .dg-svg {
+  max-width: none;
+  max-height: none;
+}
+
+.dg-board.live .dg-svg {
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+}
+
+.dg-line {
+  stroke: #343a40;
+  stroke-linecap: round;
+}
+
+.dg-line.fresh {
+  stroke: #e8a400;
+  stroke-dasharray: 18 10;
+}
+
+.dg-end {
+  fill: #1c7ed6;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+.dg-dot {
+  fill: #fff;
+  stroke: #343a40;
+  stroke-width: 5;
+}
+
+.dg-dot.full {
+  fill: #d3f9d8;
+  stroke: #2b8a3e;
+}
+
+.dg-dot.over {
+  fill: #fff5f5;
+  stroke: #c92a2a;
+  stroke-dasharray: 10 6;
+  stroke-width: 6;
+}
+
+.dg-board.small .dg-dot {
+  stroke-width: 10;
+}
+
+.dg-full-ring {
+  fill: none;
+  stroke: #2b8a3e;
+  stroke-width: 5;
+}
+
+.dg-picked {
+  fill: #fff3bf;
+  stroke: #e8a400;
+  stroke-width: 7;
+  stroke-dasharray: 12 7;
+}
+
+.dg-stuck {
+  fill: none;
+  stroke: #c92a2a;
+  stroke-width: 7;
+  stroke-dasharray: 12 7;
+}
+
+.dg-odd {
+  fill: none;
+  stroke: #7048e8;
+  stroke-width: 5;
+  stroke-dasharray: 5 5;
+}
+
+.dg-num {
+  font-size: 34px;
+  font-weight: 800;
+  fill: #212529;
+}
+
+.dg-board.small .dg-num {
+  font-size: 80px;
+}
+
+.dg-name {
+  font-size: 26px;
+  font-weight: 700;
+  fill: #495057;
+}
+
+.dg-pip {
+  fill: #fff;
+  stroke: #495057;
+  stroke-width: 2.5;
+}
+
+.dg-pip.on {
+  fill: #343a40;
+}
+
+.dg-pip.extra {
+  fill: #fff;
+  stroke: #c92a2a;
+  stroke-width: 3;
+}
+
+/* 누를 자리: 보이지 않는 넓은 선과 넓은 동그라미. 손가락으로 누른 것은 판이 가장 가까운 점, 없으면 가장 가까운 선을 골라 받는다 */
+.dg-hit-line,
+.dg-hit-dot {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.dg-hit-line:focus,
+.dg-hit-dot:focus {
+  outline: none;
+}
+
+.dg-hit-line:focus-visible {
+  stroke: rgba(252, 196, 25, 0.45);
+}
+
+.dg-hit-dot:focus-visible {
+  stroke: rgba(252, 196, 25, 0.8);
+  stroke-width: 6;
+}
+
+/* 그림은 누르는 것을 가로막지 않는다(판이 누른 자리를 받는다) */
+.dg-line,
+.dg-end,
+.dg-dot,
+.dg-full-ring,
+.dg-picked,
+.dg-stuck,
+.dg-odd,
+.dg-num,
+.dg-name,
+.dg-pip {
+  pointer-events: none;
+}
+
+.board-foot:has(> #degree-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+#degree-status {
+  height: auto;
+  min-height: 22px;
+}
+
+/* 오른쪽 칸: 모든 경우 펼쳐 보기(작은 판을 두 장씩) */
+.dg-cases h2 {
+  margin: 8px 0 4px;
+}
+
+.dg-ways {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드. 판 위의 종이(가로 470픽셀쯤)에 한 줄에 석 장이 들어간다. big은 한 장 */
+.dg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 140px);
+}
+
+.dg-card > .dg-board {
+  height: 140px;
+}
+
+.dg-card.mid {
+  width: min(100%, 200px);
+}
+
+.dg-card.mid > .dg-board {
+  height: 190px;
+}
+
+.dg-card.big {
+  width: min(100%, 360px);
+}
+
+.dg-card.big > .dg-board {
+  height: 320px;
+}
+
+.dg-card.mini {
+  width: calc(50% - 4px);
+}
+
+.dg-card.mini > .dg-board {
+  height: 130px;
+}
+
+.dg-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* 하던 판 띠, 공책, 만들기 목록, 판 고르기의 작은 그림 */
+.resume .dg-board.small {
+  width: 90px;
+  height: 80px;
+}
+
+.level .dg-board.small {
+  width: 80px;
+  height: 72px;
+}
+
+.menu-picture > .dg-board {
+  height: 76px;
+}
+
+.resume.note-picture .dg-board.small {
+  width: 100%;
+  height: 120px;
+}

@@ -84,6 +84,7 @@ function drawCounts() {
     ['slide', '번호 말 제자리 찾기'],
     ['fourdigits', '숫자 넷으로 수 만들기'],
     ['yesno', '질문으로 맞히기'],
+    ['degree', '조건 맞춰 잇기'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

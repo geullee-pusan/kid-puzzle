@@ -84,6 +84,8 @@ import { smallBoards as smallFourdigitsBoards } from './fourdigits-ladder.js';
 import { checkBoard as checkFourdigits } from './fourdigits.js';
 import { possibleOf as possibleYesno, smallBoards as smallYesnoBoards } from './yesno-ladder.js';
 import { checkBoard as checkYesno } from './yesno.js';
+import { possibleOf as possibleDegree, smallBoards as smallDegreeBoards } from './degree-ladder.js';
+import { checkBoard as checkDegree } from './degree.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1111,5 +1113,15 @@ export function smallerYesno(origin, turn = 0) {
   if (!origin.board || checkYesno(origin.board) !== null) return null;
   return wrap(pickByTurn(smallYesnoBoards(origin), possibleYesno(origin.board), turn));
 }
+// ---- 조건 맞춰 잇기: 점이 더 적은 같은 종류의 판 ----
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno };
+/**
+ * 점이 하나, 둘 적은 같은 종류의 판을 차례로 낸다(src/core/degree-ladder.js의 smallBoards).
+ * 되는 판에서는 되는 판만, 안 되는 판에서는 되는 판부터 까닭이 같은 안 되는 판과 번갈아 낸다. 더 줄일 수 없으면(점 넷) 없다.
+ */
+export function smallerDegree(origin, turn = 0) {
+  if (!origin.board || checkDegree(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallDegreeBoards(origin), possibleDegree(origin.board), turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree };
