@@ -102,7 +102,7 @@ test('규칙 설명은 세 문장 안이다. 뒤집어 같은 모양도 따로 �
   assert.match(T.rules.stairs, /한 칸이나 두 칸씩/);
   assert.equal(fill(T.rules.table, { face: '2×6 판' }), '도미노 한 개는 붙어 있는 두 칸을 덮어요. 2×1 판부터 2×6 판까지 덮는 방법을 세어 표를 채워요. 그다음 더 긴 판을 짐작해요.');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52);
+  assert.equal(guides.length, 53);
   const mine = guides[43];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^줄 수와 칸 수를 정하고, 칸을 눌러 빼거나 되살려요\./);

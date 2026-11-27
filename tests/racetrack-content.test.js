@@ -111,7 +111,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 두
   assert.match(code, /const ruleKey = \(round\) => \(round\.mode === 'made' \? \(round\.board\.flags\.length > 0 \? 'flag' : 'fewest'\) : round\.mode\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52);
+  assert.equal(guides.length, 53);
   assert.ok(sentenceCount(guides[41]) <= 3, guides[41]);
   assert.match(guides[41], /^칸을 눌러 길을 그리고 출발 칸과 결승선을 정해요\./);
   assert.match(guides[41], /여러 번 걸리는 길을 만들 수 있을까요\?$/);

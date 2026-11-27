@@ -589,6 +589,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="pig-title">
+            <h2 id="pig-title">돼지 주사위</h2>
+            <div class="door-picture"><div id="home-pig-sample"></div></div>
+            <p id="home-pig-ask" class="door-ask">도토리를 먼저 30개 모아 볼까요?</p>
+            <div class="door-foot">
+              <button id="home-pig-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-pig-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -764,6 +774,9 @@
               <li>
                 <button id="home-nopay-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-nopay-blank"></span></span><span class="menu-name">낼 수 없는 금액</span></button>
               </li>
+              <li>
+                <button id="home-pig-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-pig-blank"></span></span><span class="menu-name">돼지 주사위</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -909,6 +922,9 @@
           <button id="degree-cases-tool" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</button>
           <!-- 낼 수 없는 금액: 띠를 가장 작은 동전의 값만큼씩 한 줄로 다시 놓는 도구. 무엇이 보이는지는 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
           <button id="nopay-rows" class="btn wide" type="button" aria-pressed="false" hidden>줄 맞추기</button>
+          <!-- 돼지 주사위: 한 번 더 굴릴 때 나올 수 있는 눈을 모두 펼쳐 눈마다 바구니가 바뀌는 수를 적는 도구(한 번만 더 굴릴까에만).
+               답은 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
+          <button id="pig-faces" class="btn wide" type="button" aria-pressed="false" hidden>눈 모두 펼쳐 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -1074,6 +1090,9 @@
               </div>
               <div id="nopay-strip" class="np-strip-box"></div>
             </div>
+            <!-- 돼지 주사위: 겨루기는 두 항아리(모은 도토리), 큰 주사위와 바구니, 굴린 눈의 두 줄. 실험은 막대들, 한 번만 더 굴릴까는 바구니와 막대(또는 눈 펼쳐 보기).
+                 그림은 src/ui/pig-board.js가 그린다 -->
+            <div id="pig-board" class="pg-board" hidden></div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1310,6 +1329,10 @@
             <!-- 낼 수 없는 금액: 할 일이나 사실 한 줄(담은 동전의 합, 방금 칠하거나 고른 금액). 띠가 길어서 수를 적는 줄은 두지 않는다(고른 금액의 수는 오른쪽 칸에) -->
             <span id="nopay-count" class="count tile-count block-count" hidden>
               <span id="nopay-status" class="tile-status" aria-live="polite"></span>
+            </span>
+            <!-- 돼지 주사위: 할 일이나 사실 한 줄(바구니의 도토리, 돼지가 먹었는지). 모은 수는 판에 있다 -->
+            <span id="pig-count" class="count tile-count block-count" hidden>
+              <span id="pig-status" class="tile-status" aria-live="polite"></span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
             <!-- 도미노 가로세로: 윗줄에 누구 차례인지(선생님이 방금 놓았는지, 누가 놓을 곳이 없는지), 그 아래에 놓은 도미노와 남은 빈칸의 수 -->
@@ -2176,6 +2199,32 @@
               <button id="nopay-endless" class="btn huge" type="button">끝이 없어요</button>
             </div>
           </div>
+          <!-- 돼지 주사위: 겨루기는 굴리기와 멈추기(선생님의 규칙은 판에 적혀 있다). 실험은 짐작 단추(그리는 쪽이 만든다)와 "컴퓨터가 해 보기".
+               한 번만 더 굴릴까는 "컴퓨터가 1,000번 해 보기"와 답 셋 -->
+          <div id="pig-pad" class="pad" hidden>
+            <div id="pig-play-box" class="choices" hidden>
+              <button id="pig-roll" class="btn primary huge" type="button">굴리기</button>
+              <button id="pig-stop" class="btn good huge" type="button">멈추기</button>
+              <p class="pad-note">멈추면 바구니의 도토리를 항아리로 옮기고 선생님 차례가 돼요.</p>
+            </div>
+            <div id="pig-pick-box" class="choices" hidden>
+              <h2>먼저 짐작해 볼까요?</h2>
+              <div id="pig-picks" class="choices pg-picks"></div>
+            </div>
+            <p id="pig-picked" class="pad-note best-line" hidden></p>
+            <div id="pig-run-box" class="choices" hidden>
+              <button id="pig-run" class="btn primary huge" type="button">컴퓨터가 1,000 차례씩 해 보기</button>
+            </div>
+            <div id="pig-edge-box" class="choices" hidden>
+              <button id="pig-try" class="btn big" type="button">컴퓨터가 1,000번 해 보기</button>
+              <h2>한 번 더 굴리면?</h2>
+              <div id="pig-answers" class="choices pg-answers">
+                <button class="btn big" type="button" data-choice="more">늘어나요</button>
+                <button class="btn big" type="button" data-choice="less">줄어들어요</button>
+                <button class="btn big" type="button" data-choice="same">똑같아요</button>
+              </div>
+            </div>
+          </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
                주사위는 숫자판과 "이 수예요", 모두 찾기는 "접어 보기", "모두 지우기", 찾은 모양의 줄과 "여기까지 할래요" -->
           <!-- 도미노 가로세로: 고르는 판은 세로가 될지 가로가 될지, 이어서 먼저 둘지 나중에 둘지 고른다. 차례가 오면 판에 도미노를 놓는다 -->
@@ -2901,6 +2950,8 @@
               <label for="fair-reason">까닭 남기기</label>
               <textarea id="fair-reason" rows="2" maxlength="200" placeholder="안 써도 돼요"></textarea>
             </div>
+            <!-- 돼지 주사위의 실험 판에서만 보인다. 컴퓨터가 1,000번씩 더 해 본다. "같은 단계 새 판" 앞으로 옮겨 놓는다 -->
+            <button id="pig-more" class="btn wide after-extra primary" type="button" hidden>더 많이 해 보기</button>
           </div>
         </section>
       </main>
@@ -4990,6 +5041,36 @@
             <p id="nopay-make-result" class="make-result" aria-live="polite"></p>
             <button id="nopay-make-play" class="btn huge" type="button">내가 해 볼래요</button>
             <div id="nopay-make-picture" class="np-make-picture"></div>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-pig" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>선생님이 멈추는 수</h2>
+          <div class="stepper">
+            <button id="pig-make-teacher-less" class="btn" type="button" aria-label="선생님이 멈추는 수 줄이기">−</button>
+            <strong id="pig-make-teacher"></strong>
+            <button id="pig-make-teacher-more" class="btn" type="button" aria-label="선생님이 멈추는 수 늘리기">＋</button>
+          </div>
+          <h2>먼저 모을 도토리</h2>
+          <div class="stepper">
+            <button id="pig-make-goal-less" class="btn" type="button" aria-label="먼저 모을 도토리 10개 줄이기">−</button>
+            <strong id="pig-make-goal"></strong>
+            <button id="pig-make-goal-more" class="btn" type="button" aria-label="먼저 모을 도토리 10개 늘리기">＋</button>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">선생님이 바구니가 몇 개 이상이면 멈출지와 먼저 몇 개를 모을지 정해요. 선생님에게 1,000 차례 해 보게 하거나 직접 겨룰 수 있어요. 선생님이 가장 많이 모으게 하려면 몇 개에서 멈추게 할까요?</p>
+          <div class="board-area"><div id="pig-make-board" class="pg-board"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="pig-make-solve" class="btn primary huge" type="button">선생님, 해 보세요</button>
+            <p id="pig-make-result" class="make-result" aria-live="polite"></p>
+            <button id="pig-make-play" class="btn huge" type="button">내가 겨뤄 볼래요</button>
           </div>
         </section>
       </main>

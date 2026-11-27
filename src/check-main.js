@@ -86,6 +86,7 @@ function drawCounts() {
     ['yesno', '질문으로 맞히기'],
     ['degree', '조건 맞춰 잇기'],
     ['nopay', '낼 수 없는 금액'],
+    ['pig', '돼지 주사위'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

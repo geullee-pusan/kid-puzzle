@@ -117,7 +117,7 @@ test('규칙 설명은 세 문장 안이다. 첫 단계는 "가장 적게"를 �
   for (const key of ['fewest', 'least', 'made-swap']) assert.match(T.rules[key], /가장 적게 .+ 보세요\.$/);
   for (const key of ['small', 'big', 'made-slide']) assert.match(T.rules[key], /오른쪽 아래 구석/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52);
+  assert.equal(guides.length, 53);
   const mine = guides[47];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^두 말을 차례로 누르면 자리가 바뀌어요\./);

@@ -106,7 +106,7 @@ test('판의 종류마다 규칙 설명이 있고, 세 문장을 넘지 않는�
   assert.match(T.rules.pairs, /더 움직이지 못해요/);
   // 직접 만들기 화면의 안내 글도 같다. 안 되는 판을 만들어 보라고 권한다.
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52, '직접 만들기 안내 글은 형식마다 하나');
+  assert.equal(guides.length, 53, '직접 만들기 안내 글은 형식마다 하나');
   assert.ok(sentenceCount(guides[3]) <= 3, guides[3]);
   assert.match(guides[3], /안 되는 판도 만들 수 있을까요\?/);
   // 선생님의 만들기 안내: 만들기 화면에 "선생님, 풀어 보세요" 단추가 있으므로 그 말로 끝난다.
@@ -523,18 +523,18 @@ test('처음 화면: 하던 판 띠가 카드들 위에 있고, 퍼즐 만들기
   const titles = ['coins-title', 'trace-title', 'code-title', 'swap-title', 'tile-title', 'duel-title', 'tax-title', 'logic-title', 'block-title', 'river-title', 'cups-title', 'dandelion-title', 'maze-title', 'rulehunt-title', 'untangle-title', 'lamps-title', 'rooms-title', 'machine-title', 'split-title', 'eyeball-title', 'cutpaste-title', 'fold-title', 'domino-title', 'pieces-title', 'magic-title', 'apart-title', 'keymaze-title', 'cipher-title', 'seqpath-title', 'pancake-title', 'product-title', 'sim-title', 'matches-title', 'fair-title', 'rowflip-title', 'foxrabbit-title', 'pins-title', 'net-title', 'regionmap-title', 'blackhole-title', 'tower-title', 'racetrack-title', 'discpair-title', 'make-title'].map((id) => at(`id="${id}"`));
   assert.deepEqual(titles, [...titles].sort((a, b) => a - b));
   const cards = part('id="doors"', 'id="make-menu"');
-  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 53);
+  assert.equal([...cards.matchAll(/class="panel door[ "]/g)].length, 54);
   // 형식의 카드마다 "해 보기"와 "판 고르기"가 하나씩 있다.
-  assert.equal([...cards.matchAll(/>해 보기</g)].length, 52);
-  assert.equal([...cards.matchAll(/>판 고르기</g)].length, 52);
+  assert.equal([...cards.matchAll(/>해 보기</g)].length, 53);
+  assert.equal([...cards.matchAll(/>판 고르기</g)].length, 53);
   // 퍼즐 만들기 카드에는 단추가 "만들기" 하나뿐이다. 형식마다의 단추는 목록 안에 있다.
   const makeCard = part('id="make-title"', 'id="make-menu"');
   assert.deepEqual([...makeCard.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]), ['home-make-open']);
   assert.match(makeCard, /id="home-make-open"[^>]*>만들기</);
   const menu = part('id="make-menu"', 'id="picker"');
-  assert.deepEqual([...menu.matchAll(/<button id="([^"]+)" class="menu-item"/g)].map((match) => match[1]), ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make', 'home-duel-make', 'home-tax-make', 'home-logic-make', 'home-block-make', 'home-river-make', 'home-cups-make', 'home-dandelion-make', 'home-maze-make', 'home-rulehunt-make', 'home-untangle-make', 'home-lamps-make', 'home-rooms-make', 'home-machine-make', 'home-split-make', 'home-eyeball-make', 'home-cutpaste-make', 'home-fold-make', 'home-domino-make', 'home-pieces-make', 'home-magic-make', 'home-apart-make', 'home-keymaze-make', 'home-cipher-make', 'home-seqpath-make', 'home-pancake-make', 'home-product-make', 'home-sim-make', 'home-matches-make', 'home-fair-make', 'home-rowflip-make', 'home-foxrabbit-make', 'home-pins-make', 'home-net-make', 'home-regionmap-make', 'home-blackhole-make', 'home-tower-make', 'home-racetrack-make', 'home-discpair-make', 'home-tilings-make', 'home-fingers-make', 'home-signs-make', 'home-views-make', 'home-slide-make', 'home-fourdigits-make', 'home-yesno-make', 'home-degree-make', 'home-nopay-make']);
+  assert.deepEqual([...menu.matchAll(/<button id="([^"]+)" class="menu-item"/g)].map((match) => match[1]), ['home-make', 'home-trace-make', 'home-code-make', 'home-swap-make', 'home-tile-make', 'home-duel-make', 'home-tax-make', 'home-logic-make', 'home-block-make', 'home-river-make', 'home-cups-make', 'home-dandelion-make', 'home-maze-make', 'home-rulehunt-make', 'home-untangle-make', 'home-lamps-make', 'home-rooms-make', 'home-machine-make', 'home-split-make', 'home-eyeball-make', 'home-cutpaste-make', 'home-fold-make', 'home-domino-make', 'home-pieces-make', 'home-magic-make', 'home-apart-make', 'home-keymaze-make', 'home-cipher-make', 'home-seqpath-make', 'home-pancake-make', 'home-product-make', 'home-sim-make', 'home-matches-make', 'home-fair-make', 'home-rowflip-make', 'home-foxrabbit-make', 'home-pins-make', 'home-net-make', 'home-regionmap-make', 'home-blackhole-make', 'home-tower-make', 'home-racetrack-make', 'home-discpair-make', 'home-tilings-make', 'home-fingers-make', 'home-signs-make', 'home-views-make', 'home-slide-make', 'home-fourdigits-make', 'home-yesno-make', 'home-degree-make', 'home-nopay-make', 'home-pig-make']);
   assert.match(menu, /id="make-menu-close"[^>]*>닫기</);
-  for (const name of ['동전 뒤집기', '한붓그리기', '숫자 추리', '자리 바꾸기', '조각 덮기', '누가 이길까', '약수 세금', '참말 섬', '조각 못 들어가게 막기', '강 건너기', '컵 뒤집기와 세 색 무리', '민들레와 바람', '주사위 미로와 길 세기', '숨은 규칙 찾기', '엉킨 그림 풀기', '켜고 끄기와 숫자 마술', '방 한 번씩 돌기', '규칙 기계와 규칙이 깨지는 판', '똑같이 섞이게 자르기', '눈대중', '자르고 붙이기', '접히는 모양 가리기', '도미노 가로세로', '조각 가짓수 찾기', '마법 네모와 겹친 칸', '닿지 않게 놓기와 구역 긋기', '열쇠 미로', '암호 놀이', '수열 길 퍼즐', '팬케이크 뒤집기', '곱 단서 퍼즐', '세모 피하기', '성냥개비', '공정한 게임일까', '줄 뒤집기 판', '여우와 토끼', '핀에 실 감기', '그물 끊기', '구역 지도 맞히기', '블랙홀', '탑 옮기기', '모눈 자동차 경주', '원판 둘씩 옮기기', '도미노 깔기 모두 찾기', '손가락 더하기', '부호 넣어 수 만들기', '세 방향에서 본 그림', '번호 말 제자리 찾기', '숫자 넷으로 수 만들기', '질문으로 맞히기', '조건 맞춰 잇기', '낼 수 없는 금액']) assert.ok(visibleText(menu).includes(name), name);
+  for (const name of ['동전 뒤집기', '한붓그리기', '숫자 추리', '자리 바꾸기', '조각 덮기', '누가 이길까', '약수 세금', '참말 섬', '조각 못 들어가게 막기', '강 건너기', '컵 뒤집기와 세 색 무리', '민들레와 바람', '주사위 미로와 길 세기', '숨은 규칙 찾기', '엉킨 그림 풀기', '켜고 끄기와 숫자 마술', '방 한 번씩 돌기', '규칙 기계와 규칙이 깨지는 판', '똑같이 섞이게 자르기', '눈대중', '자르고 붙이기', '접히는 모양 가리기', '도미노 가로세로', '조각 가짓수 찾기', '마법 네모와 겹친 칸', '닿지 않게 놓기와 구역 긋기', '열쇠 미로', '암호 놀이', '수열 길 퍼즐', '팬케이크 뒤집기', '곱 단서 퍼즐', '세모 피하기', '성냥개비', '공정한 게임일까', '줄 뒤집기 판', '여우와 토끼', '핀에 실 감기', '그물 끊기', '구역 지도 맞히기', '블랙홀', '탑 옮기기', '모눈 자동차 경주', '원판 둘씩 옮기기', '도미노 깔기 모두 찾기', '손가락 더하기', '부호 넣어 수 만들기', '세 방향에서 본 그림', '번호 말 제자리 찾기', '숫자 넷으로 수 만들기', '질문으로 맞히기', '조건 맞춰 잇기', '낼 수 없는 금액', '돼지 주사위']) assert.ok(visibleText(menu).includes(name), name);
 });
 
 test('처음 화면의 배치: 카드는 한 줄에 여러 장이 놓이고, 넘치면 카드 칸만 굴러간다', () => {

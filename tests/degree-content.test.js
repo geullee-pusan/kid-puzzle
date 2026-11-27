@@ -118,7 +118,7 @@ test('규칙 설명은 세 문장 안이고, 선은 두 점 사이에 하나뿐�
   assert.match(T.rules.three, /세 개씩/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52);
+  assert.equal(guides.length, 53);
   const mine = guides[50];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^점을 눌러 고르고 그 점의 수를 정해요\./);

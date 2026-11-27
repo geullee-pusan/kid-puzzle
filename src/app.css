@@ -19033,3 +19033,569 @@ button.np-cell {
 #nopay-pad .tl-keys .key {
   min-height: 48px;
 }
+
+/* ---- 돼지 주사위: 두 항아리, 주사위와 바구니, 굴린 눈의 줄, 실험의 막대, 주사위 눈 펼쳐 보기, 작은 그림 ----
+   색만으로 알리지 않는다. 주사위의 1은 점 대신 분홍 돼지 코(콧구멍 둘)이고, 돼지가 먹은 바구니는 빗금과 점선 테두리다.
+   내 항아리는 주황, 선생님 항아리는 빗금 친 파랑이고 막대 앞에 이름이 있다. 짐작으로 고른 막대는 굵은 점선 테두리와 "내 짐작" 글.
+   더하는 눈은 초록 바탕에 +, 돼지가 먹는 눈은 분홍 빗금 바탕에 −. 굴릴 때 방금 나온 주사위만 0.35초 흔들리고,
+   움직임을 줄이는 설정이면 흔들리지 않는다. 단추(굴리기, 멈추기, 짐작, 답)는 모두 48픽셀 넘게 눌린다. */
+.pg-board {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.board-area > .pg-board {
+  align-self: center;
+  height: auto;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.pg-die {
+  display: block;
+  flex: none;
+  width: 48px;
+  height: 48px;
+}
+
+.pg-die.big {
+  width: 96px;
+  height: 96px;
+}
+
+.pg-die.mid {
+  width: 56px;
+  height: 56px;
+}
+
+.pg-die.small {
+  width: 40px;
+  height: 40px;
+}
+
+.pg-die.tiny {
+  width: 28px;
+  height: 28px;
+}
+
+.pg-die-body {
+  fill: #ffffff;
+  stroke: #343a40;
+  stroke-width: 5;
+}
+
+.pg-die-body.pig {
+  fill: #fff0f6;
+}
+
+.pg-die-slot {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 5;
+  stroke-dasharray: 12 8;
+}
+
+.pg-pip {
+  fill: #212529;
+}
+
+.pg-snout {
+  fill: #f783ac;
+  stroke: #a61e4d;
+  stroke-width: 4;
+}
+
+.pg-nostril {
+  fill: #a61e4d;
+}
+
+.pg-die.rolling {
+  animation: pg-roll 0.35s ease-out;
+}
+
+@keyframes pg-roll {
+  0% {
+    transform: rotate(-28deg) scale(0.8);
+  }
+  60% {
+    transform: rotate(14deg) scale(1.05);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-die.rolling {
+    animation: none;
+  }
+}
+
+.pg-acorn {
+  flex: none;
+  width: 26px;
+  height: 31px;
+}
+
+.pg-acorn-nut {
+  fill: #c0792f;
+  stroke: #6b3d12;
+  stroke-width: 2;
+}
+
+.pg-acorn-cap {
+  fill: #7a5230;
+  stroke: #4a2f17;
+  stroke-width: 2;
+}
+
+.pg-acorn-stem {
+  fill: none;
+  stroke: #4a2f17;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* 두 항아리: 이름, 막대(끝이 목표), 모은 수 */
+/* 두 줄의 막대가 같은 자리에서 시작하게 한 칸 틀에 놓는다 */
+.pg-jars {
+  display: grid;
+  grid-template-columns: max-content 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+}
+
+.pg-jar {
+  display: contents;
+}
+
+.pg-jar-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pg-jar-count {
+  font-size: 22px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pg-track {
+  position: relative;
+  height: 30px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.pg-track-fill,
+.pg-track-ghost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 6px;
+}
+
+.pg-jar.who-kid .pg-track-fill {
+  background: #ff922b;
+}
+
+.pg-jar.who-teacher .pg-track-fill {
+  background: repeating-linear-gradient(135deg, #4dabf7 0 6px, #1971c2 6px 9px);
+}
+
+/* 바구니에 담긴 만큼(멈추면 옮겨질 만큼)은 옅은 점선으로 이어 그린다 */
+.pg-track-ghost {
+  background: #ffe8cc;
+  border: 2px dashed #e8590c;
+}
+
+.pg-track-goal {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.pg-teacher-rule {
+  margin: 0;
+  color: var(--muted);
+  font-size: 19px;
+  text-align: center;
+}
+
+/* 큰 주사위와 바구니 */
+.pg-stage,
+.pg-edge-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.pg-edge-dice {
+  display: flex;
+  gap: 10px;
+}
+
+.pg-basket {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 6px 16px;
+  border: 3px solid #c0792f;
+  border-radius: 14px;
+  background: #fff4e6;
+}
+
+.pg-basket-n {
+  font-size: 26px;
+  white-space: nowrap;
+}
+
+.pg-basket.eaten {
+  border-style: dashed;
+  border-color: #a61e4d;
+  background: repeating-linear-gradient(135deg, #fff0f6 0 8px, #fcc2d7 8px 11px);
+}
+
+/* 굴린 눈의 줄: 제목, 주사위들, 끝(옮김, 돼지, 다 모음) */
+.pg-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pg-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.pg-row-title {
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.pg-row-dice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pg-row-end {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.pg-row-end.end-pig {
+  color: #a61e4d;
+}
+
+.pg-row-end.end-goal {
+  color: var(--good);
+}
+
+/* 실험의 막대 */
+.pg-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.pg-bar-line {
+  display: grid;
+  grid-template-columns: 150px 1fr 84px;
+  grid-template-areas:
+    'name bar n'
+    'sub sub sub';
+  align-items: center;
+  gap: 2px 8px;
+  padding: 2px 6px;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+/* 이름이 긴 막대("○개에서 멈추는 쪽", "돼지가 먹은 도토리") */
+.pg-bars.wide .pg-bar-line {
+  grid-template-columns: 196px 1fr 84px;
+}
+
+.pg-bar-line.mine {
+  border: 3px dashed #364fc7;
+}
+
+.pg-bar-name {
+  grid-area: name;
+  white-space: nowrap;
+}
+
+.pg-mine {
+  margin-right: 10px;
+  color: #364fc7;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pg-bar {
+  grid-area: bar;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pg-bar-fill {
+  display: block;
+  height: 100%;
+  background: #ffc078;
+}
+
+.pg-bar-fill.kind-top {
+  background: #fd7e14;
+}
+
+.pg-bar-fill.kind-first {
+  background: #ff922b;
+}
+
+.pg-bar-fill.kind-second {
+  background: repeating-linear-gradient(135deg, #4dabf7 0 6px, #1971c2 6px 9px);
+}
+
+.pg-bar-fill.kind-gain {
+  background: #51cf66;
+}
+
+.pg-bar-fill.kind-lose {
+  background: repeating-linear-gradient(135deg, #f783ac 0 6px, #a61e4d 6px 9px);
+}
+
+.pg-bar-n {
+  grid-area: n;
+  font-size: 20px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pg-bar-sub {
+  grid-area: sub;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.pg-caption {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  text-align: center;
+}
+
+.pg-caption.strong {
+  color: var(--ink);
+  font-size: 19px;
+  font-weight: 700;
+}
+
+/* 주사위 눈 펼쳐 보기 */
+.pg-faces-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-faces.one {
+  display: grid;
+  grid-template-columns: repeat(6, 64px);
+  gap: 6px;
+}
+
+.pg-faces.two {
+  display: grid;
+  grid-template-columns: 34px repeat(6, 46px) 84px;
+  grid-auto-rows: 40px;
+  gap: 3px;
+  align-items: center;
+}
+
+.pg-face-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+}
+
+.pg-face-cell.small {
+  justify-content: center;
+  height: 100%;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.pg-face-cell.add {
+  background: #ebfbee;
+  border-color: #2b8a3e;
+}
+
+.pg-face-cell.lose {
+  background: repeating-linear-gradient(135deg, #fff0f6 0 6px, #fcc2d7 6px 9px);
+  border: 2px dashed #a61e4d;
+}
+
+.pg-face-n {
+  font-size: 20px;
+}
+
+.pg-face-head {
+  display: flex;
+  justify-content: center;
+}
+
+.pg-row-sum {
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+/* 짐작 단추(멈추는 수가 넷 이상이면 두 줄) */
+.pg-picks,
+.pg-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pg-picks.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 종이의 그림 카드와 표 */
+.pg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(100%, 360px);
+}
+
+.pg-card.big {
+  width: min(100%, 560px);
+}
+
+.pg-card .strip-note {
+  text-align: center;
+}
+
+.pg-table {
+  border-collapse: collapse;
+  font-size: 18px;
+}
+
+.pg-table th,
+.pg-table td {
+  padding: 4px 10px;
+  white-space: nowrap;
+  border: 2px solid var(--line);
+  text-align: center;
+}
+
+.pg-table th {
+  background: #f1f3f5;
+}
+
+/* 작은 그림(처음 화면, 판 고르기, 하던 판, 공책, 만들기 목록) */
+.pg-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pg-mini {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.door-picture > .pg-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.resume .pg-board.small {
+  width: 110px;
+  height: 70px;
+  margin: 0;
+}
+
+.level .pg-board.small {
+  width: 110px;
+  height: 72px;
+}
+
+.menu-picture > .pg-board.small {
+  height: 76px;
+}
+
+.resume.note-picture .pg-board.small {
+  width: 100%;
+  height: 120px;
+}
+
+.pg-mini-track {
+  fill: #f8f9fa;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.pg-mini-fill.who-kid {
+  fill: #ff922b;
+}
+
+.pg-mini-fill.who-teacher {
+  fill: #1971c2;
+}
+
+.pg-mini-bar {
+  fill: #ffc078;
+  stroke: #c0792f;
+  stroke-width: 2;
+}
+
+.pg-mini-basket {
+  fill: #fff4e6;
+  stroke: #c0792f;
+  stroke-width: 4;
+}
+
+.pg-mini-acorn {
+  fill: #c0792f;
+  stroke: #6b3d12;
+  stroke-width: 2;
+}
+
+/* 직접 만들기의 그림: 아직 아무도 굴리지 않은 겨루기 판 */
+#pig-make-board {
+  max-width: 520px;
+}

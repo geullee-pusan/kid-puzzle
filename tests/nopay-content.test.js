@@ -50,8 +50,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="nopay-pad"', 'id="domino-pad"');
-const own = [part('id="nopay-title"', 'id="make-title"'), part('id="nopay-board"', '<!-- 접히는'), part('id="nopay-count"', 'id="fold-count"'), part('id="nopay-rows"', 'id="why"'), pad, part('id="make-nopay"', '<script')].map(visibleText).join(' ');
+const pad = part('id="nopay-pad"', 'id="pig-pad"');
+const own = [part('id="nopay-title"', 'id="pig-title"'), part('id="nopay-board"', 'id="pig-board"'), part('id="nopay-count"', 'id="pig-count"'), part('id="nopay-rows"', 'id="pig-faces"'), pad, part('id="make-nopay"', 'id="make-pig"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const lastWhy = `why[${T.why.length - 1}]`;
@@ -118,7 +118,7 @@ test('규칙 설명은 세 문장 안이고, 동전을 몇 개든 쓸 수 있다
   assert.match(T.rules.from, /어느 금액부터는 모두 낼 수 있을까요\?$/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[isAll\(round\) \? 'all' : 'from'\], \{ face: faceOf\(round\.board\.coins\) \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 52);
+  assert.equal(guides.length, 53);
   const mine = guides[51];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^동전 두세 가지의 값을 정해요\./);
@@ -235,7 +235,7 @@ test('끝났을 때와 풀이, 직접 만들기의 말', () => {
   assert.equal(fill(T.right.all, { k: 4 }), '낼 수 없는 금액 4개를 모두 골랐어요.');
   assert.equal(fill(T.right.lock, { n: 8 }), '자물쇠가 열렸어요. 8원부터는 모두 낼 수 있어요.');
   assert.equal(fill(T.make.largest, { k: 7, n: 4 }), '낼 수 없는 가장 큰 금액은 7원이에요. 낼 수 없는 금액은 모두 4개예요.');
-  const make = part('id="make-nopay"', '<script');
+  const make = part('id="make-nopay"', 'id="make-pig"');
   for (const id of ['nopay-make-fewer', 'nopay-make-n', 'nopay-make-more', 'nopay-make-c0', 'nopay-make-c1', 'nopay-make-c2', 'nopay-make-row2', 'nopay-make-board', 'nopay-make-solve', 'nopay-make-result', 'nopay-make-play', 'nopay-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="nopay-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(make, /id="nopay-make-play"[^>]*>내가 해 볼래요</);
@@ -262,10 +262,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   // 카드는 조건 맞춰 잇기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="degree-title"') < html.indexOf('id="nopay-title"'));
   assert.ok(html.indexOf('id="nopay-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 조건 맞춰 잇기 다음)
-  assert.match(read('src/main.js'), /degree: createDegree\(frame\), nopay: createNopay\(frame\) \};/);
+  // 틀이 형식을 안다(조건 맞춰 잇기 다음)
+  assert.match(read('src/main.js'), /degree: createDegree\(frame\), nopay: createNopay\(frame\), /);
   assert.match(read('src/check-main.js'), /\['nopay', '낼 수 없는 금액'\]/);
-  assert.match(read('src/core/smaller.js'), /degree: smallerDegree, nopay: smallerNopay \};/);
+  assert.match(read('src/core/smaller.js'), /degree: smallerDegree, nopay: smallerNopay, /);
   assert.match(code, /smaller: \(round, turn\) => smallerNopay\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);
