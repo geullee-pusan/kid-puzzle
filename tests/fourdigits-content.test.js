@@ -50,7 +50,7 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const own = [part('id="fourdigits-title"', 'id="make-title"'), part('id="fourdigits-board"', '<div class="board-foot">'), part('id="fourdigits-count"', 'id="fold-count"'), part('id="fourdigits-pad"', 'id="domino-pad"'), part('id="make-fourdigits"', '<script')].map(visibleText).join(' ');
+const own = [part('id="fourdigits-title"', 'id="yesno-title"'), part('id="fourdigits-board"', 'id="yesno-board"'), part('id="fourdigits-count"', 'id="yesno-count"'), part('id="fourdigits-pad"', 'id="yesno-pad"'), part('id="make-fourdigits"', 'id="make-yesno"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const faces = T.faces;
@@ -92,9 +92,9 @@ test('1부터 차례로: 열린 수 둘, 기록은 1부터 몇까지 차례로 �
   assert.match(code, /return \[run === 0 \? T\.right\['stopped-none'\] : fill\(T\.right\.run, \{ k: run \}\), fill\(T\.right\['run-more'\], \{ n: run \+ 1 \}\)\];/);
   // 열린 판 둘: 띠는 아직 만들지 않은 가장 작은 수 둘을 점선으로 연다
   assert.match(code, /open: round\.done \? \[\] : open,/);
-  assert.match(part('id="fourdigits-pad"', 'id="domino-pad"'), /점선 칸 둘이 지금 열린 수예요\./);
-  assert.match(part('id="fourdigits-pad"', 'id="domino-pad"'), /id="fourdigits-stop"[^>]*>여기까지 할래요</);
-  assert.match(part('id="fourdigits-pad"', 'id="domino-pad"'), /1부터 <strong id="fourdigits-run">0<\/strong>까지 차례로 만들었어요/);
+  assert.match(part('id="fourdigits-pad"', 'id="yesno-pad"'), /점선 칸 둘이 지금 열린 수예요\./);
+  assert.match(part('id="fourdigits-pad"', 'id="yesno-pad"'), /id="fourdigits-stop"[^>]*>여기까지 할래요</);
+  assert.match(part('id="fourdigits-pad"', 'id="yesno-pad"'), /1부터 <strong id="fourdigits-run">0<\/strong>까지 차례로 만들었어요/);
   // 가장 좋은 기록은 공책에 저절로 남는다(값은 이은 끝 수 그대로)
   assert.equal(fill(T.notebook.best, { k: 9 }), '1부터 9까지 차례로 만든 판');
   assert.match(code, /return run === 0 \? null : \{ value: run, name: fill\(T\.notebook\.best, \{ k: run \}\) \};/);
@@ -117,7 +117,7 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   }
   for (const key of ['run', 'same', 'made']) assert.match(T.rules[key], /1부터 차례로 어디까지/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 49);
+  assert.equal(guides.length, 50);
   const mine = guides[48];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^숫자 카드 넷을 골라요\./);
@@ -238,7 +238,7 @@ test('끝났을 때와 풀이, 직접 만들기의 말: 차례의 수와 분수�
   assert.match(T.make.farthest, /495가지 가운데 1부터 가장 멀리/);
   assert.match(code, /if \(best === FARTHEST\.best\) line = `\$\{line\} \$\{T\.make\.farthest\}`;/);
   assert.equal(fill(T.solution.run, { k: 9, n: 10 }), '1부터 9까지 수마다 한 가지 식이에요. 10에는 어떤 차례로도 닿지 않아요.');
-  const make = part('id="make-fourdigits"', '<script');
+  const make = part('id="make-fourdigits"', 'id="make-yesno"');
   for (const id of ['fourdigits-make-board', 'fourdigits-make-solve', 'fourdigits-make-result', 'fourdigits-make-play', 'fourdigits-make-picture', ...[0, 1, 2, 3].flatMap((at) => [`fourdigits-make-fewer-${at}`, `fourdigits-make-d${at}`, `fourdigits-make-more-${at}`])]) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="fourdigits-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(make, /id="fourdigits-make-play"[^>]*>내가 해 볼래요</);
@@ -253,16 +253,16 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 직접 �
   assert.match(part('id="fourdigits-title"', '</section>'), /<h2 id="fourdigits-title">숫자 넷으로 수 만들기<\/h2>/);
   assert.ok(visibleText(part('id="fourdigits-title"', '</section>')).includes(T.home.ask.three));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-fourdigits-make" class="menu-item"/);
-  assert.match(part('id="fourdigits-count"', 'id="fold-count"'), />남은 카드 <strong id="fourdigits-left">/);
+  assert.match(part('id="fourdigits-count"', 'id="yesno-count"'), />남은 카드 <strong id="fourdigits-left">/);
   // 셈 기호의 이름(더하기, 곱하기 같은 말)은 화면 파일에 적지 않고 대본에서 받는다
   assert.doesNotMatch(own, /더하기|빼기|곱하기|나누기/);
   // 카드는 번호 말 제자리 찾기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="slide-title"') < html.indexOf('id="fourdigits-title"'));
   assert.ok(html.indexOf('id="fourdigits-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 번호 말 제자리 찾기 다음)
-  assert.match(read('src/main.js'), /slide: createSlide\(frame\), fourdigits: createFourdigits\(frame\) \};/);
+  // 틀이 형식을 안다(번호 말 제자리 찾기 다음)
+  assert.match(read('src/main.js'), /slide: createSlide\(frame\), fourdigits: createFourdigits\(frame\), /);
   assert.match(read('src/check-main.js'), /\['fourdigits', '숫자 넷으로 수 만들기'\]/);
-  assert.match(read('src/core/smaller.js'), /slide: smallerSlide, fourdigits: smallerFourdigits \};/);
+  assert.match(read('src/core/smaller.js'), /slide: smallerSlide, fourdigits: smallerFourdigits, /);
   assert.match(code, /smaller: \(round, turn\) => smallerFourdigits\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

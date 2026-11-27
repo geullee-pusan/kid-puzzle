@@ -75,7 +75,7 @@ test('규칙은 세 문장 안이고, 번갈아 1부터 차례로 놓는 것, �
   assert.match(code, /ruleLine: \(\) => T\.rules\.game,/);
   // 직접 만들기의 안내 글도 세 문장 안이다(형식마다 하나, 이 형식이 맨 뒤). 나중에 두는 쪽이 이기는 판을 만들어 보라고 권한다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 49);
+  assert.equal(guides.length, 50);
   assert.ok(sentenceCount(guides[39]) <= 3, guides[39]);
   assert.match(guides[39], /^칸을 누르면 고른 것이 놓이거나 치워져요\./);
   assert.match(guides[39], /나중에 두는 쪽이 이기는 판도 만들 수 있을까요\?$/);

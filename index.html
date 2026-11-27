@@ -559,6 +559,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="yesno-title">
+            <h2 id="yesno-title">질문으로 맞히기</h2>
+            <div class="door-picture"><div id="home-yesno-sample"></div></div>
+            <p id="home-yesno-ask" class="door-ask">숨은 수를 물어서 맞힐 수 있을까요?</p>
+            <div class="door-foot">
+              <button id="home-yesno-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-yesno-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -725,6 +735,9 @@
               <li>
                 <button id="home-fourdigits-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-fourdigits-blank"></span></span><span class="menu-name">숫자 넷으로 수 만들기</span></button>
               </li>
+              <li>
+                <button id="home-yesno-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-yesno-blank"></span></span><span class="menu-name">질문으로 맞히기</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -860,6 +873,9 @@
           <!-- 번호 말 제자리 찾기: 맞바꾸기 판은 말마다 제자리로 가는 화살표를 그리는 도구, 밀기 판은 판을 한 줄로 읽은 수와 큰 수가 앞에 선 짝의 수를 판 아래에 적는 도구.
                무엇이 그대로인지는 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
           <button id="slide-tool" class="btn wide" type="button" aria-pressed="false" hidden>한 줄로 읽기</button>
+          <!-- 질문으로 맞히기: 지금 후보에서 남은 질문마다 가장 고르게 갈라도 남을 수 있는 많은 쪽의 수를 판 아래에 띠로 적는 도구(언제나 맞힐 수 있을까와 직접 만든 판).
+               무엇을 알려 주는지는 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
+          <button id="yesno-halves" class="btn wide" type="button" aria-pressed="false" hidden>반씩 나눠 보기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -1006,6 +1022,13 @@
             </div>
             <!-- 숫자 넷으로 수 만들기: 위에 목표 수 칸(또는 1부터의 띠), 가운데에 카드들, 아래에 셈 기호 단추 넷. 그림은 src/ui/fourdigits-board.js가 그린다 -->
             <div id="fourdigits-board" class="nf-board" hidden></div>
+            <!-- 질문으로 맞히기: 1부터 n까지의 수 칸(후보, 고른 수, 빠진 수. 미리 정하는 판은 수 아래에 질문마다의 표시 칸). 그 아래에 반씩 나눠 보기의 띠(도구를 켰을 때) -->
+            <div id="yesno-board" class="yn-board" hidden>
+              <div id="yesno-tiles"></div>
+              <div id="yesno-chain-box" class="yn-chain-box" hidden>
+                <div id="yesno-chain"></div>
+              </div>
+            </div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1219,6 +1242,15 @@
               <span id="fourdigits-status" class="tile-status" aria-live="polite"></span>
               <span class="block-numbers">
                 <span>남은 카드 <strong id="fourdigits-left">4</strong>장</span>
+              </span>
+            </span>
+            <!-- 질문으로 맞히기: 윗줄에 할 일이나 사실 한 줄(고른 수의 개수, 방금 들은 대답, 질문을 다 썼는지), 그 아래에 남은 후보, 물은 질문, 남은 질문의 수 -->
+            <span id="yesno-count" class="count tile-count block-count" hidden>
+              <span id="yesno-status" class="tile-status" aria-live="polite"></span>
+              <span class="block-numbers">
+                <span>남은 후보 <strong id="yesno-left">8</strong>개</span>
+                <span id="yesno-used-line">물은 질문 <strong id="yesno-used">0</strong>번</span>
+                <span id="yesno-rest-line">남은 질문 <strong id="yesno-rest">3</strong>번</span>
               </span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
@@ -2004,6 +2036,38 @@
               <h2 id="fourdigits-list-title">만든 식</h2>
               <ol id="fourdigits-list" class="nf-list"></ol>
               <button id="fourdigits-stop" class="btn huge" type="button" hidden>여기까지 할래요</button>
+            </div>
+          </div>
+          <!-- 질문으로 맞히기: 누르는 법. 몇 번이면 될까요는 먼저 질문 수(1~6)를 정한다. 하나씩 묻는 판은 고른 수의 개수와 묻기 단추, 물은 것의 목록.
+               미리 정하는 판은 질문마다의 단추(모양과 넣은 수)와 한꺼번에 묻기. 질문을 다 쓰고 둘 이상 남으면 다시 해 보기. 언제나 맞힐 수 있을까와 직접 만든 판에는 "불가능해요" 단추가 있다 -->
+          <div id="yesno-pad" class="pad" hidden>
+            <p id="yesno-how-ask" class="pad-note best-line">수를 눌러 고르고 물어요. 누른 채 끌면 여러 수를 한꺼번에 골라요.</p>
+            <p id="yesno-how-ahead" class="pad-note best-line" hidden>질문을 고르고 수를 눌러 넣어요. 다시 누르면 빠져요.</p>
+            <div id="yesno-pick-box" class="choices" hidden>
+              <h2>질문 몇 번이면 될까요?</h2>
+              <div id="yesno-limits" class="segment yn-limits"></div>
+              <button id="yesno-start" class="btn good huge" type="button" disabled>이 수로 해 볼래요</button>
+            </div>
+            <p id="yesno-limit-line" class="pad-note best-line" hidden>정한 질문 <strong id="yesno-limit">3</strong>번</p>
+            <div id="yesno-ask-box" class="choices">
+              <p class="pad-note best-line">고른 수 <strong id="yesno-picked">0</strong>개</p>
+              <button id="yesno-ask" class="btn primary huge" type="button" disabled>숨은 수가 이 안에 있나요?</button>
+              <button id="yesno-clear" class="btn wide" type="button" disabled>고른 것 지우기</button>
+            </div>
+            <div id="yesno-ahead-box" class="choices" hidden>
+              <h2>미리 정할 질문</h2>
+              <div id="yesno-tabs" class="yn-tabs"></div>
+              <button id="yesno-ask-all" class="btn primary huge" type="button">한꺼번에 물어보기</button>
+            </div>
+            <div id="yesno-out-box" class="choices" hidden>
+              <p id="yesno-out-line" class="pad-note best-line"></p>
+              <button id="yesno-again" class="btn huge" type="button">다시 해 보기</button>
+            </div>
+            <h2 id="yesno-list-title" hidden>물은 것</h2>
+            <ol id="yesno-list" class="yn-list"></ol>
+            <div id="yesno-maybe" class="choices" hidden>
+              <p class="pad-note">언제나 맞힐 수는 없는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
+              <button id="yesno-impossible" class="btn huge" type="button">불가능해요</button>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -4708,6 +4772,38 @@
             <button id="fourdigits-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
             <p id="fourdigits-make-result" class="make-result" aria-live="polite"></p>
             <button id="fourdigits-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-yesno" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>숨길 수: 1부터</h2>
+          <div class="stepper">
+            <button id="yesno-make-fewer" class="btn" type="button" aria-label="숨길 수의 끝 하나 줄이기">−</button>
+            <strong id="yesno-make-n"></strong>
+            <button id="yesno-make-more" class="btn" type="button" aria-label="숨길 수의 끝 하나 늘리기">＋</button>
+          </div>
+          <h2>질문 수</h2>
+          <div class="stepper">
+            <button id="yesno-make-fewer-q" class="btn" type="button" aria-label="질문 하나 줄이기">−</button>
+            <strong id="yesno-make-q"></strong>
+            <button id="yesno-make-more-q" class="btn" type="button" aria-label="질문 하나 늘리기">＋</button>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">숨길 수의 끝과 질문 수를 정해요. 선생님이 그 질문 수로 언제나 맞힐 수 있는지 따져 줘요. 질문 수마다 언제나 맞힐 수 있는 가장 큰 판을 찾을 수 있을까요?</p>
+          <div class="board-area"><div id="yesno-make-board" class="yn-board"></div></div>
+          <!-- 선생님이 그린 그림: 반씩 나눠 보기의 띠 -->
+          <div id="yesno-make-picture" class="yn-make-picture"></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="yesno-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="yesno-make-result" class="make-result" aria-live="polite"></p>
+            <button id="yesno-make-play" class="btn huge" type="button">내가 해 볼래요</button>
           </div>
         </section>
       </main>

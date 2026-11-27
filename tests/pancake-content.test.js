@@ -104,7 +104,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 첫 두
   assert.match(code, /const ruleKey = \(round\) => \(isBurnt\(round\.board\) \? \(isRecord\(round\) \? 'burnt-fewest' : 'burnt'\) : isRecord\(round\) \? 'fewest' : 'sort'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 49);
+  assert.equal(guides.length, 50);
   assert.ok(sentenceCount(guides[29]) <= 3, guides[29]);
   assert.match(guides[29], /가장 적게 뒤집어도 여러 번 걸리는 더미를 만들 수 있을까요\?$/);
 });
