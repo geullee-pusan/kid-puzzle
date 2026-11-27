@@ -35,7 +35,7 @@ import { checkFigure, fixesOf, isTidy, sideOf, solve as solveTrace } from '../sr
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Array.from({ length: 100 }, (_, index) => index + 1);
 const TURNS = [0, 1, 2, 3];
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole', 'tower', 'racetrack', 'discpair', 'tilings', 'fingers', 'signs', 'views', 'slide', 'fourdigits', 'yesno', 'degree', 'nopay', 'pig', 'seqgrid'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole', 'tower', 'racetrack', 'discpair', 'tilings', 'fingers', 'signs', 'views', 'slide', 'fourdigits', 'yesno', 'degree', 'nopay', 'pig', 'seqgrid', 'erase'];
 
 /** 사다리의 판마다(단계마다 판 번호 1~100) 일을 시킨다. */
 function eachBoard(ladder, visit) {

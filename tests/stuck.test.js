@@ -16,7 +16,7 @@ const C = JSON.parse(read('src/content/coins.json'));
 const html = read('index.html');
 const frame = read('src/main.js');
 const css = read('src/app.css').replace(/\/\*[\s\S]*?\*\//g, '');
-const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole', 'tower', 'racetrack', 'discpair', 'tilings', 'fingers', 'signs', 'views', 'slide', 'fourdigits', 'yesno', 'degree', 'nopay', 'pig', 'seqgrid'];
+const FORMATS = ['coins', 'trace', 'code', 'swap', 'tile', 'duel', 'tax', 'logic', 'block', 'river', 'cups', 'dandelion', 'maze', 'rulehunt', 'untangle', 'lamps', 'rooms', 'machine', 'split', 'eyeball', 'cutpaste', 'fold', 'domino', 'pieces', 'magic', 'apart', 'keymaze', 'cipher', 'seqpath', 'pancake', 'product', 'sim', 'matches', 'fair', 'rowflip', 'foxrabbit', 'pins', 'net', 'regionmap', 'blackhole', 'tower', 'racetrack', 'discpair', 'tilings', 'fingers', 'signs', 'views', 'slide', 'fourdigits', 'yesno', 'degree', 'nopay', 'pig', 'seqgrid', 'erase'];
 const scripts = FORMATS.map((name) => read(`src/content/${name}.json`));
 const part = (from, to) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
 const side = part('<section class="side" aria-label="힌트">', '</section>');

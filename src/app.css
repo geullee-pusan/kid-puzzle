@@ -19918,3 +19918,321 @@ button.sg-cell {
   width: 100%;
   height: 100%;
 }
+
+/* ---- 지우고 쓰기 예언: 쪽지 두 장과 칠판, 칠판에 붙은 수 카드 ----
+   색만으로 알리지 않는다. 고른 수는 아주 굵은 테두리와 위로 들린 모양, 방금 쓴 수는 점선 고리다.
+   접힌 쪽지는 모서리가 접힌 모양과 빗금, 연 쪽지는 흰 종이에 굵은 글자, 아직 비어 있는 내 쪽지는 점선 테두리다.
+   카드 한 변은 판 칸의 가로와 세로에 맞추고 104픽셀을 넘지 않는다(수가 스무 개여도 44픽셀보다 크다). 움직이는 그림은 없다. */
+.er-board.live {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+.er-notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.er-note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+  min-height: 76px;
+  padding: 6px 18px;
+  border: 3px solid #868e96;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.er-note-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.er-note-body {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+/* 접힌 쪽지: 빗금 종이에 오른쪽 위 모서리가 접힌 모양 */
+.er-note.shut {
+  background: repeating-linear-gradient(135deg, #fff3bf 0 10px, #ffe8a1 10px 16px);
+  border-color: #c08a1e;
+}
+
+.er-note.shut .er-note-body {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.er-note.shut::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  border-style: solid;
+  border-width: 0 26px 26px 0;
+  border-color: var(--panel) var(--panel) #c08a1e transparent;
+}
+
+.er-note.kid {
+  border-color: var(--accent);
+}
+
+.er-note.kid.empty {
+  border-style: dashed;
+}
+
+.er-note.kid.empty .er-note-body {
+  font-size: 20px;
+  font-weight: 700;
+  color: #495057;
+}
+
+.er-chalk {
+  --c: min(104px, calc((100cqw - 76px - (var(--cols) - 1) * 12px) / var(--cols)), calc((100cqh - 156px - (var(--rows) - 1) * 12px) / var(--rows)));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--c));
+  grid-template-rows: repeat(var(--rows), var(--c));
+  gap: 12px;
+  padding: 16px;
+  border: 10px solid #8d6e4a;
+  border-radius: 14px;
+  background: #2f5240;
+}
+
+.er-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--c);
+  height: var(--c);
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 3px solid #ced4da;
+  border-radius: 14px;
+  background: #fffdf5;
+  color: var(--ink);
+  font: inherit;
+  font-size: calc(var(--c) * 0.42);
+  font-weight: 800;
+  line-height: 1;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button.er-chip {
+  cursor: pointer;
+}
+
+.er-chip.picked {
+  border: 7px solid var(--gold);
+  background: #fff3bf;
+  transform: translateY(-6px);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35);
+}
+
+.er-chip.fresh {
+  outline: 4px dashed #ffe066;
+  outline-offset: 4px;
+}
+
+.er-chip:focus-visible {
+  outline: 4px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* 판 아래: 합 보기를 끄면 합의 줄은 자리만 두고 감춘다 */
+.er-off {
+  visibility: hidden;
+}
+
+.board-foot:has(> #erase-count:not([hidden])) {
+  justify-content: flex-end;
+}
+
+/* 내 쪽지에 적으려는 수, 숫자판 */
+.er-shown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin: 2px 0 6px;
+  border: 3px dashed var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.er-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.er-keys .key {
+  min-height: 52px;
+}
+
+/* 지우기와 적기(올리기)도 한 칸씩 쓴다 */
+.er-keys .key.word {
+  grid-column: span 1;
+}
+
+.er-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* 작은 그림(SVG): 처음 화면, 하던 판, 판 고르기, 만들기 목록, 공책, 풀이와 "왜 그럴까?" */
+.er-board.small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board-area > .er-board.small,
+.door-picture > .er-board.small {
+  align-self: stretch;
+  height: auto;
+}
+
+.er-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.er-art-frame {
+  fill: #8d6e4a;
+}
+
+.er-art-chalk {
+  fill: #2f5240;
+}
+
+.er-art-chip {
+  fill: #fffdf5;
+  stroke: #ced4da;
+  stroke-width: 3;
+}
+
+.er-art-mark {
+  fill: none;
+  stroke: #ffd43b;
+  stroke-width: 7;
+  stroke-dasharray: 14 8;
+}
+
+.er-art-corner {
+  fill: #ffd43b;
+}
+
+.er-art-ring {
+  fill: none;
+  stroke: #ffe066;
+  stroke-width: 6;
+  stroke-dasharray: 10 6;
+}
+
+.er-art-number {
+  fill: var(--ink);
+  font-weight: 800;
+}
+
+.resume .er-board.small,
+.level .er-board.small {
+  width: 130px;
+  height: 80px;
+}
+
+.menu-picture > .er-board {
+  height: 76px;
+}
+
+.resume.note-picture .er-board.small {
+  width: 100%;
+  height: 140px;
+}
+
+/* 풀이와 "왜 그럴까?"의 그림 카드 */
+.er-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 200px);
+}
+
+.er-card > .er-svg {
+  width: 100%;
+  max-height: 170px;
+}
+
+.er-card.big {
+  width: min(100%, 380px);
+}
+
+.er-card.big > .er-svg {
+  max-height: 320px;
+}
+
+.er-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.er-make-picture {
+  display: flex;
+  justify-content: center;
+}
+
+/* 직접 만들기: 왼쪽 칸이 숫자판까지 굴리지 않고 들어가게 조금 촘촘히 놓는다 */
+#make-erase .side,
+#make-erase .choices {
+  gap: 8px;
+}
+
+/* 숫자판은 한 줄에 넷씩 세 줄로 놓는다 */
+#make-erase .er-keys {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#make-erase .er-keys .key {
+  min-height: 48px;
+  padding: 0;
+}
+
+#make-erase .er-keys .key.word {
+  font-size: 18px;
+}
+
+#make-erase .er-shown {
+  min-height: 48px;
+  margin: 0;
+  font-size: 28px;
+}
+
+#erase-make-board {
+  width: 100%;
+  height: 100%;
+}

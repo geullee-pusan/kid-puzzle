@@ -92,6 +92,8 @@ import { smallBoards as smallPigBoards } from './pig-ladder.js';
 import { checkBoard as checkPig } from './pig.js';
 import { smallBoards as smallSeqgridBoards } from './seqgrid-ladder.js';
 import { checkBoard as checkSeqgrid } from './seqgrid.js';
+import { smallBoards as smallEraseBoards, solveOnce as solveErase } from './erase-ladder.js';
+import { checkBoard as checkErase } from './erase.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1163,5 +1165,17 @@ export function smallerSeqgrid(origin, turn = 0) {
   if (!origin.board || checkSeqgrid(origin.board) !== null) return null;
   return wrap(pickByTurn(smallSeqgridBoards(origin), true, turn));
 }
+// ---- 지우고 쓰기 예언: 같은 규칙과 같은 물음의 수가 적은 칠판 ----
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree, nopay: smallerNopay, pig: smallerPig, seqgrid: smallerSeqgrid };
+/**
+ * 수가 하나나 둘 적은 칠판(긴 칠판과 수가 여덟 이상인 칠판은 수가 다섯이나 여섯인 칠판)을 낸다(src/core/erase-ladder.js의 smallBoards).
+ * 0을 남길 수 있을까에서 남길 수 있는 칠판이면 남길 수 있는 칠판만, 남길 수 없는 칠판(합이 홀수)이면 남길 수 있는 칠판부터 합이 홀수인 칠판과 번갈아 낸다.
+ * 수가 셋 이하인 칠판에는 더 작은 판이 없다(수가 둘이면 한 번에 끝난다).
+ */
+export function smallerErase(origin, turn = 0) {
+  if (!origin.board || checkErase(origin.board) !== null) return null;
+  const possible = origin.mode !== 'zero' || solveErase(origin.board).zero === true;
+  return wrap(pickByTurn(smallEraseBoards(origin), possible, turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree, nopay: smallerNopay, pig: smallerPig, seqgrid: smallerSeqgrid, erase: smallerErase };

@@ -49,8 +49,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="seqgrid-pad"', 'id="domino-pad"');
-const own = [part('id="seqgrid-title"', 'id="make-title"'), part('id="seqgrid-count"', 'id="fold-count"'), pad, part('id="make-seqgrid"', '<script')].map(visibleText).join(' ');
+const pad = part('id="seqgrid-pad"', '지우고 쓰기 예언: 지우는 법');
+const own = [part('id="seqgrid-title"', 'id="erase-title"'), part('id="seqgrid-count"', 'id="erase-count"'), pad, part('id="make-seqgrid"', 'id="make-erase"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 const lastWhy = `why[${T.why.length - 1}]`;
@@ -119,7 +119,7 @@ test('규칙 설명은 세 문장 안이다. 검은 칸이 있는 판은 검은 
   assert.match(code, /const hintKey = \(round\) => \(round\.board\.black\.length > 0 \? 'black' : 'plain'\);/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[hintKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 54);
+  assert.equal(guides.length, 55);
   const mine = guides[53];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /1부터 99까지의 수로 채우는 방법을 세어 봐요\./);
@@ -238,7 +238,7 @@ test('풀이와 직접 만들기: 답이 없는지, 하나뿐인지, 여럿인�
   assert.equal(T.make.one, '1부터 99까지의 수로 채우는 방법은 한 가지뿐이에요.');
   assert.equal(fill(T.make.count, { n: 6 }), '적힌 수는 6개예요.');
   assert.equal(fill(T.make.fewest, { n: 5 }), '이 크기에서 지금까지 가장 적게 적은 것은 5개예요.');
-  const make = part('id="make-seqgrid"', '<script');
+  const make = part('id="make-seqgrid"', 'id="make-erase"');
   for (const id of ['seqgrid-make-fewer', 'seqgrid-make-n', 'seqgrid-make-more', 'seqgrid-make-clear', 'seqgrid-make-black', 'seqgrid-make-shown', 'seqgrid-make-keys', 'seqgrid-make-board', 'seqgrid-make-solve', 'seqgrid-make-result', 'seqgrid-make-play', 'seqgrid-make-picture']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="seqgrid-make-solve"[^>]*>선생님, 답이 몇 가지예요\?</);
   assert.match(make, /id="seqgrid-make-play"[^>]*>내가 해 볼래요</);
@@ -269,10 +269,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 숫자판, 직접 만�
   // 카드는 돼지 주사위 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="pig-title"') < html.indexOf('id="seqgrid-title"'));
   assert.ok(html.indexOf('id="seqgrid-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 돼지 주사위 다음)
-  assert.match(read('src/main.js'), /pig: createPig\(frame\), seqgrid: createSeqgrid\(frame\) \};/);
+  // 틀이 형식을 안다(돼지 주사위 다음)
+  assert.match(read('src/main.js'), /pig: createPig\(frame\), seqgrid: createSeqgrid\(frame\), /);
   assert.match(read('src/check-main.js'), /\['seqgrid', '가로세로 수열 퍼즐'\]/);
-  assert.match(read('src/core/smaller.js'), /pig: smallerPig, seqgrid: smallerSeqgrid \};/);
+  assert.match(read('src/core/smaller.js'), /pig: smallerPig, seqgrid: smallerSeqgrid, /);
   assert.match(code, /smaller: \(round, turn\) => smallerSeqgrid\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   // 무르기와 되돌리기가 있다. 5×5 판은 위아래로 커서 규칙 글은 왼쪽 칸에 둔다

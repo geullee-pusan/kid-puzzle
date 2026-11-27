@@ -84,7 +84,7 @@ test('규칙은 세 문장 안이고, 치면 친 손가락 수만큼 늘어나�
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleOf\(round\.board\)\], \{ n: round\.board\.limit \}\),/);
   // 직접 만들기의 안내 글도 세 문장 안이다(형식마다 하나, 이 형식이 맨 뒤). 나중에 치는 쪽이 이기는 판을 만들어 보라고 권한다
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 54);
+  assert.equal(guides.length, 55);
   const mine = guides[44];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^빠지는 수와 규칙을 정하고, 손을 눌러 손가락을 펴요\./);

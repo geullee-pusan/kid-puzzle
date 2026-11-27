@@ -112,7 +112,7 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   for (const [key, rule] of Object.entries(T.rules)) assert.ok(sentenceCount(fill(rule, VALUES)) <= 3, key);
   assert.equal(fill(T.rules.see, { face: '앞' }), '쌓기나무를 쌓았어요. 끌거나 아래 단추를 누르면 돌아가요. 앞에서 본 그림은 어느 것일까요?');
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 54);
+  assert.equal(guides.length, 55);
   const mine = guides[46];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^칸을 눌러 쌓기나무를 쌓아요\./);
