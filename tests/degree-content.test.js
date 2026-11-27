@@ -50,8 +50,8 @@ const part = (from, to) => {
   const at = html.lastIndexOf('<', html.indexOf(from));
   return html.slice(at, html.lastIndexOf('<', html.indexOf(to, html.indexOf(from))));
 };
-const pad = part('id="degree-pad"', 'id="domino-pad"');
-const own = [part('id="degree-title"', 'id="make-title"'), part('id="degree-count"', 'id="fold-count"'), part('id="degree-ends-tool"', 'id="why"'), pad, part('id="make-degree"', '<script')].map(visibleText).join(' ');
+const pad = part('id="degree-pad"', 'id="nopay-pad"');
+const own = [part('id="degree-title"', 'id="nopay-title"'), part('id="degree-count"', 'id="nopay-count"'), part('id="degree-ends-tool"', 'id="nopay-rows"'), pad, part('id="make-degree"', 'id="make-nopay"')].map(visibleText).join(' ');
 const sentences = (text) => text.split(/(?<=[.?!])\s+/);
 const said = strings.map(([, text]) => text).join(' ');
 
@@ -118,7 +118,7 @@ test('규칙 설명은 세 문장 안이고, 선은 두 점 사이에 하나뿐�
   assert.match(T.rules.three, /세 개씩/);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[ruleKey\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 51);
+  assert.equal(guides.length, 52);
   const mine = guides[50];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^점을 눌러 고르고 그 점의 수를 정해요\./);
@@ -233,7 +233,7 @@ test('끝났을 때와 풀이, 직접 만들기의 말', () => {
   assert.equal(fill(T.right.done, { n: 6 }), '모든 점을 수만큼 이었어요. 그은 선은 6개예요.');
   assert.equal(fill(T.cases.ways, { f: '가', k: 3, n: 1 }), '가 점은 선 3개를 더 이어야 해요. 잇는 방법은 1가지예요.');
   assert.equal(fill(T.solution.stuck, { f: '다', k: 2, n: 1 }), '다 점은 선 2개가 더 있어야 하는데 이을 점이 1개예요');
-  const make = part('id="make-degree"', '<script');
+  const make = part('id="make-degree"', 'id="make-nopay"');
   for (const id of ['degree-make-fewer', 'degree-make-n', 'degree-make-more', 'degree-make-which', 'degree-make-less', 'degree-make-k', 'degree-make-plus', 'degree-make-board', 'degree-make-solve', 'degree-make-result', 'degree-make-play']) assert.ok(make.includes(`id="${id}"`), id);
   assert.match(make, /id="degree-make-solve"[^>]*>선생님, 풀어 보세요</);
   assert.match(make, /id="degree-make-play"[^>]*>내가 해 볼래요</);
@@ -249,7 +249,7 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   assert.ok(visibleText(part('id="degree-title"', '</section>')).includes(T.home.ask.three));
   assert.match(part('id="make-menu"', 'id="picker"'), /id="home-degree-make" class="menu-item"/);
   assert.match(pad, /id="degree-impossible"[^>]*>불가능해요</);
-  assert.match(part('id="degree-count"', 'id="fold-count"'), />그은 선 <strong id="degree-lines">/);
+  assert.match(part('id="degree-count"', 'id="nopay-count"'), />그은 선 <strong id="degree-lines">/);
   // 도구는 왼쪽 칸의 "왜 그럴까?" 바로 위에 있다
   const side = part('<section class="side" aria-label="힌트">', '</section>');
   assert.ok(side.indexOf('id="yesno-halves"') < side.indexOf('id="degree-ends-tool"'));
@@ -257,10 +257,10 @@ test('index.html: 이 형식의 카드, 판, 판 아래, 오른쪽 칸, 도구, 
   // 카드는 질문으로 맞히기 다음, 퍼즐 만들기 앞이다
   assert.ok(html.indexOf('id="yesno-title"') < html.indexOf('id="degree-title"'));
   assert.ok(html.indexOf('id="degree-title"') < html.indexOf('id="make-title"'));
-  // 틀이 형식을 안다(형식 목록의 맨 뒤, 질문으로 맞히기 다음)
-  assert.match(read('src/main.js'), /yesno: createYesno\(frame\), degree: createDegree\(frame\) \};/);
+  // 틀이 형식을 안다(질문으로 맞히기 다음)
+  assert.match(read('src/main.js'), /yesno: createYesno\(frame\), degree: createDegree\(frame\), /);
   assert.match(read('src/check-main.js'), /\['degree', '조건 맞춰 잇기'\]/);
-  assert.match(read('src/core/smaller.js'), /yesno: smallerYesno, degree: smallerDegree \};/);
+  assert.match(read('src/core/smaller.js'), /yesno: smallerYesno, degree: smallerDegree, /);
   assert.match(code, /smaller: \(round, turn\) => smallerDegree\(\{ mode: round\.mode, board: round\.board \}, turn\),/);
   assert.doesNotMatch(code, /log\.allRecords\(\)/);
   assert.match(code, /\$\('undo'\)\.hidden = false;\s*\$\('reset'\)\.hidden = false;/);

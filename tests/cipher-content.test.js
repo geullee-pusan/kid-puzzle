@@ -123,7 +123,7 @@ test('규칙 설명은 세 문장 안이다. 판의 종류마다 있다. 직접 
   assert.match(T.rules.added, /14를 넘으면 14를 빼서 앞으로 돌아가요\./);
   assert.match(code, /ruleLine: \(round\) => T\.rules\[keyOf\(round\)\],/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 51);
+  assert.equal(guides.length, 52);
   assert.ok(sentenceCount(guides[27]) <= 3, guides[27]);
   assert.match(guides[27], /자주 나오는 글자로는 열쇠를 찾을 수 없는 편지도 쓸 수 있을까요\?$/);
 });

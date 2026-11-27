@@ -125,7 +125,7 @@ test('규칙 설명은 세 문장 안이고, 컴퓨터가 후보가 많이 남�
   assert.match(T.rules.ahead, /질문 \{k\}개를 미리 정해 두면/);
   assert.match(code, /ruleLine: \(round\) => fill\(T\.rules\[ruleKey\(round\)\], \{ n: round\.board\.n, k: round\.board\.q \?\? 0 \}\),/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 51);
+  assert.equal(guides.length, 52);
   const mine = guides[49];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^숨길 수의 끝과 질문 수를 정해요\./);

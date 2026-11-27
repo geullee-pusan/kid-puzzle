@@ -579,6 +579,16 @@
             </div>
           </section>
 
+          <section class="panel door" aria-labelledby="nopay-title">
+            <h2 id="nopay-title">낼 수 없는 금액</h2>
+            <div class="door-picture"><div id="home-nopay-sample"></div></div>
+            <p id="home-nopay-ask" class="door-ask">낼 수 없는 금액을 모두 찾아볼까요?</p>
+            <div class="door-foot">
+              <button id="home-nopay-play" class="btn primary" type="button">해 보기</button>
+              <button id="home-nopay-pick" class="btn" type="button">판 고르기</button>
+            </div>
+          </section>
+
           <!-- 퍼즐 만들기: 맨 뒤에 둔다. 단추 하나를 누르면 어느 형식으로 만들지 고르는 목록이 나온다 -->
           <section class="panel door door-make" aria-labelledby="make-title">
             <h2 id="make-title">퍼즐 만들기</h2>
@@ -751,6 +761,9 @@
               <li>
                 <button id="home-degree-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-degree-blank"></span></span><span class="menu-name">조건 맞춰 잇기</span></button>
               </li>
+              <li>
+                <button id="home-nopay-make" class="menu-item" type="button"><span class="menu-picture"><span id="home-nopay-blank"></span></span><span class="menu-name">낼 수 없는 금액</span></button>
+              </li>
             </ul>
           </div>
         </section>
@@ -894,6 +907,8 @@
                무엇을 알려 주는지는 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
           <button id="degree-ends-tool" class="btn wide" type="button" aria-pressed="false" hidden>선 끝 세기</button>
           <button id="degree-cases-tool" class="btn wide" type="button" aria-pressed="false" hidden>모든 경우 펼쳐 보기</button>
+          <!-- 낼 수 없는 금액: 띠를 가장 작은 동전의 값만큼씩 한 줄로 다시 놓는 도구. 무엇이 보이는지는 말하지 않는다. 처음 켜면 힌트 하나로 센다. 글은 대본에서 받는다 -->
+          <button id="nopay-rows" class="btn wide" type="button" aria-pressed="false" hidden>줄 맞추기</button>
           <button id="why" class="btn wide" type="button" hidden>왜 그럴까?</button>
         </section>
 
@@ -1049,6 +1064,16 @@
             </div>
             <!-- 조건 맞춰 잇기: 동그라미 위의 점(점마다 적힌 수, 둘레의 작은 동그라미가 지금 선의 수, 바깥에 이름)과 점 사이의 선. 그림은 src/ui/degree-board.js가 그린다 -->
             <div id="degree-board" class="dg-board" hidden></div>
+            <!-- 낼 수 없는 금액: 위에 동전(누르면 담긴다), 그 아래에 담은 동전과 "○원 낼 수 있어요"(담은 동전의 합. 누르면 띠에 칠한다), 맨 아래에 금액 띠.
+                 동전과 담은 동전, 띠는 src/ui/nopay-board.js가 그리고, 단추의 글은 대본에서 받는다 -->
+            <div id="nopay-board" class="np-board" hidden>
+              <div id="nopay-coins" class="np-coin-box"></div>
+              <div class="np-tray-line">
+                <div id="nopay-tray" class="np-tray" aria-label="담은 동전"></div>
+                <button id="nopay-pay" class="btn good" type="button" disabled>이 금액 낼 수 있어요</button>
+              </div>
+              <div id="nopay-strip" class="np-strip-box"></div>
+            </div>
           </div>
           <div class="board-foot">
             <!-- 조각 가짓수 찾기: 할 일 한 줄. 겹쳐 보는 동안에는 "한 번 더 보기"와 "모눈으로". 찾은 수와 올려놓은 수는 적지 않는다 -->
@@ -1281,6 +1306,10 @@
                 <span>수만큼 이은 점 <strong id="degree-full">0</strong>개 / <strong id="degree-points">4</strong>개</span>
                 <span id="degree-ends-line" hidden>선의 끝 <strong id="degree-ends">0</strong>개 · 수의 합 <strong id="degree-sum">12</strong></span>
               </span>
+            </span>
+            <!-- 낼 수 없는 금액: 할 일이나 사실 한 줄(담은 동전의 합, 방금 칠하거나 고른 금액). 띠가 길어서 수를 적는 줄은 두지 않는다(고른 금액의 수는 오른쪽 칸에) -->
+            <span id="nopay-count" class="count tile-count block-count" hidden>
+              <span id="nopay-status" class="tile-status" aria-live="polite"></span>
             </span>
             <!-- 접히는 모양 가리기: 할 일 한 줄과 "펼치기"(또는 "다시 접기", 주사위는 "떼어 보기"와 "다시 쌓기"). 몇 번 돌려 보았는지는 적지 않는다 -->
             <!-- 도미노 가로세로: 윗줄에 누구 차례인지(선생님이 방금 놓았는지, 누가 놓을 곳이 없는지), 그 아래에 놓은 도미노와 남은 빈칸의 수 -->
@@ -2109,6 +2138,42 @@
             <div id="degree-maybe" class="choices" hidden>
               <p class="pad-note">어떻게 해도 이을 수 없는 판 같으면 ‘불가능해요’ 단추를 눌러요.</p>
               <button id="degree-impossible" class="btn huge" type="button">불가능해요</button>
+            </div>
+          </div>
+          <!-- 낼 수 없는 금액: 모두 찾기는 누르는 법과 "다 골랐어요", 어디부터와 끝이 있을까는 자물쇠와 숫자판, 끝이 있을까(4·5단계와 직접 만든 판)는 "끝이 없어요".
+               자물쇠가 있는 판은 칸이 길어서 누르는 법을 적지 않는다(1·2단계에서 먼저 본다) -->
+          <div id="nopay-pad" class="pad" hidden>
+            <div id="nopay-all-box" class="choices" hidden>
+              <p class="pad-note">동전을 누르면 담기고, 담은 동전을 누르면 하나 빠져요. 칠한 금액을 누르면 그때 담은 동전이 다시 담겨요.</p>
+              <p class="pad-note">띠에서 낼 수 없을 것 같은 금액을 눌러 골라요. 다시 누르면 고르기를 그만둬요.</p>
+              <p class="pad-note best-line">못 낸다고 고른 금액 <strong id="nopay-marked">0</strong>개</p>
+              <button id="nopay-submit" class="btn good huge" type="button" disabled>다 골랐어요</button>
+            </div>
+            <div id="nopay-lock-box" class="choices" hidden>
+              <div class="tl-lock-line">
+                <span id="nopay-lock" class="tl-lock np-lock" aria-hidden="true"><svg class="tl-lock-svg" viewBox="0 0 60 72"><path class="tl-shackle np-shackle-shut" d="M16,34 V22 a14,14 0 0 1 28,0 V34"></path><path class="tl-shackle np-shackle-open" d="M16,34 V14 a14,14 0 0 1 28,0 V20"></path><rect class="tl-lock-body" x="6" y="32" width="48" height="36" rx="8"></rect><circle class="tl-keyhole" cx="30" cy="48" r="5"></circle></svg></span>
+                <h2 id="nopay-ask">몇 원부터일까요?</h2>
+                <strong id="nopay-typed" class="answer-box" aria-live="polite"></strong>
+              </div>
+              <p class="pad-note">그 금액부터 모두 낼 수 있는 가장 작은 금액을 넣어요. 몇 번이든 다시 넣어도 돼요.</p>
+              <div id="nopay-keys" class="keys tl-keys">
+                <button class="btn key" type="button" data-n="1">1</button>
+                <button class="btn key" type="button" data-n="2">2</button>
+                <button class="btn key" type="button" data-n="3">3</button>
+                <button class="btn key" type="button" data-n="4">4</button>
+                <button class="btn key" type="button" data-n="5">5</button>
+                <button class="btn key" type="button" data-n="6">6</button>
+                <button class="btn key" type="button" data-n="7">7</button>
+                <button class="btn key" type="button" data-n="8">8</button>
+                <button class="btn key" type="button" data-n="9">9</button>
+                <button class="btn key" type="button" data-n="0">0</button>
+                <button class="btn key word" type="button" data-n="erase">지우기</button>
+              </div>
+              <button id="nopay-open" class="btn good huge" type="button" disabled>열어 보기</button>
+            </div>
+            <div id="nopay-maybe" class="choices" hidden>
+              <p class="pad-note">낼 수 없는 금액이 끝없이 나올 것 같으면 눌러요.</p>
+              <button id="nopay-endless" class="btn huge" type="button">끝이 없어요</button>
             </div>
           </div>
           <!-- 접히는 모양 가리기: 판의 종류마다 상자 하나를 보인다. 모양 하나는 돼요·안 돼요, 여럿 고르기는 "접어 보기", 맞은편은 누르는 법,
@@ -4876,6 +4941,55 @@
             <button id="degree-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
             <p id="degree-make-result" class="make-result" aria-live="polite"></p>
             <button id="degree-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+          </div>
+        </section>
+      </main>
+
+      <main id="make-nopay" class="play-grid make-grid" hidden>
+        <section class="side options" aria-label="판 정하기">
+          <h2>동전 가짓수</h2>
+          <div class="stepper">
+            <button id="nopay-make-fewer" class="btn" type="button" aria-label="동전 한 가지 줄이기">−</button>
+            <strong id="nopay-make-n"></strong>
+            <button id="nopay-make-more" class="btn" type="button" aria-label="동전 한 가지 늘리기">＋</button>
+          </div>
+          <div id="nopay-make-row0">
+            <h2>첫째 동전</h2>
+            <div class="stepper">
+              <button id="nopay-make-c0-less" class="btn" type="button" aria-label="첫째 동전 값 줄이기">−</button>
+              <strong id="nopay-make-c0"></strong>
+              <button id="nopay-make-c0-more" class="btn" type="button" aria-label="첫째 동전 값 늘리기">＋</button>
+            </div>
+          </div>
+          <div id="nopay-make-row1">
+            <h2>둘째 동전</h2>
+            <div class="stepper">
+              <button id="nopay-make-c1-less" class="btn" type="button" aria-label="둘째 동전 값 줄이기">−</button>
+              <strong id="nopay-make-c1"></strong>
+              <button id="nopay-make-c1-more" class="btn" type="button" aria-label="둘째 동전 값 늘리기">＋</button>
+            </div>
+          </div>
+          <div id="nopay-make-row2" hidden>
+            <h2>셋째 동전</h2>
+            <div class="stepper">
+              <button id="nopay-make-c2-less" class="btn" type="button" aria-label="셋째 동전 값 줄이기">−</button>
+              <strong id="nopay-make-c2"></strong>
+              <button id="nopay-make-c2-more" class="btn" type="button" aria-label="셋째 동전 값 늘리기">＋</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table" aria-label="만드는 판">
+          <p class="rule">동전 두세 가지의 값을 정해요. 선생님이 낼 수 없는 가장 큰 금액과 그런 금액이 몇 개인지 따져 줘요. 낼 수 없는 금액이 아주 많은 동전을 만들 수 있을까요?</p>
+          <div class="board-area"><div id="nopay-make-board" class="np-make-coins"></div></div>
+        </section>
+
+        <section class="answer" aria-label="확인하기">
+          <div class="choices">
+            <button id="nopay-make-solve" class="btn primary huge" type="button">선생님, 풀어 보세요</button>
+            <p id="nopay-make-result" class="make-result" aria-live="polite"></p>
+            <button id="nopay-make-play" class="btn huge" type="button">내가 해 볼래요</button>
+            <div id="nopay-make-picture" class="np-make-picture"></div>
           </div>
         </section>
       </main>

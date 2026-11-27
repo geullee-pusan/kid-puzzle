@@ -85,6 +85,7 @@ function drawCounts() {
     ['fourdigits', '숫자 넷으로 수 만들기'],
     ['yesno', '질문으로 맞히기'],
     ['degree', '조건 맞춰 잇기'],
+    ['nopay', '낼 수 없는 금액'],
   ]) {
     const advice = recommend(log.allRecords(), format);
     rows.push(

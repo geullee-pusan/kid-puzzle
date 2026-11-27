@@ -18612,3 +18612,424 @@ button.yn-tile:focus-visible,
   width: 100%;
   height: 120px;
 }
+
+/* ---- 낼 수 없는 금액: 동전(누르면 담긴다), 담은 동전과 합, 금액 띠, 종이의 그림과 표 ----
+   색만으로 알리지 않는다. 칠한 금액은 금빛 바탕에 동전 고리(동그라미 테두리)를, 못 낸다고 고른 금액은 굵은 테두리와 빗금을,
+   선생님이 짚은 금액과 잇달아 낸 금액은 점선 고리를 두른다. 띠의 칸은 1180×820 화면의 가장 큰 띠(40칸)에서도 가로세로 44픽셀보다 크다. */
+.np-board {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.board-area > .np-board {
+  align-self: stretch;
+  height: auto;
+  overflow: auto;
+}
+
+.np-coins {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+
+.np-coin {
+  display: inline-flex;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+}
+
+button.np-coin {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.np-coin:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.np-coin:focus-visible,
+button.np-chip:focus-visible,
+button.np-cell:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.np-coin-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.np-coin-rim {
+  fill: #f2c94c;
+  stroke: #8a6d00;
+  stroke-width: 4;
+}
+
+.np-coin-face {
+  fill: #ffe58a;
+  stroke: #b08900;
+  stroke-width: 3;
+  stroke-dasharray: 5 4;
+}
+
+.np-coin-value {
+  fill: var(--ink);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.np-coin-unit {
+  fill: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.np-coins.small {
+  gap: 6px;
+}
+
+.np-coins.small .np-coin {
+  width: 30px;
+  height: 30px;
+}
+
+.np-tray-line {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+/* 단추는 좁게 두 줄로 써서 담은 동전 세 가지가 한 줄에 들어가게 한다 */
+.np-tray-line .btn {
+  flex: none;
+  width: 150px;
+  min-height: 56px;
+  padding: 4px 10px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.np-tray {
+  flex: 1;
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 2px dashed #adb5bd;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.np-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 46px;
+  padding: 1px 8px 1px 2px;
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+button.np-chip {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.np-chip .np-coin-svg {
+  width: 38px;
+  height: 38px;
+}
+
+.np-strip-box {
+  width: 100%;
+}
+
+.np-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 60px));
+  justify-content: center;
+  gap: 4px;
+}
+
+/* 줄로 나눠 놓기: 가로줄이 가장 작은 동전의 값만큼. 1, 2, 3이 첫 세로줄이고 위에서 아래로, 왼쪽에서 오른쪽으로 놓인다 */
+.np-strip.by-rows {
+  grid-template-columns: repeat(var(--cols), minmax(0, 60px));
+  grid-template-rows: repeat(var(--rows), auto);
+  grid-auto-flow: column;
+}
+
+.np-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0;
+  border: 2px solid #adb5bd;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+button.np-cell {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.np-cell-no {
+  position: relative;
+}
+
+/* 칠한 금액: 금빛 바탕과 동전 고리 */
+.np-cell.paid {
+  border-color: #8a6d00;
+  background: #ffe58a;
+}
+
+.np-cell.paid::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  margin: auto;
+  width: min(38px, 80%);
+  aspect-ratio: 1;
+  border: 3px solid #b08900;
+  border-radius: 50%;
+}
+
+/* 못 낸다고 고른 금액: 굵은 테두리와 빗금 */
+.np-cell.marked {
+  border: 4px solid var(--ink);
+  background: repeating-linear-gradient(135deg, #ffe3e3 0 6px, #ffffff 6px 12px);
+}
+
+.np-cell.pointed {
+  outline: 4px dashed var(--accent);
+  outline-offset: 2px;
+}
+
+.np-strip.small {
+  gap: 2px;
+  grid-template-columns: repeat(var(--cols), minmax(0, 26px));
+}
+
+.np-strip.small .np-cell {
+  min-height: 18px;
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.np-strip.small .np-cell.marked {
+  border-width: 2px;
+}
+
+.np-strip.small .np-cell.paid::before {
+  inset: 1px;
+  border-width: 1.5px;
+}
+
+.np-strip.small .np-cell.pointed {
+  outline-width: 2px;
+  outline-offset: 0;
+}
+
+.np-sample {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.np-sample .np-coins.small {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.np-sample .np-coins.small .np-coin {
+  width: 26px;
+  height: 26px;
+}
+
+/* 작은 그림(처음 화면, 판 고르기, 만들기 목록, 하던 판 띠)에는 띠의 첫 줄만 보인다. 공책의 쪽에는 띠를 모두 그린다 */
+.np-sample .np-cell:nth-child(n + 9) {
+  display: none;
+}
+
+.note-picture .np-sample {
+  flex-direction: column;
+}
+
+.note-picture .np-sample .np-cell:nth-child(n + 9) {
+  display: flex;
+}
+
+/* 오른쪽 칸의 자물쇠 */
+.np-lock .np-shackle-open,
+.np-lock.open .np-shackle-shut {
+  display: none;
+}
+
+.np-lock.open .np-shackle-open {
+  display: inline;
+}
+
+/* 종이의 그림: 띠와 표 */
+.np-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 360px);
+}
+
+.np-card.big {
+  width: min(100%, 560px);
+}
+
+.np-card-picture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.np-card .np-strip.small {
+  grid-template-columns: repeat(var(--cols), minmax(0, 34px));
+}
+
+.np-card .np-strip.small .np-cell {
+  min-height: 28px;
+  font-size: 18px;
+}
+
+.np-card.big .np-coins.small .np-coin {
+  width: 44px;
+  height: 44px;
+}
+
+.np-card.big .np-strip .np-cell {
+  min-height: 40px;
+  font-size: 18px;
+}
+
+.np-card .strip-note {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.np-table {
+  border-collapse: collapse;
+  font-size: 18px;
+}
+
+.np-table th,
+.np-table td {
+  padding: 4px 10px;
+  white-space: nowrap;
+  border: 2px solid var(--line);
+  text-align: center;
+}
+
+.np-table th {
+  background: #f1f3f5;
+}
+
+/* 직접 만들기 */
+.np-make-coins .np-coins {
+  gap: 28px;
+}
+
+.np-make-coins .np-coin {
+  width: 96px;
+  height: 96px;
+}
+
+.np-make-picture {
+  display: flex;
+  justify-content: center;
+}
+
+/* 판 고르기, 만들기 목록, 하던 판 띠의 작은 그림: 칸의 수는 감춘다 */
+.resume .np-sample .np-strip.small,
+.level .np-sample .np-strip.small,
+.menu-picture .np-strip.small {
+  grid-template-columns: repeat(var(--cols), minmax(0, 12px));
+  gap: 1px;
+}
+
+.resume .np-sample .np-cell,
+.level .np-sample .np-cell,
+.menu-picture .np-cell {
+  min-height: 0;
+  height: 12px;
+  font-size: 0;
+}
+
+.resume .np-sample .np-coin,
+.level .np-sample .np-coin,
+.menu-picture .np-coin {
+  width: 18px;
+  height: 18px;
+}
+
+.resume.note-picture .np-sample .np-strip.small {
+  grid-template-columns: repeat(var(--cols), minmax(0, 30px));
+  gap: 2px;
+}
+
+.resume.note-picture .np-sample .np-cell {
+  height: auto;
+  min-height: 24px;
+  font-size: 18px;
+}
+
+.resume.note-picture .np-sample .np-coin {
+  width: 30px;
+  height: 30px;
+}
+
+/* 낼 수 없는 금액의 오른쪽 칸: 자물쇠, 묻는 말, 넣은 수가 한 줄이다. 숫자판과 "끝이 없어요"까지 굴리지 않고 보이게 조금 줄인다 */
+#nopay-pad .tl-lock-line h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+#nopay-pad .answer-box {
+  min-width: 80px;
+  height: 52px;
+  margin-left: auto;
+}
+
+#nopay-pad .tl-keys .key {
+  min-height: 48px;
+}

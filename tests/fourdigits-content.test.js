@@ -117,7 +117,7 @@ test('규칙 설명은 세 문장 안이다. 직접 만들기의 안내 글도 �
   }
   for (const key of ['run', 'same', 'made']) assert.match(T.rules[key], /1부터 차례로 어디까지/);
   const guides = [...html.matchAll(/<p class="rule">([^<]+)<\/p>/g)].map((match) => match[1]);
-  assert.equal(guides.length, 51);
+  assert.equal(guides.length, 52);
   const mine = guides[48];
   assert.ok(sentenceCount(mine) <= 3, mine);
   assert.match(mine, /^숫자 카드 넷을 골라요\./);

@@ -86,6 +86,8 @@ import { possibleOf as possibleYesno, smallBoards as smallYesnoBoards } from './
 import { checkBoard as checkYesno } from './yesno.js';
 import { possibleOf as possibleDegree, smallBoards as smallDegreeBoards } from './degree-ladder.js';
 import { checkBoard as checkDegree } from './degree.js';
+import { possibleOf as possibleNopay, smallBoards as smallNopayBoards } from './nopay-ladder.js';
+import { checkBoard as checkNopay } from './nopay.js';
 import { checkBoard as checkSplit, solve as solveSplit } from './split.js';
 import { solveOnce as solveRiver } from './river-ladder.js';
 import { castOf as castOfRiver, checkBoard as checkRiver } from './river.js';
@@ -1124,4 +1126,15 @@ export function smallerDegree(origin, turn = 0) {
   return wrap(pickByTurn(smallDegreeBoards(origin), possibleDegree(origin.board), turn));
 }
 
-export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree };
+// ---- 낼 수 없는 금액: 동전 값이 더 작은 같은 종류의 판 ----
+
+/**
+ * 동전 값이 더 작은 같은 종류의 판을 차례로 낸다(src/core/nopay-ladder.js의 smallBoards).
+ * 끝이 있는 판에서는 끝이 있는 판만, 끝이 없는 판에서는 끝이 있는 판부터 끝이 없는 판과 번갈아 낸다. 2원과 3원처럼 더 줄일 수 없으면 없다.
+ */
+export function smallerNopay(origin, turn = 0) {
+  if (!origin.board || checkNopay(origin.board) !== null) return null;
+  return wrap(pickByTurn(smallNopayBoards(origin.board), possibleNopay(origin.board), turn));
+}
+
+export const SMALLER = { coins: smallerCoins, trace: smallerTrace, code: smallerCode, swap: smallerSwap, tile: smallerTile, duel: smallerDuel, tax: smallerTax, logic: smallerLogic, block: smallerBlock, river: smallerRiver, cups: smallerCups, dandelion: smallerDandelion, maze: smallerMaze, rulehunt: smallerRulehunt, untangle: smallerUntangle, lamps: smallerLamps, rooms: smallerRooms, machine: smallerMachine, split: smallerSplit, eyeball: smallerEyeball, cutpaste: smallerCutpaste, fold: smallerFold, domino: smallerDomino, pieces: smallerPieces, magic: smallerMagic, apart: smallerApart, keymaze: smallerKeymaze, cipher: smallerCipher, seqpath: smallerSeqpath, pancake: smallerPancake, product: smallerProduct, sim: smallerSim, matches: smallerMatches, fair: smallerFair, rowflip: smallerRowflip, foxrabbit: smallerFoxrabbit, pins: smallerPins, net: smallerNet, regionmap: smallerRegionmap, blackhole: smallerBlackhole, tower: smallerTower, racetrack: smallerRacetrack, discpair: smallerDiscpair, tilings: smallerTilings, fingers: smallerFingers, signs: smallerSigns, views: smallerViews, slide: smallerSlide, fourdigits: smallerFourdigits, yesno: smallerYesno, degree: smallerDegree, nopay: smallerNopay };
